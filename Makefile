@@ -33,6 +33,7 @@ clean:
 all: $(BIN)
 
 core-test:
-	$(MAKE) -C tests clean test
+	$(MAKE) -C tests clean
+	$(MAKE) -C tests test
 
 .PHONY: core-test

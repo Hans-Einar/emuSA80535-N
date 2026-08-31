@@ -33,3 +33,25 @@ relations:
   - {from: VER-SLC-003, type: verifies, to: SLC-003}
   - {from: SLC-003, type: resolves, to: REV-SLC-002-F001}
   - {from: SLC-003, type: resolves, to: REV-SLC-002-F002}
+  - {from: DES-011..DES-018, type: refines, to: ARCH-002}
+  - {from: DES-011..DES-018, type: refines, to: ARCH-003}
+  - {from: DES-011..DES-018, type: refines, to: ARCH-005}
+  - {from: DES-011..DES-018, type: refines, to: ARCH-006}
+  - {from: SPR-002, type: schedules, to: REQ-009}
+  - {from: SLC-004, type: belongs_to, to: ITR-004}
+  - {from: ITR-004, type: belongs_to, to: SPR-002}
+  - {from: SLC-004, type: satisfies, to: REQ-009}
+  - {from: SLC-004, type: implements_design, to: DES-011..DES-018}
+  - {from: REV-SLC-004, type: reviews, to: SLC-004}
+  - {from: VER-SLC-004, type: verifies, to: SLC-004}
+  - {from: REV-SLC-004, type: opens, to: REV-SLC-004-F001}
+  - {from: REV-SLC-004, type: opens, to: REV-SLC-004-F002}
+  - {from: SLC-005, type: corrects, to: SLC-004}
+  - {from: SLC-005, type: addresses, to: REV-SLC-004-F001}
+  - {from: SLC-005, type: addresses, to: REV-SLC-004-F002}
+  - {from: SLC-005, type: belongs_to, to: ITR-005}
+  - {from: ITR-005, type: belongs_to, to: SPR-002}
+  - {from: REV-SLC-005, type: reviews, to: SLC-005}
+  - {from: VER-SLC-005, type: verifies, to: SLC-005}
+  - {from: SLC-005, type: resolves, to: REV-SLC-004-F001}
+  - {from: SLC-005, type: resolves, to: REV-SLC-004-F002}

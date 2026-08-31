@@ -109,9 +109,9 @@ static void test_variant_and_sab_reset_map(void)
     CHECK(decode(&fixture.cpu, 0, disassembly) == 3);
     CHECK(strstr(disassembly, "IEN1") != NULL);
 
-    /* Stage 0 must not interpret SAB IEN1 at B8 as classic IP. */
+    /* The SAB path must not interpret IEN1 at B8 as classic IP. */
     fixture.code[0] = 0x00; /* NOP */
-    fixture.cpu.mSFR[EM8051_SAB_SFR_IEN0 - 0x80] = IEMASK_EA | IEMASK_EX0;
+    fixture.cpu.mSFR[EM8051_SAB_SFR_IEN0 - 0x80] = IEMASK_EA;
     fixture.cpu.mSFR[EM8051_SAB_SFR_IEN1 - 0x80] = IPMASK_PX0;
     fixture.cpu.mSFR[REG_TCON] = TCONMASK_IE0;
     CHECK(em8051_run(&fixture.cpu, 1, &result) == EM8051_STOP_INSTRUCTION_LIMIT);

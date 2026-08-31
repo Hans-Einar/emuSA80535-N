@@ -456,7 +456,11 @@ static uint8_t reti(struct em8051 *aCPU)
     if (!pop_from_stack(aCPU, &low))
         return 1;
 
-    if (aCPU->mInterruptActive)
+    if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
+    {
+        em8051_sab_irq_reti(aCPU, original_sp);
+    }
+    else if (aCPU->mInterruptActive)
     {
         {
             uint8_t hi = 0;

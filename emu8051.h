@@ -98,6 +98,67 @@ enum em8051_sab80535_sfr
     EM8051_SAB_SFR_P5 = 0xF8
 };
 
+/* Stable Siemens interrupt identities. Their numeric order is also the
+ * documented equal-priority polling order. */
+enum em8051_sab_irq_source
+{
+    EM8051_SAB_IRQ_INT0 = 0,
+    EM8051_SAB_IRQ_TIMER0,
+    EM8051_SAB_IRQ_INT1,
+    EM8051_SAB_IRQ_TIMER1,
+    EM8051_SAB_IRQ_UART,
+    EM8051_SAB_IRQ_TIMER2,
+    EM8051_SAB_IRQ_ADC,
+    EM8051_SAB_IRQ_INT2,
+    EM8051_SAB_IRQ_INT3,
+    EM8051_SAB_IRQ_INT4,
+    EM8051_SAB_IRQ_INT5,
+    EM8051_SAB_IRQ_INT6,
+    EM8051_SAB_IRQ_SOURCE_COUNT
+};
+
+enum em8051_sab_irq_vector
+{
+    EM8051_SAB_VECTOR_INT0 = 0x0003,
+    EM8051_SAB_VECTOR_TIMER0 = 0x000B,
+    EM8051_SAB_VECTOR_INT1 = 0x0013,
+    EM8051_SAB_VECTOR_TIMER1 = 0x001B,
+    EM8051_SAB_VECTOR_UART = 0x0023,
+    EM8051_SAB_VECTOR_TIMER2 = 0x002B,
+    EM8051_SAB_VECTOR_ADC = 0x0043,
+    EM8051_SAB_VECTOR_INT2 = 0x004B,
+    EM8051_SAB_VECTOR_INT3 = 0x0053,
+    EM8051_SAB_VECTOR_INT4 = 0x005B,
+    EM8051_SAB_VECTOR_INT5 = 0x0063,
+    EM8051_SAB_VECTOR_INT6 = 0x006B
+};
+
+enum em8051_sab_irq_trace_event
+{
+    EM8051_SAB_IRQ_TRACE_REQUEST = 0,
+    EM8051_SAB_IRQ_TRACE_ACCEPT,
+    EM8051_SAB_IRQ_TRACE_RELEASE
+};
+
+struct em8051_sab_irq_trace_record
+{
+    enum em8051_sab_irq_trace_event event;
+    uint64_t machine_cycle;
+    uint16_t pc;
+    enum em8051_sab_irq_source source;
+    uint8_t priority;
+    bool asserted;
+    bool global_enabled;
+    uint16_t pending_mask;
+    uint16_t enabled_mask;
+    uint16_t in_service_mask;
+    uint8_t in_service_depth;
+};
+
+/* IRQ observers receive only an immutable record and caller-owned context. */
+typedef void (*em8051sabirqtrace)(
+    const struct em8051_sab_irq_trace_record *aRecord, void *aUser);
+
 #define EM8051_SFR_UNAVAILABLE 0xFFFFu
 
 struct em8051_variant_descriptor
@@ -191,6 +252,8 @@ struct em8051
     uint64_t mMachineCycleCount;
     em8051trace trace;
     void *trace_user;
+    em8051sabirqtrace sab_irq_trace;
+    void *sab_irq_trace_user;
     bool mBreakpointEnabled;
     uint16_t mBreakpoint;
     bool mExceptionRaised;
@@ -204,6 +267,19 @@ struct em8051
     uint8_t int_a[2];
     uint8_t int_psw[2];
     uint8_t int_sp[2];
+
+    /* SAB80535 interrupt-controller state is separate from the classic
+     * two-level mInterruptActive representation. */
+    uint16_t mSABIrqPending;
+    uint16_t mSABIrqEnabled;
+    uint16_t mSABIrqInService;
+    uint8_t mSABIrqDepth;
+    uint8_t mSABIrqSourceStack[4];
+    uint8_t mSABIrqPriorityStack[4];
+    uint8_t mSABIrqSavedACC[4];
+    uint8_t mSABIrqSavedPSW[4];
+    uint8_t mSABIrqSavedSP[4];
+    uint8_t mSABIrqInhibitInstructions;
 
     // Internal handling of UART
     char serial_out[18]; // The shown size is only 18 chars
@@ -247,6 +323,16 @@ enum em8051_stop_reason em8051_run_until_pc(struct em8051 *aCPU,
 void em8051_set_breakpoint(struct em8051 *aCPU, uint16_t aPC, bool aEnabled);
 void em8051_set_trace(struct em8051 *aCPU, em8051trace aTrace, void *aUser);
 
+/* Install a record-only Siemens interrupt observer. */
+void em8051_set_sab_irq_trace(struct em8051 *aCPU,
+                              em8051sabirqtrace aTrace, void *aUser);
+
+/* Set or clear the canonical request flag(s) for one generic SAB80535
+ * interrupt source. This API models no physical pin, board or protocol. */
+bool em8051_sab_irq_set_pending(struct em8051 *aCPU,
+                                enum em8051_sab_irq_source aSource,
+                                bool aPending);
+
 // decode the next operation as character string.
 // buffer must be big enough (64 bytes is very safe). 
 // Returns length of opcode.
@@ -273,6 +359,8 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue);
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
                        uint16_t aAddress, uint8_t aValue);
 void em8051_raise_exception(struct em8051 *aCPU, int aCode);
+/* Internal opcode hook: release one Siemens in-service entry after RETI. */
+void em8051_sab_irq_reti(struct em8051 *aCPU, uint8_t aOriginalSP);
 
 
 // SFR register locations
@@ -416,6 +504,30 @@ enum EM8051_EXCEPTION
     EXCEPTION_IRET_SP_MISMATCH,  // sp not preserved over interrupt call
     EXCEPTION_IRET_ACC_MISMATCH, // acc not preserved over interrupt call
     EXCEPTION_ILLEGAL_OPCODE     // for the single 'reserved' opcode in the architecture
+};
+
+enum SAB_IEN1_MASKS
+{
+    SAB_IEN1MASK_EADC = 0x01,
+    SAB_IEN1MASK_EX2 = 0x02,
+    SAB_IEN1MASK_EX3 = 0x04,
+    SAB_IEN1MASK_EX4 = 0x08,
+    SAB_IEN1MASK_EX5 = 0x10,
+    SAB_IEN1MASK_EX6 = 0x20,
+    SAB_IEN1MASK_SWDT = 0x40,
+    SAB_IEN1MASK_EXEN2 = 0x80
+};
+
+enum SAB_IRCON_MASKS
+{
+    SAB_IRCONMASK_IADC = 0x01,
+    SAB_IRCONMASK_IEX2 = 0x02,
+    SAB_IRCONMASK_IEX3 = 0x04,
+    SAB_IRCONMASK_IEX4 = 0x08,
+    SAB_IRCONMASK_IEX5 = 0x10,
+    SAB_IRCONMASK_IEX6 = 0x20,
+    SAB_IRCONMASK_TF2 = 0x40,
+    SAB_IRCONMASK_EXF2 = 0x80
 };
 
 #endif /* EMU8051_H */
