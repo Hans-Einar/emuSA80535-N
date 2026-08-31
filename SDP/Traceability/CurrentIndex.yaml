@@ -1,0 +1,21 @@
+schema_version: emu-sab80535-current-index-v1
+updated: 2026-08-31
+
+active:
+  sprint: SPR-001
+  iteration: ITR-001
+  slice: SLC-001
+
+items:
+  MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
+  STU-001: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-SAB80535-STU-001.md}
+  REQ-001..REQ-008: {kind: requirement-range, status: active, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
+  REQ-009..REQ-015: {kind: requirement-range, status: planned, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
+  ARCH-001..ARCH-006: {kind: architecture-range, status: active, state: target, source: SDP/04--Architecture/EMU-SAB80535-ARCH-001.md}
+  DES-001..DES-010: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-001.md}
+  SPR-001: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/sprint.md}
+  ITR-001: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
+  SLC-001: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
+  REV-SLC-001: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-001.md}
+  VER-SLC-001: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-001.md}
+
