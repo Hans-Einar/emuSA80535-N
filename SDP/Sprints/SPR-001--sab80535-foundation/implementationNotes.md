@@ -23,3 +23,8 @@ Status: active; verified implementation has not yet been recorded.
 - Structurally accepted observations from the review: explicit A8/A9/B8/B9
   variant separation, CPU-owned SAB upper IRAM, direct/indirect separation,
   normal exact-size raw loading and generic no-target boundary.
+- Corrective commit `bbd63878c8ea4a2479e531509b3644e661eb875d`
+  resolved the cycle boundary, vector stop, invalid SFR access, reset wording,
+  trace-field evidence and null-loader findings. REV-SLC-002 verified those
+  corrections but left two high findings for trace reachability and stack
+  reads; Stage 0 is still not accepted.

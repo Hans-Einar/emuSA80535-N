@@ -2,7 +2,7 @@
 
 ## Current Objective
 
-Execute corrective SLC-002, then obtain a second independent review and Master
+Execute corrective SLC-003, then obtain a third independent review and Master
 verification.
 
 ## Authoritative Source Documents
@@ -25,41 +25,44 @@ verification.
 - SLC-001 implementation and first independent review completed.
 - REV-SLC-001 recorded eight reproducible findings and disposition
   `changes-required`.
+- SLC-002 corrected most findings; REV-SLC-002 left two residual high findings.
 
 ## Not Done
 
-- SLC-002 correction, second review, final verification and PR.
+- SLC-003 trace/stack correction, third review, final verification and PR.
 
 ## Exact Next Step
 
-Fresh Worker implements only the SLC-002 correction contract in
+Fresh Worker implements only the SLC-003 correction contract in
 `ScrumIterations.md` and reports evidence to the Master.
 
 ## Verification Completed
 
 Fork ancestry/remotes/HEAD verified. REV-SLC-001 reran Windows/WSL core tests,
-sanitizers, Clang strict compile, no-target audit and targeted failure probes.
+sanitizers, Clang strict compile, all-opcode cycle comparison, no-target audit
+and targeted failure probes. REV-SLC-002 verified SLC-002 corrections and
+reproduced its two residual gaps.
 Full frontend baseline remains blocked by missing external curses development
 headers.
 
 ## Traceability IDs In Play
 
 MND-001, STU-001, REQ-001..REQ-008, ARCH-001..ARCH-006,
-DES-001..DES-010, SPR-001, ITR-002, SLC-002, REV-SLC-001-F001..F008,
-REV-SLC-002 and VER-SLC-002.
+DES-001..DES-010, SPR-001, ITR-003, SLC-003, REV-SLC-002-F001,
+REV-SLC-002-F002, REV-SLC-003 and VER-SLC-003.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-002 active and findings open.
+- CurrentIndex updated: yes, SLC-003 active and two findings open.
 - Relations updated: yes, correction/review/finding links recorded.
 - Ledger updated: yes, implementation/review and corrective Slice events appended.
 
 ## Open Risks Or Ambiguities
 
-- Corrected run control must preserve classic interrupt/timer behavior while
-  ending at a coherent architectural boundary.
-- Trace immutability needs a C-compatible public signature that remains usable
-  by embedders.
+- Record-only trace signature is an API change from the unmerged Stage 0
+  proposal, not from upstream; README and tests must agree.
+- Stack failure must stop POP/RET/interrupt control-flow mutation, not merely
+  report an exception after mutation.
 - Upstream full UI build needs curses development headers; core-only evidence
   must not be mislabeled as a full frontend build.
 

@@ -78,9 +78,9 @@ Open findings: REV-SLC-001-F001..F008. Corrective work moves to ITR-002 / SLC-00
 
 ## ITR-002 — Stage 0 review correction
 
-Status: active  
+Status: changes-required  
 Iteration ID: ITR-002  
-Active Slice: SLC-002
+Slice: SLC-002
 
 ### Slice contract — SLC-002
 
@@ -132,3 +132,58 @@ observer immutability; null loader input; no-target audit and diff check.
 **Completion signal:** fresh Worker commits the correction with all focused
 evidence green; a second fresh Reviewer approves exact HEAD; Master reruns the
 verification matrix and closes the Sprint only if evidence agrees.
+
+### Result
+
+Corrective commit `bbd63878c8ea4a2479e531509b3644e661eb875d`
+resolved six findings completely and corrected the original upper-stack push
+case. REV-SLC-002 independently confirmed the new cycle/vector/SFR/reset/trace
+field/loader tests, but found two residual high-severity gaps. SLC-002 remains
+`changes-required` and is not accepted.
+
+Open findings: REV-SLC-002-F001 and REV-SLC-002-F002.
+
+## ITR-003 — Trace immutability and stack-read closure
+
+Status: active  
+Iteration ID: ITR-003  
+Active Slice: SLC-003
+
+### Slice contract — SLC-003
+
+**Goal:** close the two residual SLC-002 findings without changing the now
+verified cycle/interrupt behavior or expanding Stage 0.
+
+**Expected files:** `emu8051.h`, `core.c`, `opcodes.c`, focused
+`tests/test_stage0.c`, and README callback wording if needed.
+
+**Required corrections:**
+
+- REV-SLC-002-F001: trace callback receives only the immutable trace record and
+  user context, or another by-value/read-only surface from which mutable CPU
+  storage is unreachable in ordinary C; a compile/runtime regression proves a
+  callback cannot alter the current operand or CPU memory through its signature;
+- REV-SLC-002-F002: classic missing-upper stack reads raise
+  `EXCEPTION_STACK`; POP and RET do not silently write sentinel data or commit
+  invalid control flow; interrupt entry must not continue a second stack push
+  after the first fails.
+
+**Invariants:** preserve the corrected one-cycle tick semantics, post-instruction
+run boundary, exact two-cycle interrupt entry/vector stops, variant mapping,
+SAB upper stack success, raw loader, deterministic reset and exact trace fields.
+
+**Non-goals:** no generic indirect-memory API redesign beyond the minimum stack
+failure contract; no Stage 1 peripherals, board logic, frontend work or live I/O.
+
+**Traceability:** SLC-003 corrects SLC-002 and addresses REV-SLC-002-F001 and
+REV-SLC-002-F002. Expected review is REV-SLC-003 and verification VER-SLC-003.
+
+**Required verification:** complete existing Windows/WSL/sanitizer matrix;
+callback signature compile check and traced/untraced equality; POP and RET at
+classic SP `80/81`; interrupt entry at SP `7F` raises once and does not advance
+to a corrupt vector state; SAB SP `A2` LCALL/RET remains green; all original
+Stage 0 tests, diff check and no-target audit.
+
+**Completion signal:** fresh Worker commits the two corrections, third fresh
+Reviewer approves exact HEAD with no findings, and Master independently reruns
+the final matrix.

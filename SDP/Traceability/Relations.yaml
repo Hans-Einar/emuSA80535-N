@@ -22,3 +22,12 @@ relations:
   - {from: ITR-002, type: belongs_to, to: SPR-001}
   - {from: REV-SLC-002, type: reviews, to: SLC-002}
   - {from: VER-SLC-002, type: verifies, to: SLC-002}
+  - {from: REV-SLC-002, type: opens, to: REV-SLC-002-F001}
+  - {from: REV-SLC-002, type: opens, to: REV-SLC-002-F002}
+  - {from: SLC-003, type: corrects, to: SLC-002}
+  - {from: SLC-003, type: addresses, to: REV-SLC-002-F001}
+  - {from: SLC-003, type: addresses, to: REV-SLC-002-F002}
+  - {from: SLC-003, type: belongs_to, to: ITR-003}
+  - {from: ITR-003, type: belongs_to, to: SPR-001}
+  - {from: REV-SLC-003, type: reviews, to: SLC-003}
+  - {from: VER-SLC-003, type: verifies, to: SLC-003}
