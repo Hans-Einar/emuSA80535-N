@@ -58,3 +58,7 @@ SPR-004, ITR-007, SLC-007, REV-SLC-007 and VER-SLC-007.
 Branch `codex/sab80535-uart` starts exactly from current master
 `c0cd6f26bd8984c9fed10eb81716619cb1bb96e6`.
 
+## Issue Checkpoint
+
+Master opening checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486344066`.
