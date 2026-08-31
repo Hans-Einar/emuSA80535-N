@@ -2,7 +2,7 @@
 
 ## ITR-004 — Siemens interrupt controller
 
-Status: active
+Status: in-review
 Iteration ID: ITR-004
 Active Slice: SLC-004
 
@@ -69,3 +69,10 @@ trace determinism comparison; exact reviewed HEAD.
 and reports evidence. A fresh Reviewer either approves exact HEAD or opens
 stable findings. Master verifies and accepts only after review is approved.
 
+### Worker result
+
+Worker commit `529602d800e36e87f495ef088f17e67ba3659a1a`
+implements the bounded controller and focused Stage 0/Stage 1 tests. Worker
+reported Windows GCC/strict Clang, openSUSE WSL GCC and WSL ASan/UBSan passing.
+No SDP files or later Timer/UART behavior were included. REV-SLC-004 is now
+reviewing the exact product HEAD; this result is not yet accepted.

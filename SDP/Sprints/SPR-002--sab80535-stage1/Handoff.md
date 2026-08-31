@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Implement and independently review SLC-004 only: the generic Siemens
-SAB80535 interrupt controller.
+Independently review Worker HEAD `529602d8...` for SLC-004, then run Master
+verification only if review approves.
 
 ## Authoritative Source Documents
 
@@ -21,22 +21,23 @@ SAB80535 interrupt controller.
 - Stage 0 accepted on PR #1.
 - Issue #2 authority read and reconciled with primary Siemens semantics.
 - SPR-002 / ITR-004 / SLC-004 contract and traceability opened.
+- Worker product/test commit `529602d800e36e87f495ef088f17e67ba3659a1a`
+  completed and reported; fresh REV-SLC-004 review is running.
 
 ## Not Done
 
-- SLC-004 product implementation, review, verification and stacked PR.
+- SLC-004 independent review, Master verification and stacked PR.
 - Timer0/Timer1 and UART later slices; these are not authorized.
 
 ## Exact Next Step
 
-Fresh Worker implements only SLC-004 against the active contract and commits
-focused product/tests. Fresh Reviewer then inspects the exact implementation
-HEAD.
+Fresh Reviewer inspects `529602d800e36e87f495ef088f17e67ba3659a1a`
+against parent `f09b1d3...`, with targeted semantic probes beyond Worker tests.
 
 ## Verification Completed
 
-Authority/readiness review only. Stage 0 evidence remains the regression
-baseline.
+Worker-reported Windows/WSL/Clang/sanitizer evidence exists but has not yet been
+accepted by Master. Stage 0 evidence remains the regression baseline.
 
 ## Traceability IDs In Play
 
@@ -45,7 +46,7 @@ SPR-002, ITR-004, SLC-004, REV-SLC-004 and VER-SLC-004.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-004 active.
+- CurrentIndex updated: yes, SLC-004 in review.
 - Relations updated: yes.
 - Ledger updated: yes, Sprint/Iteration/Slice start recorded.
 
@@ -67,3 +68,6 @@ Working branch: `codex/sab80535-interrupt-controller` based on
 
 Master opening checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483242543`.
+
+Worker completion checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483447781`.
