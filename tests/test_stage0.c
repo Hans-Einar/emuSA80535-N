@@ -8,6 +8,7 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 static int gFailures;
+static int gStackExceptionCount;
 
 #define CHECK(condition)                                                       \
     do                                                                         \
@@ -35,6 +36,13 @@ static void setup_fixture(struct fixture *aFixture, enum em8051_variant aVariant
     aFixture->cpu.mExtData = aFixture->xdata;
     aFixture->cpu.mExtDataMaxIdx = 0xffffu;
     CHECK(em8051_init_variant(&aFixture->cpu, aVariant) == 0);
+}
+
+static void count_stack_exception(struct em8051 *aCPU, int aCode)
+{
+    (void)aCPU;
+    if (aCode == EXCEPTION_STACK)
+        gStackExceptionCount++;
 }
 
 static void test_variant_and_sab_reset_map(void)
@@ -155,6 +163,7 @@ static void test_upper_iram_and_stack(void)
 {
     struct fixture fixture;
     struct em8051_run_result result;
+    uint8_t invalid_sp;
     static const unsigned char memory_program[] =
     {
         0x78, 0xA2,       /* MOV R0,#A2 */
@@ -212,6 +221,31 @@ static void test_upper_iram_and_stack(void)
     CHECK(result.exception_code == EXCEPTION_STACK);
     CHECK(fixture.cpu.mSFR[REG_SP] == 0x80);
     CHECK(fixture.cpu.mUpperData == NULL);
+
+    /* A missing classic upper stack must fail before POP can overwrite its
+     * destination or RET can replace the PC with the old sentinel value. */
+    for (invalid_sp = 0x80; invalid_sp <= 0x81; invalid_sp++)
+    {
+        setup_fixture(&fixture, EM8051_VARIANT_8051);
+        fixture.code[0] = 0xD0; /* POP 20 */
+        fixture.code[1] = 0x20;
+        fixture.cpu.mLowerData[0x20] = 0xA5;
+        fixture.cpu.mSFR[REG_SP] = invalid_sp;
+        CHECK(em8051_run(&fixture.cpu, 1, &result) == EM8051_STOP_EXCEPTION);
+        CHECK(result.exception_code == EXCEPTION_STACK);
+        CHECK(fixture.cpu.mLowerData[0x20] == 0xA5);
+        CHECK(fixture.cpu.mPC == 0);
+        CHECK(fixture.cpu.mSFR[REG_SP] == invalid_sp);
+
+        setup_fixture(&fixture, EM8051_VARIANT_8051);
+        fixture.cpu.mPC = 0x0100;
+        fixture.code[0x0100] = 0x22; /* RET */
+        fixture.cpu.mSFR[REG_SP] = invalid_sp;
+        CHECK(em8051_run(&fixture.cpu, 1, &result) == EM8051_STOP_EXCEPTION);
+        CHECK(result.exception_code == EXCEPTION_STACK);
+        CHECK(fixture.cpu.mPC == 0x0100);
+        CHECK(fixture.cpu.mSFR[REG_SP] == invalid_sp);
+    }
 }
 
 static void test_sfr_gateway_validation(void)
@@ -394,6 +428,28 @@ static void test_interrupt_vector_stops(void)
     CHECK(result.pc == ISR_INT0);
     CHECK(fixture.cpu.mInstructionCount == 0);
     CHECK(fixture.cpu.mTickDelay == 0);
+
+    /* At SP=7F the first interrupt push targets absent upper IRAM. Entry must
+     * raise once and stop without executing an opcode or installing a vector. */
+    setup_fixture(&fixture, EM8051_VARIANT_8051);
+    fixture.cpu.mPC = 0x1234;
+    fixture.code[0x1234] = 0x00;
+    fixture.cpu.mSFR[REG_SP] = 0x7F;
+    fixture.cpu.mSFR[REG_IE] = IEMASK_EA | IEMASK_EX0;
+    fixture.cpu.mSFR[REG_TCON] = TCONMASK_IE0;
+    fixture.cpu.except = count_stack_exception;
+    gStackExceptionCount = 0;
+    CHECK(em8051_run(&fixture.cpu, 1, &result) == EM8051_STOP_EXCEPTION);
+    CHECK(result.exception_code == EXCEPTION_STACK);
+    CHECK(result.instructions == 0);
+    CHECK(result.machine_cycles == 1);
+    CHECK(result.pc == 0x1234);
+    CHECK(fixture.cpu.mPC == 0x1234);
+    CHECK(fixture.cpu.mSFR[REG_SP] == 0x80);
+    CHECK(fixture.cpu.mTickDelay == 0);
+    CHECK(fixture.cpu.mInterruptActive == 0);
+    CHECK((fixture.cpu.mSFR[REG_TCON] & TCONMASK_IE0) != 0);
+    CHECK(gStackExceptionCount == 1);
 }
 
 struct trace_capture
@@ -402,17 +458,37 @@ struct trace_capture
     size_t count;
 };
 
-/* The const CPU parameter is also a compile-time check of the public
- * read-only observer callback type under the strict warnings-as-errors gate. */
-static void capture_trace(const struct em8051 *aCPU,
-                          const struct em8051_trace_record *aRecord,
+/* This exact record-only signature is checked under the strict
+ * warnings-as-errors build and provides no CPU pointer to the observer. */
+static void capture_trace(const struct em8051_trace_record *aRecord,
                           void *aUser)
 {
     struct trace_capture *capture = (struct trace_capture *)aUser;
-    (void)aCPU;
     if (capture->count < ARRAY_SIZE(capture->records))
         capture->records[capture->count++] = *aRecord;
 }
+
+struct trace_isolation_context
+{
+    struct em8051_trace_record writable_copy;
+    size_t count;
+};
+
+static void exercise_record_only_trace(
+    const struct em8051_trace_record *aRecord, void *aUser)
+{
+    struct trace_isolation_context *context =
+        (struct trace_isolation_context *)aUser;
+
+    context->writable_copy = *aRecord;
+    context->writable_copy.value = 0x42;
+    context->count++;
+}
+
+/* Assignment to the public callback typedef is the compile-time signature
+ * regression: an observer taking the former CPU parameter is incompatible. */
+static em8051trace const record_only_trace_compile_check =
+    exercise_record_only_trace;
 
 static void test_trace_contract(void)
 {
@@ -451,7 +527,10 @@ static void test_trace_contract(void)
     };
     struct fixture traced;
     struct fixture untraced;
+    struct fixture isolated;
+    struct fixture isolation_control;
     struct trace_capture capture;
+    struct trace_isolation_context isolation;
     struct em8051_run_result result;
     size_t i;
 
@@ -483,6 +562,35 @@ static void test_trace_contract(void)
     CHECK(memcmp(untraced.cpu.mSFR, traced.cpu.mSFR,
                  sizeof(traced.cpu.mSFR)) == 0);
     CHECK(memcmp(untraced.xdata, traced.xdata, sizeof(traced.xdata)) == 0);
+
+    /* Instruction trace fires before operand reads. Mutating the observer's
+     * writable record copy must not alter the current immediate operand or
+     * any CPU-owned memory because none is reachable through the signature. */
+    memset(&isolation, 0, sizeof(isolation));
+    setup_fixture(&isolated, EM8051_VARIANT_8051);
+    setup_fixture(&isolation_control, EM8051_VARIANT_8051);
+    isolated.code[0] = 0x74; /* MOV A,#11 */
+    isolated.code[1] = 0x11;
+    isolated.code[2] = 0xF5; /* MOV 20,A */
+    isolated.code[3] = 0x20;
+    memcpy(isolation_control.code, isolated.code, 4);
+    em8051_set_trace(&isolated.cpu, record_only_trace_compile_check,
+                     &isolation);
+    CHECK(em8051_run(&isolated.cpu, 2, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK(em8051_run(&isolation_control.cpu, 2, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK(isolation.count == 2);
+    CHECK(isolation.writable_copy.value == 0x42);
+    CHECK(isolated.code[1] == 0x11);
+    CHECK(isolated.cpu.mSFR[REG_ACC] == 0x11);
+    CHECK(isolated.cpu.mLowerData[0x20] == 0x11);
+    CHECK(memcmp(isolated.code, isolation_control.code,
+                 sizeof(isolated.code)) == 0);
+    CHECK(memcmp(isolated.cpu.mLowerData, isolation_control.cpu.mLowerData,
+                 sizeof(isolated.cpu.mLowerData)) == 0);
+    CHECK(memcmp(isolated.cpu.mSFR, isolation_control.cpu.mSFR,
+                 sizeof(isolated.cpu.mSFR)) == 0);
 
     /* A reached but unbacked generic XDATA access remains diagnosable. */
     memset(&capture, 0, sizeof(capture));

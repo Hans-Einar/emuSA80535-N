@@ -103,7 +103,7 @@ static void write_mem_indir(struct em8051 *aCPU, uint8_t aAddress, uint8_t value
     }
 }
 
-void push_to_stack(struct em8051 *aCPU, uint8_t aValue)
+bool push_to_stack(struct em8051 *aCPU, uint8_t aValue)
 {
     aCPU->mSFR[REG_SP]++;
     /* Stack addressing is always indirect. On 8052/SAB80535 an SP above 7F
@@ -111,21 +111,37 @@ void push_to_stack(struct em8051 *aCPU, uint8_t aValue)
     if (aCPU->mSFR[REG_SP] > 0x7fu && !aCPU->mUpperData)
     {
         em8051_raise_exception(aCPU, EXCEPTION_STACK);
-        return;
+        return false;
     }
     write_mem_indir(aCPU, aCPU->mSFR[REG_SP], aValue);
     if (aCPU->mSFR[REG_SP] == 0)
+    {
         em8051_raise_exception(aCPU, EXCEPTION_STACK);
+        return false;
+    }
+    return true;
 }
 
-static uint8_t pop_from_stack(struct em8051 *aCPU)
+static bool pop_from_stack(struct em8051 *aCPU, uint8_t *aValue)
 {
-    uint8_t value = read_mem_indir(aCPU, aCPU->mSFR[REG_SP]);
+    uint8_t value;
+
+    if (aCPU->mSFR[REG_SP] > 0x7fu && !aCPU->mUpperData)
+    {
+        em8051_raise_exception(aCPU, EXCEPTION_STACK);
+        return false;
+    }
+
+    value = read_mem_indir(aCPU, aCPU->mSFR[REG_SP]);
     aCPU->mSFR[REG_SP]--;
 
     if (aCPU->mSFR[REG_SP] == 0xff)
+    {
         em8051_raise_exception(aCPU, EXCEPTION_STACK);
-    return value;
+        return false;
+    }
+    *aValue = value;
+    return true;
 }
 
 
@@ -252,16 +268,20 @@ static uint8_t jbc_bitaddr_offset(struct em8051 *aCPU)
 static uint8_t acall_offset(struct em8051 *aCPU)
 {
     uint16_t address = ((PC + 2) & 0xf800) | OPERAND1 | ((OPCODE & 0xe0) << 3);
-    push_to_stack(aCPU, (PC + 2) & 0xff);
-    push_to_stack(aCPU, (PC + 2) >> 8);
+    if (!push_to_stack(aCPU, (PC + 2) & 0xff))
+        return 1;
+    if (!push_to_stack(aCPU, (PC + 2) >> 8))
+        return 1;
     PC = address;
     return 1;
 }
 
 static uint8_t lcall_address(struct em8051 *aCPU)
 {
-    push_to_stack(aCPU, (PC + 3) & 0xff);
-    push_to_stack(aCPU, (PC + 3) >> 8);
+    if (!push_to_stack(aCPU, (PC + 3) & 0xff))
+        return 1;
+    if (!push_to_stack(aCPU, (PC + 3) >> 8))
+        return 1;
     PC = (OPERAND1 << 8) |
          (OPERAND2 << 0);
     return 1;
@@ -343,8 +363,13 @@ static uint8_t jb_bitaddr_offset(struct em8051 *aCPU)
 
 static uint8_t ret(struct em8051 *aCPU)
 {
-    PC = pop_from_stack(aCPU) << 8;
-    PC |= pop_from_stack(aCPU);
+    uint8_t high;
+    uint8_t low;
+    if (!pop_from_stack(aCPU, &high))
+        return 1;
+    if (!pop_from_stack(aCPU, &low))
+        return 1;
+    PC = (uint16_t)(high << 8) | low;
     return 1;
 }
 
@@ -422,6 +447,15 @@ static uint8_t jnb_bitaddr_offset(struct em8051 *aCPU)
 
 static uint8_t reti(struct em8051 *aCPU)
 {
+    uint8_t high;
+    uint8_t low;
+    uint8_t original_sp = aCPU->mSFR[REG_SP];
+
+    if (!pop_from_stack(aCPU, &high))
+        return 1;
+    if (!pop_from_stack(aCPU, &low))
+        return 1;
+
     if (aCPU->mInterruptActive)
     {
         {
@@ -430,7 +464,7 @@ static uint8_t reti(struct em8051 *aCPU)
                 hi = 1;
             if (aCPU->int_a[hi] != aCPU->mSFR[REG_ACC])
                 em8051_raise_exception(aCPU, EXCEPTION_IRET_ACC_MISMATCH);
-            if (aCPU->int_sp[hi] != aCPU->mSFR[REG_SP])
+            if (aCPU->int_sp[hi] != original_sp)
                 em8051_raise_exception(aCPU, EXCEPTION_IRET_SP_MISMATCH);
             if ((aCPU->int_psw[hi] & (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 | PSWMASK_AC | PSWMASK_C)) !=                 
                 (aCPU->mSFR[REG_PSW] & (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 | PSWMASK_AC | PSWMASK_C)))
@@ -443,8 +477,7 @@ static uint8_t reti(struct em8051 *aCPU)
             aCPU->mInterruptActive = 0;
     }
 
-    PC = pop_from_stack(aCPU) << 8;
-    PC |= pop_from_stack(aCPU);
+    PC = (uint16_t)(high << 8) | low;
     return 1;
 }
 
@@ -1144,7 +1177,8 @@ static uint8_t cjne_indir_rx_imm_offset(struct em8051 *aCPU)
 static uint8_t push_mem(struct em8051 *aCPU)
 {
     uint8_t value = read_mem(aCPU, OPERAND1);
-    push_to_stack(aCPU, value);   
+    if (!push_to_stack(aCPU, value))
+        return 1;
     PC += 2;
     return 1;
 }
@@ -1214,7 +1248,9 @@ static uint8_t xch_a_indir_rx(struct em8051 *aCPU)
 static uint8_t pop_mem(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = pop_from_stack(aCPU);
+    uint8_t value;
+    if (!pop_from_stack(aCPU, &value))
+        return 1;
     write_mem(aCPU, address, value);
     PC += 2;
     return 1;

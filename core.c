@@ -116,7 +116,7 @@ void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
     record.pc = aCPU->mInInstruction ? aCPU->mTracePC : aCPU->mPC;
     record.address = aAddress;
     record.value = aValue;
-    aCPU->trace(aCPU, &record, aCPU->trace_user);
+    aCPU->trace(&record, aCPU->trace_user);
 }
 
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
@@ -424,7 +424,7 @@ static void timer_tick(struct em8051 *aCPU)
     // TODO: serial port, timer2, other stuff
 }
 
-void handle_interrupts(struct em8051 *aCPU)
+static bool handle_interrupts(struct em8051 *aCPU)
 {
     int16_t dest_ip = -1;
     uint8_t hi = 0;
@@ -434,11 +434,11 @@ void handle_interrupts(struct em8051 *aCPU)
      * intentionally deferred to Stage 1. Never interpret SAB IEN1 at B8 as
      * the classic IP register. */
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
-        return;
+        return true;
 
     // can't interrupt high level
     if (aCPU->mInterruptActive > 1) 
-        return;    
+        return true;
 
     if (aCPU->mSFR[REG_IE] & IEMASK_EA)
     {
@@ -529,16 +529,18 @@ void handle_interrupts(struct em8051 *aCPU)
     
     // no interrupt
     if (dest_ip == -1)
-        return;
+        return true;
 
     // can't interrupt same-level
     if (aCPU->mInterruptActive == 1 && !hi)
-        return; 
+        return true;
 
     // some interrupt occurs; perform LCALL
+    if (!push_to_stack(aCPU, aCPU->mPC & 0xff))
+        return false;
+    if (!push_to_stack(aCPU, aCPU->mPC >> 8))
+        return false;
     aCPU->mSFR[REG_PCON] &= ~0x01; // clear idle flag, but not Power down flag
-    push_to_stack(aCPU, aCPU->mPC & 0xff);
-    push_to_stack(aCPU, aCPU->mPC >> 8);
     aCPU->mPC = dest_ip;
     /* Interrupt entry consumes two machine cycles. This tick accounts for
      * the first; one pending cycle completes before the vector opcode. */
@@ -567,6 +569,7 @@ void handle_interrupts(struct em8051 *aCPU)
     aCPU->int_a[hi] = aCPU->mSFR[REG_ACC];
     aCPU->int_psw[hi] = aCPU->mSFR[REG_PSW];
     aCPU->int_sp[hi] = aCPU->mSFR[REG_SP];
+    return true;
 }
 
 bool tick(struct em8051 *aCPU)
@@ -594,7 +597,14 @@ bool tick(struct em8051 *aCPU)
     // 1. interrupt of equal or higher priority is in progress (tested inside function)
     // 2. current cycle is not the final cycle of instruction (tickdelay = 0)
     // 3. the instruction in progress is RETI or any write to the IE or IP regs (TODO)
-    handle_interrupts(aCPU);
+    /* A failed interrupt stack push terminates entry immediately. Do not run
+     * the interrupted opcode after the failed entry attempt. */
+    if (!handle_interrupts(aCPU))
+    {
+        timer_tick(aCPU);
+        aCPU->mMachineCycleCount++;
+        return false;
+    }
 
     if (aCPU->mTickDelay == 0)
     {

@@ -131,10 +131,9 @@ struct em8051_trace_record
     uint8_t value;
 };
 
-/* Trace observers receive a read-only CPU view. Trace callbacks must not
- * influence execution. */
-typedef void (*em8051trace)(const struct em8051 *aCPU,
-                            const struct em8051_trace_record *aRecord,
+/* Trace observers receive only an immutable record and caller-owned context.
+ * CPU storage is intentionally unreachable through this callback signature. */
+typedef void (*em8051trace)(const struct em8051_trace_record *aRecord,
                             void *aUser);
 
 enum em8051_stop_reason
@@ -263,8 +262,8 @@ int em8051_load_binary(struct em8051 *aCPU, const char *aFilename);
 // Alternate way to execute an opcode (switch-structure instead of function pointers)
 uint8_t do_op(struct em8051 *aCPU);
 
-// Internal: Pushes a value into stack
-void push_to_stack(struct em8051 *aCPU, uint8_t aValue);
+// Internal: Pushes a value onto the stack and reports whether it succeeded.
+bool push_to_stack(struct em8051 *aCPU, uint8_t aValue);
 
 /* Internal access gateways shared by the opcode engine and embedders. Invalid
  * CPU pointers or addresses below the SFR range are rejected: reads return FF

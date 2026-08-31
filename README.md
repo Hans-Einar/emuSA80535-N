@@ -94,7 +94,9 @@ The deterministic embedding surface provides an exact 65536-byte raw CODE
 loader, 64-bit instruction and machine-cycle counters, bounded run and
 run-until-PC calls, a breakpoint, typed stop reasons, and optional normalized
 instruction/SFR-write/MOVX trace records. Missing MOVX backing is reported as
-an unsupported trace record. Trace callbacks receive a read-only CPU view.
+an unsupported trace record. Trace callbacks receive only an immutable trace
+record and caller-owned user context; the callback signature exposes no CPU
+pointer or CPU-owned memory.
 Specialized accumulator/PSW opcode forms and
 internal peripheral SFR changes do not yet pass through the SFR-write trace
 gateway, so Stage 0 does not claim complete SFR observation.
