@@ -59,3 +59,7 @@ SPR-003, ITR-006, SLC-006, REV-SLC-006 and VER-SLC-006.
 Branch `codex/sab80535-timers` starts exactly from current master
 `a20815e24778760a308130cf1f9aa6d0f55b6af3`.
 
+## Issue Checkpoint
+
+Master opening checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5484149458`.
