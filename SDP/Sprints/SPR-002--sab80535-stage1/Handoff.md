@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Push the verified branch, open the stacked SLC-004 implementation PR and record
-the real PR/cross-repository checkpoint identities.
+SPR-002 is complete. Review/merge stacked PR #3 after its Stage 0 base PR #1.
+Do not start later Timer/UART slices without new SteeringGroup authorization.
 
 ## Authoritative Source Documents
 
@@ -28,23 +28,24 @@ the real PR/cross-repository checkpoint identities.
 - SLC-005 corrective product/test commit `85fa6e1f8318c691598b9a2ae191d1bd94b436c8`
   completed; fresh review is running.
 - REV-SLC-005 approved with no findings; VER-SLC-005 passed.
+- Stacked PR #3 opened and exact CPU commit reported to Ponsse Issue #26.
 
 ## Not Done
 
-- Stacked PR publication and cross-repository Ponsse Issue #26 checkpoint.
+- PR #3 review/merge. Later Issue #2 slices are not authorized.
 - Timer0/Timer1 and UART later slices; these are not authorized.
 
 ## Exact Next Step
 
-Open a PR from `codex/sab80535-interrupt-controller` to
-`codex/sab80535-foundation`, because PR #1 is not merged. Do not retarget to
-`master` until Stage 0 is available there.
+Review PR #3. After PR #1 merges, retarget/rebase the stacked PR only through a
+separately authorized integration action. Do not implement Timer/UART work.
 
 ## Verification Completed
 
 REV-SLC-004 reproduced both findings. REV-SLC-005 verified literal corrections
 and approved; VER-SLC-005 independently passed the full matrix. Stage 0 remains
 green.
+GitHub reports PR #3 open and mergeable with no configured check runs.
 
 ## Traceability IDs In Play
 
@@ -53,7 +54,7 @@ SPR-002, ITR-005, SLC-005, REV-SLC-005 and VER-SLC-005.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-005 accepted; Sprint ready-for-pr.
+- CurrentIndex updated: yes, Sprint complete and no active item.
 - Relations updated: yes.
 - Ledger updated: yes, Sprint/Iteration/Slice start recorded.
 
@@ -89,3 +90,19 @@ Corrective Worker checkpoint:
 
 Reviewer/Master acceptance checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483733470`.
+
+Stacked PR checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483783013`.
+
+## Pull Request
+
+- PR: `https://github.com/Hans-Einar/emuSA80535-N/pull/3`
+- Base: `codex/sab80535-foundation`
+- Head: `codex/sab80535-interrupt-controller`
+- State at closure: open, mergeable, no configured check runs.
+
+## Cross-Repository Checkpoint
+
+Accepted CPU product HEAD `85fa6e1f8318c691598b9a2ae191d1bd94b436c8`
+reported to Ponsse Issue #26:
+`https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5483780360`.

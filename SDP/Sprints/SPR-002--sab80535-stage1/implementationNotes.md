@@ -27,3 +27,7 @@ Status: active; no verified SLC-004 product implementation recorded yet.
   ancestry checks.
 - The SLC-004/SLC-005 controller increment is accepted technically and ready
   for a stacked PR.
+- Stacked PR #3 was opened against the unmerged Stage 0 branch:
+  `https://github.com/Hans-Einar/emuSA80535-N/pull/3`.
+- Exact reviewed CPU revision was reported to Ponsse Issue #26:
+  `https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5483780360`.

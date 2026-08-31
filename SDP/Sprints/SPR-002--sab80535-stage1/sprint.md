@@ -1,6 +1,6 @@
 # SPR-002 — SAB80535 Stage 1 interrupt controller
 
-Status: ready-for-pr
+Status: complete
 Sprint ID: SPR-002
 Started: 2026-08-31
 Steering authority: `Hans-Einar/emuSA80535-N#2`
@@ -57,5 +57,7 @@ Later Timer/UART slices in Issue #2 are not authorized by this Sprint.
 All technical exit criteria are satisfied by cumulative product commits
 `529602d800e36e87f495ef088f17e67ba3659a1a` and corrective
 `85fa6e1f8318c691598b9a2ae191d1bd94b436c8`, through REV-SLC-005 and
-VER-SLC-005. Sprint remains `ready-for-pr` until the real stacked PR identity
-is recorded.
+VER-SLC-005. The verified branch is published as stacked PR #3:
+`https://github.com/Hans-Einar/emuSA80535-N/pull/3`.
+
+SPR-002 is complete. Later Timer0/Timer1 and UART slices remain unauthorized.
