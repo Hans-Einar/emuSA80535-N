@@ -2,8 +2,7 @@
 
 ## Current Objective
 
-Execute corrective SLC-003, then obtain a third independent review and Master
-verification.
+Push the verified branch, open the first PR and record the real PR identity.
 
 ## Authoritative Source Documents
 
@@ -26,15 +25,17 @@ verification.
 - REV-SLC-001 recorded eight reproducible findings and disposition
   `changes-required`.
 - SLC-002 corrected most findings; REV-SLC-002 left two residual high findings.
+- SLC-003 closed both residual findings; REV-SLC-003 approved and VER-SLC-003
+  passed.
 
 ## Not Done
 
-- SLC-003 trace/stack correction, third review, final verification and PR.
+- Branch push, PR creation and final Sprint PR-identity reconciliation.
 
 ## Exact Next Step
 
-Fresh Worker implements only the SLC-003 correction contract in
-`ScrumIterations.md` and reports evidence to the Master.
+Push `codex/sab80535-foundation`, open the first PR against `master`, then update
+this handoff and the ledger with the real PR URL/number.
 
 ## Verification Completed
 
@@ -42,27 +43,28 @@ Fork ancestry/remotes/HEAD verified. REV-SLC-001 reran Windows/WSL core tests,
 sanitizers, Clang strict compile, all-opcode cycle comparison, no-target audit
 and targeted failure probes. REV-SLC-002 verified SLC-002 corrections and
 reproduced its two residual gaps.
+REV-SLC-003 approved the final exact HEAD with no findings; VER-SLC-003 records
+the independent Master matrix.
 Full frontend baseline remains blocked by missing external curses development
 headers.
 
 ## Traceability IDs In Play
 
 MND-001, STU-001, REQ-001..REQ-008, ARCH-001..ARCH-006,
-DES-001..DES-010, SPR-001, ITR-003, SLC-003, REV-SLC-002-F001,
-REV-SLC-002-F002, REV-SLC-003 and VER-SLC-003.
+DES-001..DES-010, SPR-001, ITR-003, SLC-003, REV-SLC-003 and
+VER-SLC-003.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-003 active and two findings open.
+- CurrentIndex updated: yes, SLC-003 accepted; Sprint ready-for-pr.
 - Relations updated: yes, correction/review/finding links recorded.
 - Ledger updated: yes, implementation/review and corrective Slice events appended.
 
 ## Open Risks Or Ambiguities
 
-- Record-only trace signature is an API change from the unmerged Stage 0
-  proposal, not from upstream; README and tests must agree.
-- Stack failure must stop POP/RET/interrupt control-flow mutation, not merely
-  report an exception after mutation.
+- Upstream full UI build still needs an external curses development package.
+- Stage 1 begins with the Siemens interrupt controller and requires a new
+  authorized Sprint/Slice; it must not be folded into this PR silently.
 - Upstream full UI build needs curses development headers; core-only evidence
   must not be mislabeled as a full frontend build.
 

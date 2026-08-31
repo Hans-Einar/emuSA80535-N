@@ -145,9 +145,9 @@ Open findings: REV-SLC-002-F001 and REV-SLC-002-F002.
 
 ## ITR-003 — Trace immutability and stack-read closure
 
-Status: active  
+Status: complete  
 Iteration ID: ITR-003  
-Active Slice: SLC-003
+Slice: SLC-003
 
 ### Slice contract — SLC-003
 
@@ -187,3 +187,12 @@ Stage 0 tests, diff check and no-target audit.
 **Completion signal:** fresh Worker commits the two corrections, third fresh
 Reviewer approves exact HEAD with no findings, and Master independently reruns
 the final matrix.
+
+### Final result
+
+Accepted. Commit `dbcc6b74adbc34896a71401366991229c0d58922`
+resolved both REV-SLC-002 findings. REV-SLC-003 approved the exact HEAD with no
+new findings, and VER-SLC-003 passed the independent Master matrix.
+
+SLC-003 closes the corrective chain SLC-001 -> SLC-002 -> SLC-003. Stage 0 is
+complete; no Stage 1 behavior is claimed.

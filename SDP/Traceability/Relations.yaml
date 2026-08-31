@@ -31,3 +31,5 @@ relations:
   - {from: ITR-003, type: belongs_to, to: SPR-001}
   - {from: REV-SLC-003, type: reviews, to: SLC-003}
   - {from: VER-SLC-003, type: verifies, to: SLC-003}
+  - {from: SLC-003, type: resolves, to: REV-SLC-002-F001}
+  - {from: SLC-003, type: resolves, to: REV-SLC-002-F002}

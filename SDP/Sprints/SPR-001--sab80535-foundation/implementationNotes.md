@@ -28,3 +28,13 @@ Status: active; verified implementation has not yet been recorded.
   trace-field evidence and null-loader findings. REV-SLC-002 verified those
   corrections but left two high findings for trace reachability and stack
   reads; Stage 0 is still not accepted.
+- Final corrective commit `dbcc6b74adbc34896a71401366991229c0d58922`
+  replaced the shallow CPU trace view with a record-only callback and closed
+  classic missing-upper stack read/control-flow behavior.
+- REV-SLC-003 approved exact HEAD with no findings. VER-SLC-003 independently
+  passed Windows GCC, strict Clang, WSL GCC, WSL ASan/UBSan, three product diff
+  checks, no-target audit, NDJSON parsing and ancestry checks.
+- Stage 0 is accepted. Implemented behavior is limited to the explicit variant
+  foundation, 256-byte SAB indirect IRAM, exact raw loader, deterministic
+  counters/run control/reset, bounded diagnostics/trace and tests. Stage 1
+  peripherals remain unimplemented.
