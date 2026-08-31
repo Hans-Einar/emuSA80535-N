@@ -3,8 +3,8 @@ updated: 2026-08-31
 
 active:
   sprint: SPR-001
-  iteration: ITR-001
-  slice: SLC-001
+  iteration: ITR-002
+  slice: SLC-002
 
 items:
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
@@ -14,8 +14,12 @@ items:
   ARCH-001..ARCH-006: {kind: architecture-range, status: active, state: target, source: SDP/04--Architecture/EMU-SAB80535-ARCH-001.md}
   DES-001..DES-010: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-001.md}
   SPR-001: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/sprint.md}
-  ITR-001: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
-  SLC-001: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
-  REV-SLC-001: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-001.md}
+  ITR-001: {kind: iteration, status: changes-required, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
+  SLC-001: {kind: slice, status: changes-required, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
+  REV-SLC-001: {kind: review, status: changes-required, state: current, source: SDP/CodeReview/REV-SLC-001.md}
   VER-SLC-001: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-001.md}
-
+  REV-SLC-001-F001..F008: {kind: finding-range, status: open, state: current, source: SDP/CodeReview/REV-SLC-001.md}
+  ITR-002: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
+  SLC-002: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
+  REV-SLC-002: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-002.md}
+  VER-SLC-002: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-002.md}

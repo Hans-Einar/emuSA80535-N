@@ -15,4 +15,11 @@ Status: active; verified implementation has not yet been recorded.
 
 ## Verified work
 
-None yet. Add only evidence that the Master has rerun or directly inspected.
+- Worker commit `1cedf941d09779686e142511ff21b5b75de27f16`
+  introduced the Stage 0 foundation and passed Windows/WSL/sanitizer core
+  tests when independently rerun by REV-SLC-001.
+- The same independent review reproduced eight findings; the implementation is
+  not accepted and must be corrected by SLC-002.
+- Structurally accepted observations from the review: explicit A8/A9/B8/B9
+  variant separation, CPU-owned SAB upper IRAM, direct/indirect separation,
+  normal exact-size raw loading and generic no-target boundary.

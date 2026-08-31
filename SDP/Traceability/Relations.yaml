@@ -15,4 +15,10 @@ relations:
   - {from: SLC-001, type: implements_design, to: DES-001..DES-010}
   - {from: REV-SLC-001, type: reviews, to: SLC-001}
   - {from: VER-SLC-001, type: verifies, to: SLC-001}
-
+  - {from: REV-SLC-001, type: opens, to: REV-SLC-001-F001..F008}
+  - {from: SLC-002, type: corrects, to: SLC-001}
+  - {from: SLC-002, type: addresses, to: REV-SLC-001-F001..F008}
+  - {from: SLC-002, type: belongs_to, to: ITR-002}
+  - {from: ITR-002, type: belongs_to, to: SPR-001}
+  - {from: REV-SLC-002, type: reviews, to: SLC-002}
+  - {from: VER-SLC-002, type: verifies, to: SLC-002}

@@ -2,7 +2,8 @@
 
 ## Current Objective
 
-Execute SLC-001, then obtain independent review and Master verification.
+Execute corrective SLC-002, then obtain a second independent review and Master
+verification.
 
 ## Authoritative Source Documents
 
@@ -21,37 +22,44 @@ Execute SLC-001, then obtain independent review and Master verification.
 - `origin` and `upstream` remotes verified.
 - exact upstream HEAD recorded.
 - Sprint/Iteration/Slice contract and traceability initialized.
+- SLC-001 implementation and first independent review completed.
+- REV-SLC-001 recorded eight reproducible findings and disposition
+  `changes-required`.
 
 ## Not Done
 
-- SLC-001 product implementation, tests, review, verification and PR.
+- SLC-002 correction, second review, final verification and PR.
 
 ## Exact Next Step
 
-Fresh Worker implements only SLC-001 and reports evidence to the Master.
+Fresh Worker implements only the SLC-002 correction contract in
+`ScrumIterations.md` and reports evidence to the Master.
 
 ## Verification Completed
 
-Fork ancestry/remotes/HEAD verified. Full frontend baseline build was attempted
-and truthfully stopped by missing external curses development headers.
+Fork ancestry/remotes/HEAD verified. REV-SLC-001 reran Windows/WSL core tests,
+sanitizers, Clang strict compile, no-target audit and targeted failure probes.
+Full frontend baseline remains blocked by missing external curses development
+headers.
 
 ## Traceability IDs In Play
 
 MND-001, STU-001, REQ-001..REQ-008, ARCH-001..ARCH-006,
-DES-001..DES-010, SPR-001, ITR-001, SLC-001, REV-SLC-001,
-VER-SLC-001.
+DES-001..DES-010, SPR-001, ITR-002, SLC-002, REV-SLC-001-F001..F008,
+REV-SLC-002 and VER-SLC-002.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, Slice active.
-- Relations updated: yes.
-- Ledger updated: yes, Sprint/Iteration/Slice started.
+- CurrentIndex updated: yes, SLC-002 active and findings open.
+- Relations updated: yes, correction/review/finding links recorded.
+- Ledger updated: yes, implementation/review and corrective Slice events appended.
 
 ## Open Risks Or Ambiguities
 
-- Complete SFR tracing may require a broader opcode access audit than the first
-  implementation suggests; Reviewer must reject an unsupported completeness
-  claim.
+- Corrected run control must preserve classic interrupt/timer behavior while
+  ending at a coherent architectural boundary.
+- Trace immutability needs a C-compatible public signature that remains usable
+  by embedders.
 - Upstream full UI build needs curses development headers; core-only evidence
   must not be mislabeled as a full frontend build.
 
@@ -59,4 +67,3 @@ VER-SLC-001.
 
 Working branch is `codex/sab80535-foundation` in
 `C:/Users/hanse/GIT/emuSA80535-N`.
-
