@@ -2,7 +2,7 @@
 
 ## ITR-004 — Siemens interrupt controller
 
-Status: in-review
+Status: changes-required
 Iteration ID: ITR-004
 Active Slice: SLC-004
 
@@ -76,3 +76,54 @@ implements the bounded controller and focused Stage 0/Stage 1 tests. Worker
 reported Windows GCC/strict Clang, openSUSE WSL GCC and WSL ASan/UBSan passing.
 No SDP files or later Timer/UART behavior were included. REV-SLC-004 is now
 reviewing the exact product HEAD; this result is not yet accepted.
+
+### Review result
+
+REV-SLC-004 independently reviewed exact product HEAD
+`529602d800e36e87f495ef088f17e67ba3659a1a` and set disposition
+`changes-required`. Open findings are REV-SLC-004-F001 and F002. SLC-004 is not
+accepted; corrective work moves to ITR-005 / SLC-005.
+
+## ITR-005 — Raw IRCON and Timer1 pending correction
+
+Status: active
+Iteration ID: ITR-005
+Active Slice: SLC-005
+
+### Slice contract — SLC-005
+
+**Goal:** close the two REV-SLC-004 findings without changing the accepted
+controller structure or entering later Timer/UART behavior.
+
+**Expected product files:** `emu8051.h`, the minimal controller/legacy serial
+integration in `core.c`, focused `tests/test_stage1_irq.c`, and README only if
+raw bit documentation requires correction.
+
+**Required corrections:**
+
+1. define raw `IRCON.C6/0x40=TF2` and `C7/0x80=EXF2` exactly;
+2. ensure TF2 is gated by IEN0.ET2 and EXF2 by IEN1.EXEN2;
+3. synthetic Timer2 assertion sets TF2 at C6; source clearing clears both only
+   when explicitly requested by the synthetic clear API;
+4. add raw numeric tests independent of enum macros, including ROM-style clear
+   of C6;
+5. prevent inherited serial handling from clearing SAB TF1 merely because
+   SM1 is set; under startup-like TR1/mode2/SM1 and EAL/ET1 masking, TF1 and
+   pending state survive until documented vector-entry auto-clear or explicit
+   software clear;
+6. do not implement Timer1 baud generation, UART frame timing or any later
+   Issue #2 slice.
+
+**Invariants:** preserve all REV-SLC-004 positive findings, Stage 0 cycle/run
+semantics, classic 8051/8052 serial/timer behavior and the no-target boundary.
+
+**Traceability:** SLC-005 corrects SLC-004 and addresses REV-SLC-004-F001/F002.
+Expected review REV-SLC-005 and verification VER-SLC-005.
+
+**Required verification:** full Stage 0/1 Windows/WSL/strict/sanitizer matrix;
+raw C6/C7 split-gate probes; startup-like Timer1 persistence across multiple
+instructions while masked; Timer1 auto-clear only on accepted vector; classic
+serial regression; diff/no-target audit.
+
+**Completion signal:** fresh Worker commits only the two bounded corrections;
+fresh Reviewer approves exact corrective HEAD; Master reruns verification.

@@ -44,3 +44,12 @@ relations:
   - {from: SLC-004, type: implements_design, to: DES-011..DES-018}
   - {from: REV-SLC-004, type: reviews, to: SLC-004}
   - {from: VER-SLC-004, type: verifies, to: SLC-004}
+  - {from: REV-SLC-004, type: opens, to: REV-SLC-004-F001}
+  - {from: REV-SLC-004, type: opens, to: REV-SLC-004-F002}
+  - {from: SLC-005, type: corrects, to: SLC-004}
+  - {from: SLC-005, type: addresses, to: REV-SLC-004-F001}
+  - {from: SLC-005, type: addresses, to: REV-SLC-004-F002}
+  - {from: SLC-005, type: belongs_to, to: ITR-005}
+  - {from: ITR-005, type: belongs_to, to: SPR-002}
+  - {from: REV-SLC-005, type: reviews, to: SLC-005}
+  - {from: VER-SLC-005, type: verifies, to: SLC-005}

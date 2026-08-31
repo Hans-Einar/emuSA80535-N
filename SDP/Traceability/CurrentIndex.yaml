@@ -3,8 +3,8 @@ updated: 2026-08-31
 
 active:
   sprint: SPR-002
-  iteration: ITR-004
-  slice: SLC-004
+  iteration: ITR-005
+  slice: SLC-005
 
 items:
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
@@ -32,7 +32,13 @@ items:
   VER-SLC-003: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-003.md}
   DES-011..DES-018: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-002.md}
   SPR-002: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/sprint.md}
-  ITR-004: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
-  SLC-004: {kind: slice, status: in-review, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
-  REV-SLC-004: {kind: review, status: active, state: target, source: SDP/CodeReview/REV-SLC-004.md}
+  ITR-004: {kind: iteration, status: changes-required, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
+  SLC-004: {kind: slice, status: changes-required, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
+  REV-SLC-004: {kind: review, status: changes-required, state: current, source: SDP/CodeReview/REV-SLC-004.md}
   VER-SLC-004: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-004.md}
+  REV-SLC-004-F001: {kind: finding, status: open, severity: blocking, state: current, source: SDP/CodeReview/REV-SLC-004.md}
+  REV-SLC-004-F002: {kind: finding, status: open, severity: high, state: current, source: SDP/CodeReview/REV-SLC-004.md}
+  ITR-005: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
+  SLC-005: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
+  REV-SLC-005: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-005.md}
+  VER-SLC-005: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-005.md}

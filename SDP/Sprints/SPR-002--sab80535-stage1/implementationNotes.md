@@ -13,5 +13,9 @@ Status: active; no verified SLC-004 product implementation recorded yet.
 
 ## Verified work
 
-None yet. Record only Master-rerun or independently reviewed evidence.
-
+- Product commit `529602d800e36e87f495ef088f17e67ba3659a1a`
+  passed the submitted cross-platform suites and most independent semantic
+  probes, but REV-SLC-004 reproduced two findings. It is not accepted.
+- Independently verified positive structure includes all source/vector/order,
+  priority/nesting/RETI/inhibit/trace and classic-regression behavior outside
+  REV-SLC-004-F001/F002.
