@@ -131,7 +131,9 @@ struct em8051_trace_record
     uint8_t value;
 };
 
-typedef void (*em8051trace)(struct em8051 *aCPU,
+/* Trace observers receive a read-only CPU view. Trace callbacks must not
+ * influence execution. */
+typedef void (*em8051trace)(const struct em8051 *aCPU,
                             const struct em8051_trace_record *aRecord,
                             void *aUser);
 
@@ -264,7 +266,9 @@ uint8_t do_op(struct em8051 *aCPU);
 // Internal: Pushes a value into stack
 void push_to_stack(struct em8051 *aCPU, uint8_t aValue);
 
-/* Internal access gateways shared by the opcode engine and embedders. */
+/* Internal access gateways shared by the opcode engine and embedders. Invalid
+ * CPU pointers or addresses below the SFR range are rejected: reads return FF
+ * and writes have no effect. */
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress);
 void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue);
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,

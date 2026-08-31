@@ -38,6 +38,8 @@ int em8051_load_binary(struct em8051 *aCPU, const char *aFilename)
     int trailing;
     int result = EM8051_LOAD_OK;
 
+    if (!aFilename)
+        return EM8051_LOAD_IO_ERROR;
     if (!aCPU || !aCPU->mCodeMem || aCPU->mCodeMemMaxIdx != 0xffffu)
         return EM8051_LOAD_CONFIGURATION_ERROR;
 

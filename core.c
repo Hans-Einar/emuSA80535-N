@@ -121,7 +121,10 @@ void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
 
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
 {
-    uint8_t index = aAddress - 0x80;
+    uint8_t index;
+    if (!aCPU || aAddress < 0x80u)
+        return 0xffu;
+    index = (uint8_t)(aAddress - 0x80u);
     if (aCPU->sfrread[index])
         return aCPU->sfrread[index](aCPU, aAddress);
     return aCPU->mSFR[index];
@@ -129,7 +132,10 @@ uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
 
 void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
 {
-    uint8_t index = aAddress - 0x80;
+    uint8_t index;
+    if (!aCPU || aAddress < 0x80u)
+        return;
+    index = (uint8_t)(aAddress - 0x80u);
     aCPU->mSFR[index] = aValue;
     if (aCPU->sfrwrite[index])
         aCPU->sfrwrite[index](aCPU, aAddress);
@@ -534,10 +540,9 @@ void handle_interrupts(struct em8051 *aCPU)
     push_to_stack(aCPU, aCPU->mPC & 0xff);
     push_to_stack(aCPU, aCPU->mPC >> 8);
     aCPU->mPC = dest_ip;
-    // wait for 2 ticks instead of one since we were not executing
-    // this LCALL before.
-    aCPU->mTickDelay = 2;
-    aCPU->mMachineCycleCount += 2u;
+    /* Interrupt entry consumes two machine cycles. This tick accounts for
+     * the first; one pending cycle completes before the vector opcode. */
+    aCPU->mTickDelay = 1;
     switch (dest_ip)
     {
     case ISR_TF0:
@@ -569,14 +574,19 @@ bool tick(struct em8051 *aCPU)
     uint8_t v;
     bool ticked = false;
 
+    /* A pending cycle belongs to the already-started instruction or interrupt
+     * entry. It advances peripherals and virtual time, but must not also start
+     * the next opcode in the same architectural cycle. */
     if (aCPU->mTickDelay)
     {
         aCPU->mTickDelay--;
+        timer_tick(aCPU);
+        aCPU->mMachineCycleCount++;
+        return false;
     }
 
     // Test for Power Down
-    if (aCPU->mTickDelay == 0 && (aCPU->mSFR[REG_PCON]) & 0x02) {
-        aCPU->mTickDelay = 1;
+    if ((aCPU->mSFR[REG_PCON]) & 0x02) {
         return false;
     }
 
@@ -584,17 +594,15 @@ bool tick(struct em8051 *aCPU)
     // 1. interrupt of equal or higher priority is in progress (tested inside function)
     // 2. current cycle is not the final cycle of instruction (tickdelay = 0)
     // 3. the instruction in progress is RETI or any write to the IE or IP regs (TODO)
-    if (aCPU->mTickDelay == 0)
-    {
-        handle_interrupts(aCPU);
-    }
+    handle_interrupts(aCPU);
 
     if (aCPU->mTickDelay == 0)
     {
         // IDL activate the idle mode to save power
         bool is_idle = (aCPU->mSFR[REG_PCON]) & 0x01;
         if (is_idle) {
-            aCPU->mTickDelay = 1;
+            /* IDLE stops opcode execution, but virtual machine cycles and
+             * classic timers continue until an interrupt clears IDLE. */
         } else {
             uint8_t opcode = aCPU->mCodeMem[aCPU->mPC & aCPU->mCodeMemMaxIdx];
             aCPU->mTracePC = aCPU->mPC;
@@ -604,7 +612,6 @@ bool tick(struct em8051 *aCPU)
             aCPU->mTickDelay = aCPU->op[opcode](aCPU);
             aCPU->mInInstruction = false;
             aCPU->mInstructionCount++;
-            aCPU->mMachineCycleCount += (uint64_t)aCPU->mTickDelay + 1u;
             ticked = true;
         }
         // update parity bit
@@ -616,6 +623,7 @@ bool tick(struct em8051 *aCPU)
     }
 
     timer_tick(aCPU);
+    aCPU->mMachineCycleCount++;
 
     return ticked;
 }
@@ -643,7 +651,6 @@ static enum em8051_stop_reason run_control(struct em8051 *aCPU,
 {
     uint64_t start_instructions = aCPU->mInstructionCount;
     uint64_t start_cycles = aCPU->mMachineCycleCount;
-    uint64_t executed = 0;
     enum em8051_stop_reason reason = EM8051_STOP_INSTRUCTION_LIMIT;
 
     aCPU->mExceptionRaised = false;
@@ -651,7 +658,17 @@ static enum em8051_stop_reason run_control(struct em8051 *aCPU,
 
     while (true)
     {
-        uint64_t before;
+        /* Public run calls only return at a completed cycle boundary. This
+         * also leaves an interrupt vector observable after its two entry
+         * cycles and before execution of the vector opcode. */
+        while (aCPU->mTickDelay != 0)
+            (void)tick(aCPU);
+
+        if (aCPU->mExceptionRaised)
+        {
+            reason = EM8051_STOP_EXCEPTION;
+            break;
+        }
         if (aHasTarget && aCPU->mPC == aTargetPC)
         {
             reason = EM8051_STOP_TARGET_PC;
@@ -667,22 +684,13 @@ static enum em8051_stop_reason run_control(struct em8051 *aCPU,
             reason = EM8051_STOP_HALT;
             break;
         }
-        if (executed >= aMaxInstructions)
+        if (aCPU->mInstructionCount - start_instructions >= aMaxInstructions)
         {
             reason = EM8051_STOP_INSTRUCTION_LIMIT;
             break;
         }
 
-        before = aCPU->mInstructionCount;
-        while (aCPU->mInstructionCount == before)
-            (void)tick(aCPU);
-        executed++;
-
-        if (aCPU->mExceptionRaised)
-        {
-            reason = EM8051_STOP_EXCEPTION;
-            break;
-        }
+        (void)tick(aCPU);
     }
 
     fill_run_result(aCPU, aResult, reason, start_instructions, start_cycles);
@@ -785,8 +793,10 @@ void reset(struct em8051 *aCPU, bool aWipe)
     aCPU->mSFR[REG_P3] = 0xff;
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
     {
-        /* The remaining canonical Stage-0 SAB registers reset to zero via
-         * the SFR clear above. The extra ports reset high. */
+        /* P4/P5 high are documented SAB reset values. The zeroed IP0/IP1 and
+         * ADCON fields above, and the input-only P6 value below, are stable
+         * Stage-0 model choices for hardware-indeterminate/unspecified state;
+         * they are not claims about physical reset values or a P6 latch. */
         aCPU->mSFR[EM8051_SAB_SFR_P4 - 0x80] = 0xff;
         aCPU->mSFR[EM8051_SAB_SFR_P5 - 0x80] = 0xff;
         aCPU->mSFR[EM8051_SAB_SFR_P6 - 0x80] = 0xff;

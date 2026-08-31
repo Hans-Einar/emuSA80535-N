@@ -108,6 +108,11 @@ void push_to_stack(struct em8051 *aCPU, uint8_t aValue)
     aCPU->mSFR[REG_SP]++;
     /* Stack addressing is always indirect. On 8052/SAB80535 an SP above 7F
      * therefore reaches upper IRAM, never the SFR address space. */
+    if (aCPU->mSFR[REG_SP] > 0x7fu && !aCPU->mUpperData)
+    {
+        em8051_raise_exception(aCPU, EXCEPTION_STACK);
+        return;
+    }
     write_mem_indir(aCPU, aCPU->mSFR[REG_SP], aValue);
     if (aCPU->mSFR[REG_SP] == 0)
         em8051_raise_exception(aCPU, EXCEPTION_STACK);

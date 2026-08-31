@@ -94,15 +94,23 @@ The deterministic embedding surface provides an exact 65536-byte raw CODE
 loader, 64-bit instruction and machine-cycle counters, bounded run and
 run-until-PC calls, a breakpoint, typed stop reasons, and optional normalized
 instruction/SFR-write/MOVX trace records. Missing MOVX backing is reported as
-an unsupported trace record. Specialized accumulator/PSW opcode forms and
+an unsupported trace record. Trace callbacks receive a read-only CPU view.
+Specialized accumulator/PSW opcode forms and
 internal peripheral SFR changes do not yet pass through the SFR-write trace
 gateway, so Stage 0 does not claim complete SFR observation.
+Step and bounded-run calls return at a completed machine-cycle boundary: all
+cycles credited to the last instruction have advanced virtual time and classic
+timers, and no pending instruction delay remains.
 
 Hardware power-on IRAM and SBUF contents are undefined. The original `reset()`
 entry point remains available for classic callers; explicit variant
 initialization configures a deterministic default seed. Call
 `em8051_set_reset_seed()` before a cold `reset(cpu, true)` to reproduce a
 chosen pseudo-random power-on state. A warm `reset(cpu, false)` preserves IRAM.
+For SAB80535, documented P4/P5 reset-high values are modeled as hardware facts.
+Zeroed IP0/IP1/ADCON fields and the high input-only P6 model byte are
+deterministic Stage-0 placeholders for indeterminate or unspecified hardware
+state, not claims about physical reset values or a P6 output latch.
 
 Install
 =======

@@ -39,15 +39,21 @@ static void setup_fixture(struct fixture *aFixture, enum em8051_variant aVariant
 
 static void test_variant_and_sab_reset_map(void)
 {
-    static const uint8_t zero_reset_sfrs[] =
+    static const uint8_t documented_zero_reset_sfrs[] =
     {
-        EM8051_SAB_SFR_IEN0, EM8051_SAB_SFR_IP0,
-        EM8051_SAB_SFR_IEN1, EM8051_SAB_SFR_IP1,
+        EM8051_SAB_SFR_IEN0, EM8051_SAB_SFR_IEN1,
         EM8051_SAB_SFR_IRCON, EM8051_SAB_SFR_CCEN,
         EM8051_SAB_SFR_T2CON, EM8051_SAB_SFR_CRCL,
         EM8051_SAB_SFR_CRCH, EM8051_SAB_SFR_TL2,
-        EM8051_SAB_SFR_TH2, EM8051_SAB_SFR_ADCON,
-        EM8051_SAB_SFR_ADDAT, EM8051_SAB_SFR_DAPR
+        EM8051_SAB_SFR_TH2, EM8051_SAB_SFR_ADDAT,
+        EM8051_SAB_SFR_DAPR
+    };
+    static const uint8_t deterministic_zero_model_sfrs[] =
+    {
+        /* These hardware fields are indeterminate; zero is a repeatable
+         * Stage-0 model choice, not a physical reset assertion. */
+        EM8051_SAB_SFR_IP0, EM8051_SAB_SFR_IP1,
+        EM8051_SAB_SFR_ADCON
     };
     const struct em8051_variant_descriptor *classic;
     const struct em8051_variant_descriptor *classic52;
@@ -79,10 +85,14 @@ static void test_variant_and_sab_reset_map(void)
     setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
     CHECK(fixture.cpu.mUpperData == fixture.cpu.mOwnedUpperData);
     CHECK(fixture.cpu.mOscillatorHz == 11059200u);
-    for (i = 0; i < ARRAY_SIZE(zero_reset_sfrs); i++)
-        CHECK(fixture.cpu.mSFR[zero_reset_sfrs[i] - 0x80] == 0);
+    for (i = 0; i < ARRAY_SIZE(documented_zero_reset_sfrs); i++)
+        CHECK(fixture.cpu.mSFR[documented_zero_reset_sfrs[i] - 0x80] == 0);
+    for (i = 0; i < ARRAY_SIZE(deterministic_zero_model_sfrs); i++)
+        CHECK(fixture.cpu.mSFR[deterministic_zero_model_sfrs[i] - 0x80] == 0);
     CHECK(fixture.cpu.mSFR[EM8051_SAB_SFR_P4 - 0x80] == 0xff);
     CHECK(fixture.cpu.mSFR[EM8051_SAB_SFR_P5 - 0x80] == 0xff);
+    /* P6 is input-only and has no proven reset latch value. High is the
+     * deterministic Stage-0 sample chosen for otherwise unspecified state. */
     CHECK(fixture.cpu.mSFR[EM8051_SAB_SFR_P6 - 0x80] == 0xff);
 
     fixture.code[0] = 0x75; /* MOV IEN1,#01 */
@@ -189,6 +199,40 @@ static void test_upper_iram_and_stack(void)
     CHECK(fixture.cpu.mSFR[REG_ACC] == 0x5A);
     CHECK(fixture.cpu.mPC == 3);
     CHECK(fixture.cpu.mSFR[REG_SP] == 0xA2);
+
+    /* A classic 8051 has no upper IRAM. Entering address 80 through the
+     * indirect stack path must fail immediately instead of losing the byte. */
+    setup_fixture(&fixture, EM8051_VARIANT_8051);
+    fixture.code[0] = 0xC0; /* PUSH 20 */
+    fixture.code[1] = 0x20;
+    fixture.cpu.mLowerData[0x20] = 0xA5;
+    fixture.cpu.mSFR[REG_SP] = 0x7F;
+    CHECK(em8051_run(&fixture.cpu, 1, &result) == EM8051_STOP_EXCEPTION);
+    CHECK(result.instructions == 1);
+    CHECK(result.exception_code == EXCEPTION_STACK);
+    CHECK(fixture.cpu.mSFR[REG_SP] == 0x80);
+    CHECK(fixture.cpu.mUpperData == NULL);
+}
+
+static void test_sfr_gateway_validation(void)
+{
+    struct fixture fixture;
+    unsigned char sfr_before[128];
+
+    setup_fixture(&fixture, EM8051_VARIANT_8051);
+    fixture.cpu.mPC = 0x1234;
+    fixture.cpu.mSFR[REG_ACC] = 0x5A;
+    memcpy(sfr_before, fixture.cpu.mSFR, sizeof(sfr_before));
+
+    CHECK(em8051_sfr_read(&fixture.cpu, 0x00) == 0xff);
+    em8051_sfr_write(&fixture.cpu, 0x00, 0xAB);
+    CHECK(fixture.cpu.mPC == 0x1234);
+    CHECK(memcmp(sfr_before, fixture.cpu.mSFR, sizeof(sfr_before)) == 0);
+    CHECK(em8051_sfr_read(NULL, 0x80) == 0xff);
+    em8051_sfr_write(NULL, 0x80, 0xAB);
+
+    em8051_sfr_write(&fixture.cpu, 0xE0, 0xC3);
+    CHECK(em8051_sfr_read(&fixture.cpu, 0xE0) == 0xC3);
 }
 
 static void write_test_image(const char *aName, size_t aSize)
@@ -217,6 +261,8 @@ static void test_exact_raw_loader(void)
     write_test_image(exact_name, 65536u);
     write_test_image(long_name, 65537u);
 
+    CHECK(em8051_load_binary(&fixture.cpu, NULL) == EM8051_LOAD_IO_ERROR);
+    CHECK(fixture.code[0] == 0xE5);
     CHECK(em8051_load_binary(&fixture.cpu, short_name) == EM8051_LOAD_SIZE_ERROR);
     CHECK(fixture.code[0] == 0xE5);
     CHECK(em8051_load_binary(&fixture.cpu, long_name) == EM8051_LOAD_SIZE_ERROR);
@@ -255,7 +301,25 @@ static void test_run_control_and_counters(void)
     CHECK(result.pc == 1);
     CHECK(fixture.cpu.mInstructionCount == 3);
     CHECK(fixture.cpu.mMachineCycleCount == 5);
+    CHECK(fixture.cpu.mTickDelay == 0);
 
+    /* A multi-cycle instruction returns only after every credited cycle has
+     * advanced Timer 0 and the pending delay is fully drained. */
+    reset(&fixture.cpu, false);
+    fixture.code[0] = 0x80; /* SJMP -2 */
+    fixture.code[1] = 0xFE;
+    fixture.cpu.mSFR[REG_TMOD] = TMODMASK_M0_0; /* Timer 0 mode 1 */
+    fixture.cpu.mSFR[REG_TCON] = TCONMASK_TR0;
+    CHECK(em8051_step_instruction(&fixture.cpu, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK(result.instructions == 1);
+    CHECK(result.machine_cycles == 2);
+    CHECK(fixture.cpu.mSFR[REG_TL0] == 2);
+    CHECK(fixture.cpu.mTickDelay == 0);
+
+    fixture.code[0] = 0x00; /* restore NOP; SJMP -2 remains at address 1 */
+    fixture.code[1] = 0x80;
+    fixture.code[2] = 0xFE;
     reset(&fixture.cpu, false);
     em8051_set_breakpoint(&fixture.cpu, 1, true);
     CHECK(em8051_run(&fixture.cpu, 10, &result) == EM8051_STOP_BREAKPOINT);
@@ -278,6 +342,23 @@ static void test_run_control_and_counters(void)
     CHECK(em8051_run(&fixture.cpu, 10, &result) == EM8051_STOP_HALT);
     CHECK(result.instructions == 1);
     CHECK(result.machine_cycles == 2);
+    CHECK(fixture.cpu.mTickDelay == 0);
+
+    /* IDLE starts only after the two-cycle MOV has completed. Thereafter a
+     * raw idle tick advances virtual time and Timer 0 without an opcode. */
+    reset(&fixture.cpu, false);
+    fixture.code[0] = 0x75; /* MOV PCON,#01 (IDLE) */
+    fixture.code[1] = 0x87;
+    fixture.code[2] = 0x01;
+    fixture.cpu.mSFR[REG_TMOD] = TMODMASK_M0_0;
+    fixture.cpu.mSFR[REG_TCON] = TCONMASK_TR0;
+    CHECK(em8051_run(&fixture.cpu, 10, &result) == EM8051_STOP_HALT);
+    CHECK(result.machine_cycles == 2);
+    CHECK(fixture.cpu.mSFR[REG_TL0] == 2);
+    CHECK(!tick(&fixture.cpu));
+    CHECK(fixture.cpu.mMachineCycleCount == 3);
+    CHECK(fixture.cpu.mSFR[REG_TL0] == 3);
+    CHECK(fixture.cpu.mInstructionCount == 1);
 
     reset(&fixture.cpu, false);
     fixture.code[0] = 0xA5; /* reserved opcode */
@@ -286,13 +367,44 @@ static void test_run_control_and_counters(void)
     CHECK(result.exception_code == EXCEPTION_ILLEGAL_OPCODE);
 }
 
+static void test_interrupt_vector_stops(void)
+{
+    struct fixture fixture;
+    struct em8051_run_result result;
+
+    setup_fixture(&fixture, EM8051_VARIANT_8051);
+    fixture.code[ISR_INT0] = 0x00; /* vector NOP must remain unexecuted */
+    fixture.cpu.mSFR[REG_IE] = IEMASK_EA | IEMASK_EX0;
+    fixture.cpu.mSFR[REG_TCON] = TCONMASK_IE0;
+    CHECK(em8051_run_until_pc(&fixture.cpu, ISR_INT0, 10, &result) ==
+          EM8051_STOP_TARGET_PC);
+    CHECK(result.instructions == 0);
+    CHECK(result.machine_cycles == 2);
+    CHECK(result.pc == ISR_INT0);
+    CHECK(fixture.cpu.mInstructionCount == 0);
+    CHECK(fixture.cpu.mTickDelay == 0);
+
+    reset(&fixture.cpu, false);
+    fixture.cpu.mSFR[REG_IE] = IEMASK_EA | IEMASK_EX0;
+    fixture.cpu.mSFR[REG_TCON] = TCONMASK_IE0;
+    em8051_set_breakpoint(&fixture.cpu, ISR_INT0, true);
+    CHECK(em8051_run(&fixture.cpu, 10, &result) == EM8051_STOP_BREAKPOINT);
+    CHECK(result.instructions == 0);
+    CHECK(result.machine_cycles == 2);
+    CHECK(result.pc == ISR_INT0);
+    CHECK(fixture.cpu.mInstructionCount == 0);
+    CHECK(fixture.cpu.mTickDelay == 0);
+}
+
 struct trace_capture
 {
     struct em8051_trace_record records[128];
     size_t count;
 };
 
-static void capture_trace(struct em8051 *aCPU,
+/* The const CPU parameter is also a compile-time check of the public
+ * read-only observer callback type under the strict warnings-as-errors gate. */
+static void capture_trace(const struct em8051 *aCPU,
                           const struct em8051_trace_record *aRecord,
                           void *aUser)
 {
@@ -316,14 +428,31 @@ static void test_trace_contract(void)
         0x53, 0x90, 0xFE, /* ANL P1,#FE */
         0x75, 0x90, 0xAA  /* MOV P1,#AA */
     };
+    static const struct em8051_trace_record expected[] =
+    {
+        /* Exact instruction records plus direct, bit and read-modify-write
+         * SFR writes prove PC/cycle/address/value field semantics. */
+        { EM8051_TRACE_INSTRUCTION, 0,  0,  0,      0x75 },
+        { EM8051_TRACE_SFR_WRITE,   0,  0,  0x82,   0x34 },
+        { EM8051_TRACE_INSTRUCTION, 2,  3,  3,      0x75 },
+        { EM8051_TRACE_SFR_WRITE,   2,  3,  0x83,   0x12 },
+        { EM8051_TRACE_INSTRUCTION, 4,  6,  6,      0x74 },
+        { EM8051_TRACE_INSTRUCTION, 5,  8,  8,      0xF0 },
+        { EM8051_TRACE_MOVX_WRITE,  5,  8,  0x1234, 0x5A },
+        { EM8051_TRACE_INSTRUCTION, 7,  9,  9,      0xE4 },
+        { EM8051_TRACE_INSTRUCTION, 8,  10, 10,     0xE0 },
+        { EM8051_TRACE_MOVX_READ,   8,  10, 0x1234, 0x5A },
+        { EM8051_TRACE_INSTRUCTION, 10, 11, 11,     0xD2 },
+        { EM8051_TRACE_SFR_WRITE,   10, 11, 0x90,   0xFF },
+        { EM8051_TRACE_INSTRUCTION, 11, 13, 13,     0x53 },
+        { EM8051_TRACE_SFR_WRITE,   11, 13, 0x90,   0xFE },
+        { EM8051_TRACE_INSTRUCTION, 13, 16, 16,     0x75 },
+        { EM8051_TRACE_SFR_WRITE,   13, 16, 0x90,   0xAA }
+    };
     struct fixture traced;
     struct fixture untraced;
     struct trace_capture capture;
     struct em8051_run_result result;
-    size_t instruction_count = 0;
-    size_t sfr_count = 0;
-    size_t movx_read_count = 0;
-    size_t movx_write_count = 0;
     size_t i;
 
     memset(&capture, 0, sizeof(capture));
@@ -335,40 +464,15 @@ static void test_trace_contract(void)
     CHECK(traced.cpu.mSFR[REG_ACC] == 0x5A);
     CHECK(traced.cpu.mSFR[REG_P1] == 0xAA);
 
-    for (i = 0; i < capture.count; i++)
+    CHECK(capture.count == ARRAY_SIZE(expected));
+    for (i = 0; i < capture.count && i < ARRAY_SIZE(expected); i++)
     {
-        if (i > 0)
-            CHECK(capture.records[i].machine_cycle >=
-                  capture.records[i - 1].machine_cycle);
-        switch (capture.records[i].type)
-        {
-        case EM8051_TRACE_INSTRUCTION:
-            instruction_count++;
-            break;
-        case EM8051_TRACE_SFR_WRITE:
-            sfr_count++;
-            break;
-        case EM8051_TRACE_MOVX_READ:
-            movx_read_count++;
-            CHECK(capture.records[i].pc == 10);
-            CHECK(capture.records[i].address == 0x1234);
-            CHECK(capture.records[i].value == 0x5A);
-            break;
-        case EM8051_TRACE_MOVX_WRITE:
-            movx_write_count++;
-            CHECK(capture.records[i].pc == 8);
-            CHECK(capture.records[i].address == 0x1234);
-            CHECK(capture.records[i].value == 0x5A);
-            break;
-        default:
-            CHECK(false);
-            break;
-        }
+        CHECK(capture.records[i].type == expected[i].type);
+        CHECK(capture.records[i].machine_cycle == expected[i].machine_cycle);
+        CHECK(capture.records[i].pc == expected[i].pc);
+        CHECK(capture.records[i].address == expected[i].address);
+        CHECK(capture.records[i].value == expected[i].value);
     }
-    CHECK(instruction_count == 9);
-    CHECK(sfr_count == 5);
-    CHECK(movx_read_count == 1);
-    CHECK(movx_write_count == 1);
 
     setup_fixture(&untraced, EM8051_VARIANT_SAB80535);
     memcpy(untraced.code, program, sizeof(program));
@@ -390,10 +494,39 @@ static void test_trace_contract(void)
     CHECK(em8051_run(&untraced.cpu, 1, &result) ==
           EM8051_STOP_INSTRUCTION_LIMIT);
     CHECK(capture.count == 2);
+    CHECK(capture.records[0].type == EM8051_TRACE_INSTRUCTION);
+    CHECK(capture.records[0].machine_cycle == 0);
+    CHECK(capture.records[0].pc == 0);
+    CHECK(capture.records[0].address == 0);
+    CHECK(capture.records[0].value == 0xE0);
     CHECK(capture.records[1].type == EM8051_TRACE_UNSUPPORTED_MOVX_READ);
+    CHECK(capture.records[1].machine_cycle == 0);
     CHECK(capture.records[1].pc == 0);
     CHECK(capture.records[1].address == 0);
     CHECK(capture.records[1].value == 0x77);
+
+    /* Unsupported writes carry the same exact diagnostic fields. */
+    memset(&capture, 0, sizeof(capture));
+    reset(&untraced.cpu, false);
+    untraced.code[0] = 0xF0; /* MOVX @DPTR,A */
+    untraced.cpu.mExtData = NULL;
+    untraced.cpu.mSFR[REG_DPL] = 0x56;
+    untraced.cpu.mSFR[REG_DPH] = 0x34;
+    untraced.cpu.mSFR[REG_ACC] = 0x66;
+    em8051_set_trace(&untraced.cpu, capture_trace, &capture);
+    CHECK(em8051_run(&untraced.cpu, 1, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK(capture.count == 2);
+    CHECK(capture.records[0].type == EM8051_TRACE_INSTRUCTION);
+    CHECK(capture.records[0].machine_cycle == 0);
+    CHECK(capture.records[0].pc == 0);
+    CHECK(capture.records[0].address == 0);
+    CHECK(capture.records[0].value == 0xF0);
+    CHECK(capture.records[1].type == EM8051_TRACE_UNSUPPORTED_MOVX_WRITE);
+    CHECK(capture.records[1].machine_cycle == 0);
+    CHECK(capture.records[1].pc == 0);
+    CHECK(capture.records[1].address == 0x3456);
+    CHECK(capture.records[1].value == 0x66);
 }
 
 static void test_seeded_reset_is_repeatable(void)
@@ -457,8 +590,10 @@ int main(void)
     test_variant_and_sab_reset_map();
     test_classic_instruction_regression();
     test_upper_iram_and_stack();
+    test_sfr_gateway_validation();
     test_exact_raw_loader();
     test_run_control_and_counters();
+    test_interrupt_vector_stops();
     test_trace_contract();
     test_seeded_reset_is_repeatable();
 
