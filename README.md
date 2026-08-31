@@ -87,8 +87,7 @@ upstream curses frontend build.
 SAB variant owns its upper 128 bytes of IRAM and keeps indirect addresses
 `80..FF` separate from direct SFR addresses. Its default oscillator is
 11.0592 MHz. The public variant descriptor distinguishes classic `IP=B8` from
-SAB80535 `IEN1=B8`; SAB interrupt-controller behavior is intentionally not
-implemented in Stage 0.
+SAB80535 `IEN1=B8`.
 
 The deterministic embedding surface provides an exact 65536-byte raw CODE
 loader, 64-bit instruction and machine-cycle counters, bounded run and
@@ -113,6 +112,38 @@ For SAB80535, documented P4/P5 reset-high values are modeled as hardware facts.
 Zeroed IP0/IP1/ADCON fields and the high input-only P6 model byte are
 deterministic Stage-0 placeholders for indeterminate or unspecified hardware
 state, not claims about physical reset values or a P6 output latch.
+
+SAB80535 interrupt-controller API
+==================================
+
+The SAB variant implements the twelve architectural interrupt sources in
+fixed polling order, the canonical `IEN0/IP0/IEN1/IP1/IRCON` register map and
+four priority levels formed from paired `IP1.x:IP0.x` bits. Pending, enabled
+and in-service state are independent. Only a strictly higher priority may
+nest, `RET` preserves in-service state, and `RETI` releases exactly the top
+entry. Classic 8051/8052 interrupt handling continues to use classic `IP=B8`.
+
+`em8051_sab_irq_set_pending(cpu, source, pending)` is the generic deterministic
+producer seam. It sets or clears the canonical request flag for one CPU source
+without modeling a physical pin, protocol or board. UART maps to RI for a
+synthetic assertion and Timer 2 maps to TF2; clearing either aggregate source
+clears both of its canonical request flags. Existing peripheral logic may also
+assert TCON, SCON or IRCON flags directly and arbitration consumes them at the
+next architectural boundary.
+
+`em8051_set_sab_irq_trace()` installs an optional record-only observer. Each
+immutable IRQ record contains virtual cycle, PC, event/source, selected
+priority, pending/enabled/in-service masks, global-enable state and in-service
+depth. Observation has no CPU pointer and does not alter execution.
+
+Vector entry auto-clears edge-mode IE0/IE1, TF0/TF1 and IEX2..IEX6. Level-mode
+IE0/IE1, UART RI/TI, ADC IADC and Timer-2 TF2/EXF2 remain asserted until their
+canonical SFR flags are cleared. TF2 is gated by IEN0.ET2 and EXF2 by
+IEN1.EXEN2. Siemens arbitration is held off until one further instruction has
+executed after `RETI` or a write to IEN0, IEN1, IP0 or IP1.
+
+This controller slice does not add Timer 0/1 scheduling behavior, UART mode-3
+timing, ADC conversion, Timer-2 counting, GPIO edge sampling or live I/O.
 
 Install
 =======

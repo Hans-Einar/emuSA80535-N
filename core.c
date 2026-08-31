@@ -32,6 +32,25 @@
 #include <string.h>
 #include "emu8051.h"
 
+#define SAB_SFR_INDEX(aAddress) ((uint8_t)((aAddress) - 0x80u))
+#define SAB_IRQ_BIT(aSource) ((uint16_t)(1u << (unsigned)(aSource)))
+
+static const uint16_t gSABIrqVectors[EM8051_SAB_IRQ_SOURCE_COUNT] =
+{
+    EM8051_SAB_VECTOR_INT0,
+    EM8051_SAB_VECTOR_TIMER0,
+    EM8051_SAB_VECTOR_INT1,
+    EM8051_SAB_VECTOR_TIMER1,
+    EM8051_SAB_VECTOR_UART,
+    EM8051_SAB_VECTOR_TIMER2,
+    EM8051_SAB_VECTOR_ADC,
+    EM8051_SAB_VECTOR_INT2,
+    EM8051_SAB_VECTOR_INT3,
+    EM8051_SAB_VECTOR_INT4,
+    EM8051_SAB_VECTOR_INT5,
+    EM8051_SAB_VECTOR_INT6
+};
+
 static const struct em8051_variant_descriptor gVariants[] =
 {
     {
@@ -104,6 +123,15 @@ void em8051_set_trace(struct em8051 *aCPU, em8051trace aTrace, void *aUser)
     aCPU->trace_user = aUser;
 }
 
+void em8051_set_sab_irq_trace(struct em8051 *aCPU,
+                              em8051sabirqtrace aTrace, void *aUser)
+{
+    if (!aCPU)
+        return;
+    aCPU->sab_irq_trace = aTrace;
+    aCPU->sab_irq_trace_user = aUser;
+}
+
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
                        uint16_t aAddress, uint8_t aValue)
 {
@@ -117,6 +145,110 @@ void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
     record.address = aAddress;
     record.value = aValue;
     aCPU->trace(&record, aCPU->trace_user);
+}
+
+static void sab_irq_sync(struct em8051 *aCPU)
+{
+    uint16_t pending = 0;
+    uint16_t enabled = 0;
+    uint8_t tcon = aCPU->mSFR[REG_TCON];
+    uint8_t scon = aCPU->mSFR[REG_SCON];
+    uint8_t ien0 = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IEN0)];
+    uint8_t ien1 = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IEN1)];
+    uint8_t ircon = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+    unsigned source;
+
+    if (tcon & TCONMASK_IE0)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_INT0);
+    if (tcon & TCONMASK_TF0)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_TIMER0);
+    if (tcon & TCONMASK_IE1)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_INT1);
+    if (tcon & TCONMASK_TF1)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_TIMER1);
+    if (scon & (SCONMASK_RI | SCONMASK_TI))
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_UART);
+    if (ircon & (SAB_IRCONMASK_TF2 | SAB_IRCONMASK_EXF2))
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_TIMER2);
+    if (ircon & SAB_IRCONMASK_IADC)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_ADC);
+    if (ircon & SAB_IRCONMASK_IEX2)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_INT2);
+    if (ircon & SAB_IRCONMASK_IEX3)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_INT3);
+    if (ircon & SAB_IRCONMASK_IEX4)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_INT4);
+    if (ircon & SAB_IRCONMASK_IEX5)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_INT5);
+    if (ircon & SAB_IRCONMASK_IEX6)
+        pending |= SAB_IRQ_BIT(EM8051_SAB_IRQ_INT6);
+
+    for (source = EM8051_SAB_IRQ_INT0;
+         source <= EM8051_SAB_IRQ_UART; source++)
+    {
+        if (ien0 & (uint8_t)(1u << source))
+            enabled |= SAB_IRQ_BIT(source);
+    }
+    if ((ien0 & IEMASK_ET2) || (ien1 & SAB_IEN1MASK_EXEN2))
+        enabled |= SAB_IRQ_BIT(EM8051_SAB_IRQ_TIMER2);
+    for (source = EM8051_SAB_IRQ_ADC;
+         source < EM8051_SAB_IRQ_SOURCE_COUNT; source++)
+    {
+        if (ien1 & (uint8_t)(1u << (source - EM8051_SAB_IRQ_ADC)))
+            enabled |= SAB_IRQ_BIT(source);
+    }
+
+    aCPU->mSABIrqPending = pending;
+    aCPU->mSABIrqEnabled = enabled;
+}
+
+static void sab_irq_trace_emit(struct em8051 *aCPU,
+                               enum em8051_sab_irq_trace_event aEvent,
+                               enum em8051_sab_irq_source aSource,
+                               uint8_t aPriority, bool aAsserted,
+                               uint16_t aPendingSnapshot)
+{
+    struct em8051_sab_irq_trace_record record;
+    if (!aCPU->sab_irq_trace)
+        return;
+
+    record.event = aEvent;
+    record.machine_cycle = aCPU->mMachineCycleCount;
+    record.pc = aCPU->mInInstruction ? aCPU->mTracePC : aCPU->mPC;
+    record.source = aSource;
+    record.priority = aPriority;
+    record.asserted = aAsserted;
+    record.global_enabled =
+        (aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IEN0)] & IEMASK_EA) != 0;
+    record.pending_mask = aPendingSnapshot;
+    record.enabled_mask = aCPU->mSABIrqEnabled;
+    record.in_service_mask = aCPU->mSABIrqInService;
+    record.in_service_depth = aCPU->mSABIrqDepth;
+    aCPU->sab_irq_trace(&record, aCPU->sab_irq_trace_user);
+}
+
+static void sab_irq_arm_inhibit(struct em8051 *aCPU)
+{
+    /* An instruction performing the write consumes the first count itself.
+     * A host-side boundary write starts directly with the one instruction
+     * that must execute before the next arbitration. */
+    aCPU->mSABIrqInhibitInstructions = aCPU->mInInstruction ? 2u : 1u;
+}
+
+static uint8_t sab_irq_priority(const struct em8051 *aCPU,
+                                enum em8051_sab_irq_source aSource)
+{
+    unsigned pair = (unsigned)aSource;
+    uint8_t bit;
+    uint8_t ip0;
+    uint8_t ip1;
+    if (pair >= (unsigned)EM8051_SAB_IRQ_ADC)
+        pair -= (unsigned)EM8051_SAB_IRQ_ADC;
+    bit = (uint8_t)(1u << pair);
+    ip0 = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IP0)];
+    ip1 = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IP1)];
+    return (uint8_t)(((ip0 & bit) ? 1u : 0u) |
+                     ((ip1 & bit) ? 2u : 0u));
 }
 
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
@@ -140,6 +272,95 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     if (aCPU->sfrwrite[index])
         aCPU->sfrwrite[index](aCPU, aAddress);
     em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
+    if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
+        (aAddress == EM8051_SAB_SFR_IEN0 ||
+         aAddress == EM8051_SAB_SFR_IEN1 ||
+         aAddress == EM8051_SAB_SFR_IP0 ||
+         aAddress == EM8051_SAB_SFR_IP1))
+    {
+        sab_irq_arm_inhibit(aCPU);
+    }
+}
+
+bool em8051_sab_irq_set_pending(struct em8051 *aCPU,
+                                enum em8051_sab_irq_source aSource,
+                                bool aPending)
+{
+    uint8_t *request_sfr;
+    uint8_t request_mask;
+
+    if (!aCPU || aCPU->mVariant != EM8051_VARIANT_SAB80535 ||
+        (unsigned)aSource >= (unsigned)EM8051_SAB_IRQ_SOURCE_COUNT)
+    {
+        return false;
+    }
+
+    switch (aSource)
+    {
+    case EM8051_SAB_IRQ_INT0:
+        request_sfr = &aCPU->mSFR[REG_TCON];
+        request_mask = TCONMASK_IE0;
+        break;
+    case EM8051_SAB_IRQ_TIMER0:
+        request_sfr = &aCPU->mSFR[REG_TCON];
+        request_mask = TCONMASK_TF0;
+        break;
+    case EM8051_SAB_IRQ_INT1:
+        request_sfr = &aCPU->mSFR[REG_TCON];
+        request_mask = TCONMASK_IE1;
+        break;
+    case EM8051_SAB_IRQ_TIMER1:
+        request_sfr = &aCPU->mSFR[REG_TCON];
+        request_mask = TCONMASK_TF1;
+        break;
+    case EM8051_SAB_IRQ_UART:
+        request_sfr = &aCPU->mSFR[REG_SCON];
+        request_mask = SCONMASK_RI | SCONMASK_TI;
+        break;
+    case EM8051_SAB_IRQ_TIMER2:
+        request_sfr =
+            &aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+        request_mask = SAB_IRCONMASK_TF2 | SAB_IRCONMASK_EXF2;
+        break;
+    case EM8051_SAB_IRQ_ADC:
+        request_sfr =
+            &aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+        request_mask = SAB_IRCONMASK_IADC;
+        break;
+    case EM8051_SAB_IRQ_INT2:
+    case EM8051_SAB_IRQ_INT3:
+    case EM8051_SAB_IRQ_INT4:
+    case EM8051_SAB_IRQ_INT5:
+    case EM8051_SAB_IRQ_INT6:
+        request_sfr =
+            &aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+        request_mask = (uint8_t)(1u <<
+            ((unsigned)aSource - (unsigned)EM8051_SAB_IRQ_ADC));
+        break;
+    default:
+        return false;
+    }
+
+    if (aPending)
+    {
+        /* Aggregate UART and Timer-2 sources use RI and TF2 respectively for
+         * a synthetic assertion; clearing the source clears both members. */
+        if (aSource == EM8051_SAB_IRQ_UART)
+            request_mask = SCONMASK_RI;
+        else if (aSource == EM8051_SAB_IRQ_TIMER2)
+            request_mask = SAB_IRCONMASK_TF2;
+        *request_sfr |= request_mask;
+    }
+    else
+    {
+        *request_sfr &= (uint8_t)~request_mask;
+    }
+
+    sab_irq_sync(aCPU);
+    sab_irq_trace_emit(aCPU, EM8051_SAB_IRQ_TRACE_REQUEST, aSource,
+                       sab_irq_priority(aCPU, aSource), aPending,
+                       aCPU->mSABIrqPending);
+    return true;
 }
 
 void em8051_raise_exception(struct em8051 *aCPU, int aCode)
@@ -424,17 +645,182 @@ static void timer_tick(struct em8051 *aCPU)
     // TODO: serial port, timer2, other stuff
 }
 
+static bool sab_irq_timer2_is_enabled(const struct em8051 *aCPU)
+{
+    uint8_t ien0 = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IEN0)];
+    uint8_t ien1 = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IEN1)];
+    uint8_t ircon = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+    return ((ircon & SAB_IRCONMASK_TF2) && (ien0 & IEMASK_ET2)) ||
+           ((ircon & SAB_IRCONMASK_EXF2) &&
+            (ien1 & SAB_IEN1MASK_EXEN2));
+}
+
+static void sab_irq_auto_clear(struct em8051 *aCPU,
+                               enum em8051_sab_irq_source aSource)
+{
+    uint8_t *ircon =
+        &aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+    switch (aSource)
+    {
+    case EM8051_SAB_IRQ_INT0:
+        if (aCPU->mSFR[REG_TCON] & TCONMASK_IT0)
+            aCPU->mSFR[REG_TCON] &= (uint8_t)~TCONMASK_IE0;
+        break;
+    case EM8051_SAB_IRQ_TIMER0:
+        aCPU->mSFR[REG_TCON] &= (uint8_t)~TCONMASK_TF0;
+        break;
+    case EM8051_SAB_IRQ_INT1:
+        if (aCPU->mSFR[REG_TCON] & TCONMASK_IT1)
+            aCPU->mSFR[REG_TCON] &= (uint8_t)~TCONMASK_IE1;
+        break;
+    case EM8051_SAB_IRQ_TIMER1:
+        aCPU->mSFR[REG_TCON] &= (uint8_t)~TCONMASK_TF1;
+        break;
+    case EM8051_SAB_IRQ_INT2:
+    case EM8051_SAB_IRQ_INT3:
+    case EM8051_SAB_IRQ_INT4:
+    case EM8051_SAB_IRQ_INT5:
+    case EM8051_SAB_IRQ_INT6:
+        *ircon &= (uint8_t)~(1u <<
+            ((unsigned)aSource - (unsigned)EM8051_SAB_IRQ_ADC));
+        break;
+    case EM8051_SAB_IRQ_UART:
+    case EM8051_SAB_IRQ_TIMER2:
+    case EM8051_SAB_IRQ_ADC:
+    default:
+        /* RI/TI, TF2/EXF2 and IADC are software-clear classes. */
+        break;
+    }
+}
+
+static bool handle_sab_interrupts(struct em8051 *aCPU)
+{
+    int selected = -1;
+    uint8_t selected_priority = 0;
+    uint8_t current_priority = 0;
+    uint16_t pending_snapshot;
+    unsigned source;
+    uint8_t depth;
+
+    sab_irq_sync(aCPU);
+    if (aCPU->mSABIrqInhibitInstructions != 0)
+        return true;
+    if (!(aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IEN0)] & IEMASK_EA))
+        return true;
+
+    depth = aCPU->mSABIrqDepth;
+    if (depth != 0)
+        current_priority = aCPU->mSABIrqPriorityStack[depth - 1u];
+
+    for (source = 0; source < (unsigned)EM8051_SAB_IRQ_SOURCE_COUNT;
+         source++)
+    {
+        enum em8051_sab_irq_source candidate =
+            (enum em8051_sab_irq_source)source;
+        uint16_t bit = SAB_IRQ_BIT(source);
+        uint8_t priority;
+
+        if (!(aCPU->mSABIrqPending & bit) ||
+            !(aCPU->mSABIrqEnabled & bit) ||
+            (aCPU->mSABIrqInService & bit))
+        {
+            continue;
+        }
+        if (candidate == EM8051_SAB_IRQ_TIMER2 &&
+            !sab_irq_timer2_is_enabled(aCPU))
+        {
+            continue;
+        }
+
+        priority = sab_irq_priority(aCPU, candidate);
+        if (depth != 0 && priority <= current_priority)
+            continue;
+        if (selected < 0 || priority > selected_priority)
+        {
+            selected = (int)source;
+            selected_priority = priority;
+        }
+    }
+
+    if (selected < 0 || depth >= 4u)
+        return true;
+
+    pending_snapshot = aCPU->mSABIrqPending;
+    if (!push_to_stack(aCPU, (uint8_t)(aCPU->mPC & 0xffu)))
+        return false;
+    if (!push_to_stack(aCPU, (uint8_t)(aCPU->mPC >> 8)))
+        return false;
+
+    aCPU->mSFR[REG_PCON] &= (uint8_t)~0x01u;
+    aCPU->mPC = gSABIrqVectors[selected];
+    aCPU->mTickDelay = 1;
+    aCPU->mSABIrqSourceStack[depth] = (uint8_t)selected;
+    aCPU->mSABIrqPriorityStack[depth] = selected_priority;
+    aCPU->mSABIrqSavedACC[depth] = aCPU->mSFR[REG_ACC];
+    aCPU->mSABIrqSavedPSW[depth] = aCPU->mSFR[REG_PSW];
+    aCPU->mSABIrqSavedSP[depth] = aCPU->mSFR[REG_SP];
+    aCPU->mSABIrqDepth = (uint8_t)(depth + 1u);
+    aCPU->mSABIrqInService |= SAB_IRQ_BIT((unsigned)selected);
+
+    sab_irq_auto_clear(aCPU, (enum em8051_sab_irq_source)selected);
+    sab_irq_sync(aCPU);
+    sab_irq_trace_emit(aCPU, EM8051_SAB_IRQ_TRACE_ACCEPT,
+                       (enum em8051_sab_irq_source)selected,
+                       selected_priority, true, pending_snapshot);
+    return true;
+}
+
+void em8051_sab_irq_reti(struct em8051 *aCPU, uint8_t aOriginalSP)
+{
+    uint8_t depth;
+    uint8_t index;
+    enum em8051_sab_irq_source source;
+    uint8_t priority;
+
+    if (!aCPU || aCPU->mVariant != EM8051_VARIANT_SAB80535)
+        return;
+
+    depth = aCPU->mSABIrqDepth;
+    if (depth != 0)
+    {
+        index = (uint8_t)(depth - 1u);
+        source = (enum em8051_sab_irq_source)
+            aCPU->mSABIrqSourceStack[index];
+        priority = aCPU->mSABIrqPriorityStack[index];
+
+        if (aCPU->mSABIrqSavedACC[index] != aCPU->mSFR[REG_ACC])
+            em8051_raise_exception(aCPU, EXCEPTION_IRET_ACC_MISMATCH);
+        if (aCPU->mSABIrqSavedSP[index] != aOriginalSP)
+            em8051_raise_exception(aCPU, EXCEPTION_IRET_SP_MISMATCH);
+        if ((aCPU->mSABIrqSavedPSW[index] &
+             (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 |
+              PSWMASK_AC | PSWMASK_C)) !=
+            (aCPU->mSFR[REG_PSW] &
+             (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 |
+              PSWMASK_AC | PSWMASK_C)))
+        {
+            em8051_raise_exception(aCPU, EXCEPTION_IRET_PSW_MISMATCH);
+        }
+
+        aCPU->mSABIrqDepth = index;
+        aCPU->mSABIrqInService &=
+            (uint16_t)~SAB_IRQ_BIT((unsigned)source);
+        sab_irq_sync(aCPU);
+        sab_irq_trace_emit(aCPU, EM8051_SAB_IRQ_TRACE_RELEASE, source,
+                           priority, false, aCPU->mSABIrqPending);
+    }
+
+    sab_irq_arm_inhibit(aCPU);
+}
+
 static bool handle_interrupts(struct em8051 *aCPU)
 {
     int16_t dest_ip = -1;
     uint8_t hi = 0;
     uint8_t lo = 0;
 
-    /* The SAB80535 controller has different enable/priority registers and is
-     * intentionally deferred to Stage 1. Never interpret SAB IEN1 at B8 as
-     * the classic IP register. */
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
-        return true;
+        return handle_sab_interrupts(aCPU);
 
     // can't interrupt high level
     if (aCPU->mInterruptActive > 1) 
@@ -596,7 +982,8 @@ bool tick(struct em8051 *aCPU)
     // Interrupts are sent if the following cases are not true:
     // 1. interrupt of equal or higher priority is in progress (tested inside function)
     // 2. current cycle is not the final cycle of instruction (tickdelay = 0)
-    // 3. the instruction in progress is RETI or any write to the IE or IP regs (TODO)
+    // 3. Siemens arbitration is inhibited for one instruction after RETI or
+    //    a write to IEN0/IEN1/IP0/IP1 (handled by the SAB controller).
     /* A failed interrupt stack push terminates entry immediately. Do not run
      * the interrupted opcode after the failed entry attempt. */
     if (!handle_interrupts(aCPU))
@@ -622,6 +1009,11 @@ bool tick(struct em8051 *aCPU)
             aCPU->mTickDelay = aCPU->op[opcode](aCPU);
             aCPU->mInInstruction = false;
             aCPU->mInstructionCount++;
+            if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
+                aCPU->mSABIrqInhibitInstructions != 0)
+            {
+                aCPU->mSABIrqInhibitInstructions--;
+            }
             ticked = true;
         }
         // update parity bit
@@ -834,6 +1226,18 @@ void reset(struct em8051 *aCPU, bool aWipe)
 
     // Clean internal variables
     aCPU->mInterruptActive = 0;
+    aCPU->mSABIrqPending = 0;
+    aCPU->mSABIrqEnabled = 0;
+    aCPU->mSABIrqInService = 0;
+    aCPU->mSABIrqDepth = 0;
+    memset(aCPU->mSABIrqSourceStack, 0,
+           sizeof(aCPU->mSABIrqSourceStack));
+    memset(aCPU->mSABIrqPriorityStack, 0,
+           sizeof(aCPU->mSABIrqPriorityStack));
+    memset(aCPU->mSABIrqSavedACC, 0, sizeof(aCPU->mSABIrqSavedACC));
+    memset(aCPU->mSABIrqSavedPSW, 0, sizeof(aCPU->mSABIrqSavedPSW));
+    memset(aCPU->mSABIrqSavedSP, 0, sizeof(aCPU->mSABIrqSavedSP));
+    aCPU->mSABIrqInhibitInstructions = 0;
     aCPU->mInstructionCount = 0;
     aCPU->mMachineCycleCount = 0;
     aCPU->mExceptionRaised = false;
