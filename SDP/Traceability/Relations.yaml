@@ -1,0 +1,35 @@
+schema_version: emu-sab80535-relations-v1
+updated: 2026-08-31
+
+relations:
+  - {from: STU-001, type: informs, to: MND-001}
+  - {from: REQ-001..REQ-015, type: derives_from, to: MND-001}
+  - {from: REQ-001..REQ-015, type: informed_by, to: STU-001}
+  - {from: ARCH-001..ARCH-006, type: realizes, to: REQ-001..REQ-015}
+  - {from: DES-001..DES-010, type: refines, to: ARCH-001..ARCH-006}
+  - {from: SPR-001, type: schedules, to: REQ-001..REQ-008}
+  - {from: SLC-001, type: belongs_to, to: ITR-001}
+  - {from: ITR-001, type: belongs_to, to: SPR-001}
+  - {from: SLC-001, type: satisfies, to: REQ-001..REQ-008}
+  - {from: SLC-001, type: conforms_to, to: ARCH-001..ARCH-006}
+  - {from: SLC-001, type: implements_design, to: DES-001..DES-010}
+  - {from: REV-SLC-001, type: reviews, to: SLC-001}
+  - {from: VER-SLC-001, type: verifies, to: SLC-001}
+  - {from: REV-SLC-001, type: opens, to: REV-SLC-001-F001..F008}
+  - {from: SLC-002, type: corrects, to: SLC-001}
+  - {from: SLC-002, type: addresses, to: REV-SLC-001-F001..F008}
+  - {from: SLC-002, type: belongs_to, to: ITR-002}
+  - {from: ITR-002, type: belongs_to, to: SPR-001}
+  - {from: REV-SLC-002, type: reviews, to: SLC-002}
+  - {from: VER-SLC-002, type: verifies, to: SLC-002}
+  - {from: REV-SLC-002, type: opens, to: REV-SLC-002-F001}
+  - {from: REV-SLC-002, type: opens, to: REV-SLC-002-F002}
+  - {from: SLC-003, type: corrects, to: SLC-002}
+  - {from: SLC-003, type: addresses, to: REV-SLC-002-F001}
+  - {from: SLC-003, type: addresses, to: REV-SLC-002-F002}
+  - {from: SLC-003, type: belongs_to, to: ITR-003}
+  - {from: ITR-003, type: belongs_to, to: SPR-001}
+  - {from: REV-SLC-003, type: reviews, to: SLC-003}
+  - {from: VER-SLC-003, type: verifies, to: SLC-003}
+  - {from: SLC-003, type: resolves, to: REV-SLC-002-F001}
+  - {from: SLC-003, type: resolves, to: REV-SLC-002-F002}

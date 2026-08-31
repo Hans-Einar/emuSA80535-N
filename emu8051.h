@@ -26,6 +26,9 @@
  * Emulator core header file
  */
 
+#ifndef EMU8051_H
+#define EMU8051_H
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -59,6 +62,106 @@ typedef void (*em8051xwrite)(struct em8051 *aCPU, uint16_t aAddress, uint8_t aVa
 // (can be used to control some peripherals)
 typedef uint8_t (*em8051xread)(struct em8051 *aCPU, uint16_t aAddress);
 
+enum em8051_variant
+{
+    EM8051_VARIANT_8051 = 0,
+    EM8051_VARIANT_8052,
+    EM8051_VARIANT_SAB80535
+};
+
+/* Full SFR addresses. These names deliberately keep the classic and Siemens
+ * meanings separate: address B8 is classic IP but SAB80535 IEN1. */
+enum em8051_classic_sfr
+{
+    EM8051_CLASSIC_SFR_IE = 0xA8,
+    EM8051_CLASSIC_SFR_IP = 0xB8
+};
+
+enum em8051_sab80535_sfr
+{
+    EM8051_SAB_SFR_IEN0 = 0xA8,
+    EM8051_SAB_SFR_IP0 = 0xA9,
+    EM8051_SAB_SFR_IEN1 = 0xB8,
+    EM8051_SAB_SFR_IP1 = 0xB9,
+    EM8051_SAB_SFR_IRCON = 0xC0,
+    EM8051_SAB_SFR_CCEN = 0xC1,
+    EM8051_SAB_SFR_T2CON = 0xC8,
+    EM8051_SAB_SFR_CRCL = 0xCA,
+    EM8051_SAB_SFR_CRCH = 0xCB,
+    EM8051_SAB_SFR_TL2 = 0xCC,
+    EM8051_SAB_SFR_TH2 = 0xCD,
+    EM8051_SAB_SFR_ADCON = 0xD8,
+    EM8051_SAB_SFR_ADDAT = 0xD9,
+    EM8051_SAB_SFR_DAPR = 0xDA,
+    EM8051_SAB_SFR_P6 = 0xDB,
+    EM8051_SAB_SFR_P4 = 0xE8,
+    EM8051_SAB_SFR_P5 = 0xF8
+};
+
+#define EM8051_SFR_UNAVAILABLE 0xFFFFu
+
+struct em8051_variant_descriptor
+{
+    enum em8051_variant variant;
+    const char *name;
+    uint32_t default_oscillator_hz;
+    bool has_upper_iram;
+    uint16_t interrupt_enable0_sfr;
+    uint16_t interrupt_priority0_sfr;
+    uint16_t interrupt_enable1_sfr;
+    uint16_t interrupt_priority1_sfr;
+};
+
+enum em8051_trace_type
+{
+    EM8051_TRACE_INSTRUCTION = 0,
+    EM8051_TRACE_SFR_WRITE,
+    EM8051_TRACE_MOVX_READ,
+    EM8051_TRACE_MOVX_WRITE,
+    EM8051_TRACE_UNSUPPORTED_MOVX_READ,
+    EM8051_TRACE_UNSUPPORTED_MOVX_WRITE
+};
+
+struct em8051_trace_record
+{
+    enum em8051_trace_type type;
+    uint64_t machine_cycle;
+    uint16_t pc;
+    uint16_t address;
+    uint8_t value;
+};
+
+/* Trace observers receive only an immutable record and caller-owned context.
+ * CPU storage is intentionally unreachable through this callback signature. */
+typedef void (*em8051trace)(const struct em8051_trace_record *aRecord,
+                            void *aUser);
+
+enum em8051_stop_reason
+{
+    EM8051_STOP_INSTRUCTION_LIMIT = 0,
+    EM8051_STOP_BREAKPOINT,
+    EM8051_STOP_TARGET_PC,
+    EM8051_STOP_EXCEPTION,
+    EM8051_STOP_HALT
+};
+
+struct em8051_run_result
+{
+    enum em8051_stop_reason reason;
+    uint64_t instructions;
+    uint64_t machine_cycles;
+    uint16_t pc;
+    int exception_code;
+};
+
+enum em8051_load_result
+{
+    EM8051_LOAD_OK = 0,
+    EM8051_LOAD_IO_ERROR = -1,
+    EM8051_LOAD_SIZE_ERROR = -2,
+    EM8051_LOAD_CONFIGURATION_ERROR = -3
+};
+
 
 struct em8051
 {
@@ -68,6 +171,7 @@ struct em8051
     uint16_t mExtDataMaxIdx;
     unsigned char mLowerData[128]; // 128 bytes
     unsigned char *mUpperData; // 0 or 128 bytes; leave to NULL if none
+    unsigned char mOwnedUpperData[128]; // owned by 8052/SAB80535 variants
     unsigned char mSFR[128]; // 128 bytes; (special function registers)
     uint16_t mPC; // Program Counter; outside memory area
     uint8_t mTickDelay; // How many ticks should we delay before continuing
@@ -78,6 +182,21 @@ struct em8051
     em8051sfrwrite sfrwrite[128]; // callback array: SFR register written
     em8051xread xread; // callback: external memory being read
     em8051xwrite xwrite; // callback: external memory being written
+
+    enum em8051_variant mVariant;
+    uint32_t mOscillatorHz;
+    uint32_t mResetSeed;
+    bool mResetSeedConfigured;
+    uint64_t mInstructionCount;
+    uint64_t mMachineCycleCount;
+    em8051trace trace;
+    void *trace_user;
+    bool mBreakpointEnabled;
+    uint16_t mBreakpoint;
+    bool mExceptionRaised;
+    int mLastException;
+    uint16_t mTracePC;
+    bool mInInstruction;
 
     // Internal values for interrupt services etc.
     uint8_t mInterruptActive;
@@ -93,14 +212,40 @@ struct em8051
     bool serial_interrupt_trigger;
 };
 
-// set the emulator into reset state. Must be called before tick(), as
-// it also initializes the function pointers. aWipe tells whether to reset
-// all memory to zero.
+/* Select a stable CPU variant and perform a deterministic cold reset. The
+ * caller supplies CODE/XDATA buffers as with the upstream API before calling
+ * this function. SAB80535 and 8052 upper IRAM is owned by the CPU object. */
+int em8051_init_variant(struct em8051 *aCPU, enum em8051_variant aVariant);
+
+const struct em8051_variant_descriptor *em8051_get_variant_descriptor(
+    enum em8051_variant aVariant);
+
+/* Hardware power-on RAM is undefined. A configured seed produces repeatable
+ * pseudo-random IRAM and SBUF contents on every cold reset. */
+void em8051_set_reset_seed(struct em8051 *aCPU, uint32_t aSeed);
+
+// Set the emulator into reset state. Must be called before tick(), as it also
+// initializes the function pointers. aWipe performs a cold reset: CODE/XDATA
+// are cleared and IRAM/SBUF use the configured deterministic power-on seed
+// (legacy callers without a configured seed retain the upstream zero/rand
+// behavior). A warm reset preserves RAM.
 void reset(struct em8051 *aCPU, bool aWipe);
 
 // run one emulator tick, or 12 hardware clock cycles.
 // returns "true" if a new operation was executed.
 bool tick(struct em8051 *aCPU);
+
+enum em8051_stop_reason em8051_step_instruction(
+    struct em8051 *aCPU, struct em8051_run_result *aResult);
+enum em8051_stop_reason em8051_run(struct em8051 *aCPU,
+                                      uint64_t aMaxInstructions,
+                                      struct em8051_run_result *aResult);
+enum em8051_stop_reason em8051_run_until_pc(struct em8051 *aCPU,
+                                               uint16_t aTargetPC,
+                                               uint64_t aMaxInstructions,
+                                               struct em8051_run_result *aResult);
+void em8051_set_breakpoint(struct em8051 *aCPU, uint16_t aPC, bool aEnabled);
+void em8051_set_trace(struct em8051 *aCPU, em8051trace aTrace, void *aUser);
 
 // decode the next operation as character string.
 // buffer must be big enough (64 bytes is very safe). 
@@ -110,11 +255,24 @@ uint8_t decode(struct em8051 *aCPU, uint16_t aPosition, char *aBuffer);
 // Load an intel hex format object file. Returns negative for errors.
 int load_obj(struct em8051 *aCPU, char *aFilename);
 
+/* Load a raw CODE image. Exactly 65536 bytes and a 64 KiB CODE buffer are
+ * required; XDATA is never used or resized. */
+int em8051_load_binary(struct em8051 *aCPU, const char *aFilename);
+
 // Alternate way to execute an opcode (switch-structure instead of function pointers)
 uint8_t do_op(struct em8051 *aCPU);
 
-// Internal: Pushes a value into stack
-void push_to_stack(struct em8051 *aCPU, uint8_t aValue);
+// Internal: Pushes a value onto the stack and reports whether it succeeded.
+bool push_to_stack(struct em8051 *aCPU, uint8_t aValue);
+
+/* Internal access gateways shared by the opcode engine and embedders. Invalid
+ * CPU pointers or addresses below the SFR range are rejected: reads return FF
+ * and writes have no effect. */
+uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress);
+void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue);
+void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
+                       uint16_t aAddress, uint8_t aValue);
+void em8051_raise_exception(struct em8051 *aCPU, int aCode);
 
 
 // SFR register locations
@@ -259,4 +417,6 @@ enum EM8051_EXCEPTION
     EXCEPTION_IRET_ACC_MISMATCH, // acc not preserved over interrupt call
     EXCEPTION_ILLEGAL_OPCODE     // for the single 'reserved' opcode in the architecture
 };
+
+#endif /* EMU8051_H */
 
