@@ -76,6 +76,12 @@ VER-SLC-003.
 - Base: `master`
 - Head branch: `codex/sab80535-foundation`
 - State at handoff: open, mergeable, no configured check runs.
+
+## Cross-Repository Checkpoint
+
+Stage 0 exact commits, evidence, reviewer status and first Stage 1 blocker were
+reported to Ponsse Issue #26:
+`https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5482407158`.
 - Upstream full UI build needs curses development headers; core-only evidence
   must not be mislabeled as a full frontend build.
 
