@@ -2,7 +2,7 @@
 
 ## ITR-006 — Timer0 mode1 and Timer1 mode2
 
-Status: active
+Status: in-review
 Iteration ID: ITR-006
 Active Slice: SLC-006
 
@@ -60,3 +60,10 @@ integer-cycle/trace-repeat checks; product diff and no-target/no-UART audit.
 fresh Reviewer approves or opens stable findings; Master accepts only after
 independent verification.
 
+### Worker result
+
+Worker commit `30cf42efa845d29a47a950eca7bbaf657490fbe6`
+adds only shared overflow counters/callback, timer tests and build/API notes.
+Worker reports Stage0/IRQ/timer suites passing on Windows GCC/strict Clang and
+WSL GCC/ASan+UBSan. REV-SLC-006 is reviewing exact HEAD; no acceptance is
+recorded yet.
