@@ -132,6 +132,16 @@ void em8051_set_sab_irq_trace(struct em8051 *aCPU,
     aCPU->sab_irq_trace_user = aUser;
 }
 
+void em8051_set_timer_overflow_callback(struct em8051 *aCPU,
+                                        em8051timeroverflow aCallback,
+                                        void *aUser)
+{
+    if (!aCPU)
+        return;
+    aCPU->timer_overflow = aCallback;
+    aCPU->timer_overflow_user = aUser;
+}
+
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
                        uint16_t aAddress, uint8_t aValue)
 {
@@ -391,6 +401,31 @@ static void serial_tx(struct em8051 *aCPU) {
 	}
 }
 
+static void timer_overflow_emit(struct em8051 *aCPU,
+                                enum em8051_timer aTimer)
+{
+    struct em8051_timer_overflow_record record;
+
+    aCPU->mTimerOverflowCount[aTimer]++;
+    if (!aCPU->timer_overflow)
+        return;
+
+    record.timer = aTimer;
+    /* timer_tick() runs before the shared machine-cycle counter is advanced. */
+    record.machine_cycle = aCPU->mMachineCycleCount + 1u;
+    if (aTimer == EM8051_TIMER0)
+    {
+        record.tl = aCPU->mSFR[REG_TL0];
+        record.th = aCPU->mSFR[REG_TH0];
+    }
+    else
+    {
+        record.tl = aCPU->mSFR[REG_TL1];
+        record.th = aCPU->mSFR[REG_TH1];
+    }
+    aCPU->timer_overflow(&record, aCPU->timer_overflow_user);
+}
+
 
 static void timer_tick(struct em8051 *aCPU)
 {
@@ -525,6 +560,7 @@ static void timer_tick(struct em8051 *aCPU)
                     {
                         // TH0 overflowed; set bit
                         aCPU->mSFR[REG_TCON] |= TCONMASK_TF0;
+                        timer_overflow_emit(aCPU, EM8051_TIMER0);
                     }
                 }
                 break;
@@ -624,7 +660,10 @@ static void timer_tick(struct em8051 *aCPU)
                     
             
                     if (!((aCPU->mSFR[REG_TMOD] & T0_MODE3_MASK ) == T0_MODE3_MASK))
+                    {
                         aCPU->mSFR[REG_TCON] |= TCONMASK_TF1;
+                        timer_overflow_emit(aCPU, EM8051_TIMER1);
+                    }
                     
                 }
                 break;
@@ -1241,6 +1280,8 @@ void reset(struct em8051 *aCPU, bool aWipe)
     memset(aCPU->mSABIrqSavedPSW, 0, sizeof(aCPU->mSABIrqSavedPSW));
     memset(aCPU->mSABIrqSavedSP, 0, sizeof(aCPU->mSABIrqSavedSP));
     aCPU->mSABIrqInhibitInstructions = 0;
+    memset(aCPU->mTimerOverflowCount, 0,
+           sizeof(aCPU->mTimerOverflowCount));
     aCPU->mInstructionCount = 0;
     aCPU->mMachineCycleCount = 0;
     aCPU->mExceptionRaised = false;

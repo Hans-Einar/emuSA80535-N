@@ -142,8 +142,25 @@ canonical SFR flags are cleared. TF2 is gated by IEN0.ET2 and EXF2 by
 IEN1.EXEN2. Siemens arbitration is held off until one further instruction has
 executed after `RETI` or a write to IEN0, IEN1, IP0 or IP1.
 
-This controller slice does not add Timer 0/1 scheduling behavior, UART mode-3
-timing, ADC conversion, Timer-2 counting, GPIO edge sampling or live I/O.
+The controller does not add UART mode-3 timing, ADC conversion, Timer-2
+counting, GPIO edge sampling or live I/O.
+
+Deterministic Timer0/Timer1 timing
+=================================
+
+The shared classic timer engine advances from virtual machine cycles, not host
+wall time. Timer0 mode 1 provides a live 16-bit `TH0:TL0` counter; the SAB
+`DCEF` scheduler reload reaches `TF0` after exactly 8977 eligible cycles.
+Timer1 mode 2 reloads `TL1` from the current `TH1`; an `FD` reload produces an
+overflow every three eligible machine cycles. Live SFR writes, interrupt-entry
+cycles and ISR/software-reload latency remain visible.
+
+Each Timer0 mode-1 and Timer1 mode-2 wrap increments a resettable 64-bit
+overflow count. `em8051_set_timer_overflow_callback()` optionally observes an
+immutable record containing the timer identity, completed machine cycle and
+post-wrap/reload bytes. Overflow events repeat independently of sticky
+`TF0`/`TF1`; the seam does not implement UART shifting, SBUF/RI/TI behavior or
+any transport.
 
 Install
 =======
