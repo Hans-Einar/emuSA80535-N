@@ -632,8 +632,11 @@ static void timer_tick(struct em8051 *aCPU)
                 break;
             }
 
-	    // If Timer1 overflowed, see if we need to send a serial bit
-            if (aCPU->mSFR[REG_TCON] & TCONMASK_TF1) {
+	    // If Timer1 overflowed, see if we need to send a serial bit.
+            // SAB80535 Timer/UART scheduling is variant-owned and is not
+            // provided by this inherited classic serial shortcut.
+            if (aCPU->mVariant != EM8051_VARIANT_SAB80535 &&
+                (aCPU->mSFR[REG_TCON] & TCONMASK_TF1)) {
                 if (aCPU->mSFR[REG_SCON] & SCONMASK_SM1) {
                     serial_tx(aCPU);
 		    aCPU->mSFR[REG_TCON] &= ~TCONMASK_TF1; // clear overflow flag

@@ -455,6 +455,9 @@ static void test_software_clear_and_timer2_split_gates(void)
     struct em8051_run_result result;
     uint8_t *ircon;
 
+    CHECK(SAB_IRCONMASK_TF2 == 0x40u);  /* IRCON.C6 */
+    CHECK(SAB_IRCONMASK_EXF2 == 0x80u); /* IRCON.C7 */
+
     setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
     enable_source(&fixture.cpu, EM8051_SAB_IRQ_UART);
     fixture.cpu.mSFR[REG_SCON] = SCONMASK_RI | SCONMASK_TI;
@@ -464,16 +467,29 @@ static void test_software_clear_and_timer2_split_gates(void)
           EM8051_STOP_INSTRUCTION_LIMIT);
     CHECK((fixture.cpu.mSABIrqPending & IRQ_BIT(EM8051_SAB_IRQ_UART)) == 0);
 
+    /* Synthetic Timer2 assertion chooses raw TF2/C6. Explicit source clear
+     * clears both aggregate request flags. These checks deliberately use
+     * numeric IRCON bits rather than the mask enum under test. */
+    setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
+    ircon = &fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+    CHECK(em8051_sab_irq_set_pending(
+        &fixture.cpu, EM8051_SAB_IRQ_TIMER2, true));
+    CHECK((*ircon & 0xc0u) == 0x40u);
+    *ircon |= 0x80u;
+    CHECK(em8051_sab_irq_set_pending(
+        &fixture.cpu, EM8051_SAB_IRQ_TIMER2, false));
+    CHECK((*ircon & 0xc0u) == 0);
+
     setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
     fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IEN0)] = IEMASK_EA;
     fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IEN1)] =
         SAB_IEN1MASK_EXEN2;
     ircon = &fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IRCON)];
-    *ircon = SAB_IRCONMASK_TF2;
+    *ircon = 0x40u; /* raw TF2/C6 */
     CHECK(em8051_run(&fixture.cpu, 1, &result) ==
           EM8051_STOP_INSTRUCTION_LIMIT);
     CHECK(result.pc == 1); /* EXEN2 does not gate TF2. */
-    *ircon = SAB_IRCONMASK_EXF2;
+    *ircon = 0x80u; /* raw EXF2/C7 */
     accept_source(&fixture, EM8051_SAB_IRQ_TIMER2);
 
     setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
@@ -481,16 +497,79 @@ static void test_software_clear_and_timer2_split_gates(void)
         IEMASK_EA | IEMASK_ET2;
     fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IEN1)] = 0;
     ircon = &fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IRCON)];
-    *ircon = SAB_IRCONMASK_EXF2;
+    *ircon = 0x80u; /* raw EXF2/C7 */
     CHECK(em8051_run(&fixture.cpu, 1, &result) ==
           EM8051_STOP_INSTRUCTION_LIMIT);
     CHECK(result.pc == 1); /* ET2 does not gate EXF2. */
-    *ircon = SAB_IRCONMASK_TF2;
+    *ircon = 0x40u; /* raw TF2/C6 */
     accept_source(&fixture, EM8051_SAB_IRQ_TIMER2);
     em8051_sfr_write(&fixture.cpu, EM8051_SAB_SFR_IRCON, 0);
     CHECK(em8051_run(&fixture.cpu, 1, &result) ==
           EM8051_STOP_INSTRUCTION_LIMIT);
     CHECK((fixture.cpu.mSABIrqPending & IRQ_BIT(EM8051_SAB_IRQ_TIMER2)) == 0);
+
+    /* ROM-style CLR C6 clears raw TF2 while leaving raw EXF2/C7 asserted. */
+    setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
+    fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IEN0)] = IEMASK_ET2;
+    ircon = &fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+    *ircon = 0xc0u;
+    fixture.code[0] = 0xc2u; /* CLR bit */
+    fixture.code[1] = 0xc6u; /* IRCON.C6 / TF2 */
+    CHECK(em8051_run(&fixture.cpu, 1, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK(result.pc == 2);
+    CHECK((*ircon & 0xc0u) == 0x80u);
+    CHECK((fixture.cpu.mSABIrqPending &
+           IRQ_BIT(EM8051_SAB_IRQ_TIMER2)) != 0);
+    em8051_sfr_write(&fixture.cpu, EM8051_SAB_SFR_IEN0,
+                     IEMASK_EA | IEMASK_ET2);
+    CHECK(em8051_run(&fixture.cpu, 2, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK(fixture.cpu.mSABIrqDepth == 0); /* ET2 cannot gate raw EXF2. */
+}
+
+static void test_sab_timer1_pending_persistence(void)
+{
+    struct fixture fixture;
+    struct em8051_run_result result;
+    uint16_t timer1_bit = IRQ_BIT(EM8051_SAB_IRQ_TIMER1);
+
+    setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
+    fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_IEN0)] = IEMASK_ET1;
+    fixture.cpu.mSFR[REG_TMOD] = TMODMASK_M1_1; /* Timer1 mode 2 */
+    fixture.cpu.mSFR[REG_TH1] = 0xfdu;
+    fixture.cpu.mSFR[REG_TL1] = 0xfdu;
+    fixture.cpu.mSFR[REG_TCON] = TCONMASK_TR1;
+    fixture.cpu.mSFR[REG_SCON] = SCONMASK_SM1;
+    CHECK(em8051_sab_irq_set_pending(
+        &fixture.cpu, EM8051_SAB_IRQ_TIMER1, true));
+
+    /* EAL masking must not let the inherited serial path consume TF1. */
+    CHECK(em8051_run(&fixture.cpu, 4, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK((fixture.cpu.mSFR[REG_TCON] & TCONMASK_TF1) != 0);
+    CHECK((fixture.cpu.mSABIrqPending & timer1_bit) != 0);
+    CHECK(fixture.cpu.mSABIrqDepth == 0);
+
+    /* ET1 masking with EAL set also preserves TF1 across instructions. */
+    em8051_sfr_write(&fixture.cpu, EM8051_SAB_SFR_IEN0, IEMASK_EA);
+    CHECK(em8051_run(&fixture.cpu, 4, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK((fixture.cpu.mSFR[REG_TCON] & TCONMASK_TF1) != 0);
+    CHECK((fixture.cpu.mSABIrqPending & timer1_bit) != 0);
+    CHECK(fixture.cpu.mSABIrqDepth == 0);
+
+    /* Stop Timer1 to isolate vector-entry clearing from a later overflow. */
+    fixture.cpu.mSFR[REG_TCON] &= (uint8_t)~TCONMASK_TR1;
+    em8051_sfr_write(&fixture.cpu, EM8051_SAB_SFR_IEN0,
+                     IEMASK_EA | IEMASK_ET1);
+    CHECK(em8051_run(&fixture.cpu, 1, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK((fixture.cpu.mSFR[REG_TCON] & TCONMASK_TF1) != 0);
+    CHECK((fixture.cpu.mSABIrqPending & timer1_bit) != 0);
+    accept_source(&fixture, EM8051_SAB_IRQ_TIMER1);
+    CHECK((fixture.cpu.mSFR[REG_TCON] & TCONMASK_TF1) == 0);
+    CHECK((fixture.cpu.mSABIrqPending & timer1_bit) == 0);
 }
 
 static void test_ip_write_and_post_reti_inhibit(void)
@@ -703,6 +782,15 @@ static void test_failed_entry_and_classic_regression(void)
         CHECK(result.pc == 0);
         CHECK(fixture.cpu.mInterruptActive == 0);
         CHECK(fixture.cpu.mSABIrqDepth == 0);
+
+        /* The variant bound must preserve the inherited classic shortcut. */
+        setup_fixture(&fixture, variant);
+        fixture.cpu.mSFR[REG_TMOD] = TMODMASK_M1_1;
+        fixture.cpu.mSFR[REG_TCON] = TCONMASK_TR1 | TCONMASK_TF1;
+        fixture.cpu.mSFR[REG_SCON] = SCONMASK_SM1;
+        CHECK(em8051_run(&fixture.cpu, 1, &result) ==
+              EM8051_STOP_INSTRUCTION_LIMIT);
+        CHECK((fixture.cpu.mSFR[REG_TCON] & TCONMASK_TF1) == 0);
     }
 }
 
@@ -716,6 +804,7 @@ int main(void)
     test_ret_does_not_release();
     test_request_clear_matrix();
     test_software_clear_and_timer2_split_gates();
+    test_sab_timer1_pending_persistence();
     test_ip_write_and_post_reti_inhibit();
     test_irq_trace_and_observer_neutrality();
     test_failed_entry_and_classic_regression();
