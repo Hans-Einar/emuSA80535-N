@@ -55,3 +55,14 @@ relations:
   - {from: VER-SLC-005, type: verifies, to: SLC-005}
   - {from: SLC-005, type: resolves, to: REV-SLC-004-F001}
   - {from: SLC-005, type: resolves, to: REV-SLC-004-F002}
+  - {from: DES-019..DES-026, type: refines, to: ARCH-003}
+  - {from: DES-019..DES-026, type: refines, to: ARCH-004}
+  - {from: DES-019..DES-026, type: refines, to: ARCH-005}
+  - {from: DES-019..DES-026, type: refines, to: ARCH-006}
+  - {from: SPR-003, type: schedules, to: REQ-010}
+  - {from: SLC-006, type: belongs_to, to: ITR-006}
+  - {from: ITR-006, type: belongs_to, to: SPR-003}
+  - {from: SLC-006, type: satisfies, to: REQ-010}
+  - {from: SLC-006, type: implements_design, to: DES-019..DES-026}
+  - {from: REV-SLC-006, type: reviews, to: SLC-006}
+  - {from: VER-SLC-006, type: verifies, to: SLC-006}
