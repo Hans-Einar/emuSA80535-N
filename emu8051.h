@@ -159,6 +159,28 @@ struct em8051_sab_irq_trace_record
 typedef void (*em8051sabirqtrace)(
     const struct em8051_sab_irq_trace_record *aRecord, void *aUser);
 
+/* Timer identities and overflow records are generic to the shared classic
+ * Timer0/Timer1 engine. An overflow record represents the completed machine
+ * cycle and contains the live post-wrap/reload register values. */
+enum em8051_timer
+{
+    EM8051_TIMER0 = 0,
+    EM8051_TIMER1,
+    EM8051_TIMER_COUNT
+};
+
+struct em8051_timer_overflow_record
+{
+    enum em8051_timer timer;
+    uint64_t machine_cycle;
+    uint8_t tl;
+    uint8_t th;
+};
+
+/* Timer observers receive only an immutable record and caller-owned context. */
+typedef void (*em8051timeroverflow)(
+    const struct em8051_timer_overflow_record *aRecord, void *aUser);
+
 #define EM8051_SFR_UNAVAILABLE 0xFFFFu
 
 struct em8051_variant_descriptor
@@ -254,6 +276,9 @@ struct em8051
     void *trace_user;
     em8051sabirqtrace sab_irq_trace;
     void *sab_irq_trace_user;
+    uint64_t mTimerOverflowCount[EM8051_TIMER_COUNT];
+    em8051timeroverflow timer_overflow;
+    void *timer_overflow_user;
     bool mBreakpointEnabled;
     uint16_t mBreakpoint;
     bool mExceptionRaised;
@@ -326,6 +351,11 @@ void em8051_set_trace(struct em8051 *aCPU, em8051trace aTrace, void *aUser);
 /* Install a record-only Siemens interrupt observer. */
 void em8051_set_sab_irq_trace(struct em8051 *aCPU,
                               em8051sabirqtrace aTrace, void *aUser);
+
+/* Install a record-only Timer0/Timer1 overflow observer. */
+void em8051_set_timer_overflow_callback(struct em8051 *aCPU,
+                                        em8051timeroverflow aCallback,
+                                        void *aUser);
 
 /* Set or clear the canonical request flag(s) for one generic SAB80535
  * interrupt source. This API models no physical pin, board or protocol. */
