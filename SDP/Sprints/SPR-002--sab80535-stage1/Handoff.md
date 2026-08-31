@@ -63,3 +63,7 @@ SPR-002, ITR-004, SLC-004, REV-SLC-004 and VER-SLC-004.
 Working branch: `codex/sab80535-interrupt-controller` based on
 `codex/sab80535-foundation` HEAD `62f40127...`.
 
+## Issue Checkpoint
+
+Master opening checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483242543`.
