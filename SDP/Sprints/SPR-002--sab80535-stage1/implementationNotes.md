@@ -19,3 +19,11 @@ Status: active; no verified SLC-004 product implementation recorded yet.
 - Independently verified positive structure includes all source/vector/order,
   priority/nesting/RETI/inhibit/trace and classic-regression behavior outside
   REV-SLC-004-F001/F002.
+- Corrective commit `85fa6e1f8318c691598b9a2ae191d1bd94b436c8`
+  fixed raw C6/C7 identities/split gates and SAB TF1 persistence without
+  changing classic serial behavior or adding later Timer/UART functionality.
+- REV-SLC-005 approved with no findings. VER-SLC-005 passed Windows GCC,
+  strict Clang, WSL GCC, WSL ASan/UBSan, product diff/no-target, NDJSON and
+  ancestry checks.
+- The SLC-004/SLC-005 controller increment is accepted technically and ready
+  for a stacked PR.

@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Complete fresh REV-SLC-005 review of corrective HEAD `85fa6e1f...`, then run
-Master verification only if approved.
+Push the verified branch, open the stacked SLC-004 implementation PR and record
+the real PR/cross-repository checkpoint identities.
 
 ## Authoritative Source Documents
 
@@ -27,31 +27,33 @@ Master verification only if approved.
   identities and lost SAB Timer1 pending under startup-like serial settings.
 - SLC-005 corrective product/test commit `85fa6e1f8318c691598b9a2ae191d1bd94b436c8`
   completed; fresh review is running.
+- REV-SLC-005 approved with no findings; VER-SLC-005 passed.
 
 ## Not Done
 
-- SLC-005 fresh review, Master verification and stacked PR.
+- Stacked PR publication and cross-repository Ponsse Issue #26 checkpoint.
 - Timer0/Timer1 and UART later slices; these are not authorized.
 
 ## Exact Next Step
 
-Fresh Reviewer independently probes exact corrective HEAD, including literal
-C6/C7 and startup-like masked TF1 scenarios.
+Open a PR from `codex/sab80535-interrupt-controller` to
+`codex/sab80535-foundation`, because PR #1 is not merged. Do not retarget to
+`master` until Stage 0 is available there.
 
 ## Verification Completed
 
-REV-SLC-004 reran Windows/WSL/Clang/sanitizer tests and reproduced both open
-findings with raw-register/startup-like probes. Stage 0 remains green.
+REV-SLC-004 reproduced both findings. REV-SLC-005 verified literal corrections
+and approved; VER-SLC-005 independently passed the full matrix. Stage 0 remains
+green.
 
 ## Traceability IDs In Play
 
 MND-001, STU-001, REQ-009, ARCH-002/003/005/006, DES-011..DES-018,
-SPR-002, ITR-005, SLC-005, REV-SLC-004-F001/F002, REV-SLC-005 and
-VER-SLC-005.
+SPR-002, ITR-005, SLC-005, REV-SLC-005 and VER-SLC-005.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-005 active and findings open.
+- CurrentIndex updated: yes, SLC-005 accepted; Sprint ready-for-pr.
 - Relations updated: yes.
 - Ledger updated: yes, Sprint/Iteration/Slice start recorded.
 
@@ -84,3 +86,6 @@ Reviewer changes-required checkpoint:
 
 Corrective Worker checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483642648`.
+
+Reviewer/Master acceptance checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483733470`.

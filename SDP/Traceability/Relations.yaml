@@ -53,3 +53,5 @@ relations:
   - {from: ITR-005, type: belongs_to, to: SPR-002}
   - {from: REV-SLC-005, type: reviews, to: SLC-005}
   - {from: VER-SLC-005, type: verifies, to: SLC-005}
+  - {from: SLC-005, type: resolves, to: REV-SLC-004-F001}
+  - {from: SLC-005, type: resolves, to: REV-SLC-004-F002}
