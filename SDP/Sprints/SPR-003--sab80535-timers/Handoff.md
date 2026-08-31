@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Independently review SLC-006 product HEAD `30cf42ef...`, then run Master
-verification only if approved.
+Push the verified branch, open the focused SLC-006 PR and record PR/Ponsse
+checkpoint identities.
 
 ## Authoritative Source Documents
 
@@ -22,20 +22,21 @@ verification only if approved.
 - Timer authority reconciled and SPR-003 / ITR-006 / SLC-006 opened.
 - Worker product/test commit `30cf42efa845d29a47a950eca7bbaf657490fbe6`
   completed; fresh REV-SLC-006 review is running.
+- REV-SLC-006 approved with no findings; VER-SLC-006 passed.
 
 ## Not Done
 
-- SLC-006 independent review, Master verification and PR.
+- Focused PR publication and Ponsse Issue #26 checkpoint.
 - 9-bit UART and every later Issue #2 scope; unauthorized.
 
 ## Exact Next Step
 
-Fresh Reviewer inspects exact product HEAD with independent timer/event probes.
+Open the timer branch PR against current master. Do not start UART work.
 
 ## Verification Completed
 
-Worker-reported cross-platform evidence exists but is not yet accepted. Stage0/
-controller suites remain the regression baseline.
+REV-SLC-006 and VER-SLC-006 passed cross-platform, sanitizer and independent
+timing probes. Stage0/controller suites remain green.
 
 ## Traceability IDs In Play
 
@@ -44,7 +45,7 @@ SPR-003, ITR-006, SLC-006, REV-SLC-006 and VER-SLC-006.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-006 in review.
+- CurrentIndex updated: yes, SLC-006 accepted; Sprint ready-for-pr.
 - Relations updated: yes.
 - Ledger updated: integration gate and Sprint/Iteration/Slice start recorded.
 
@@ -68,3 +69,6 @@ Master opening checkpoint:
 
 Worker completion checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5484292128`.
+
+Reviewer/Master acceptance checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5484416928`.

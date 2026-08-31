@@ -1,6 +1,6 @@
 # SPR-003 — SAB80535 Timer0/Timer1 timing
 
-Status: active
+Status: ready-for-pr
 Sprint ID: SPR-003
 Started: 2026-08-31
 Steering authority: Issue #2 SLC-006 checkpoint
@@ -46,3 +46,8 @@ future UART Slice, without implementing UART behavior.
 - Issue #2 checkpoints and a focused implementation PR are published;
 - no UART or other unauthorized behavior enters the diff.
 
+## Verified result
+
+All technical exit criteria are satisfied at product HEAD
+`30cf42efa845d29a47a950eca7bbaf657490fbe6` through REV-SLC-006 and
+VER-SLC-006. Sprint remains `ready-for-pr` until the real PR identity exists.
