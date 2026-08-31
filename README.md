@@ -159,8 +159,30 @@ Each Timer0 mode-1 and Timer1 mode-2 wrap increments a resettable 64-bit
 overflow count. `em8051_set_timer_overflow_callback()` optionally observes an
 immutable record containing the timer identity, completed machine cycle and
 post-wrap/reload bytes. Overflow events repeat independently of sticky
-`TF0`/`TF1`; the seam does not implement UART shifting, SBUF/RI/TI behavior or
-any transport.
+`TF0`/`TF1` and of the observer callback.
+
+SAB80535 mode-3 9-bit UART
+==========================
+
+When SAB mode 3 selects Timer1 rather than the dedicated baud generator, every
+internal Timer1 mode-2 overflow advances a continuous integer serial phase.
+`PCON.SMOD=1` divides the overflow stream by 16 and `SMOD=0` by 32. Thus the
+11.0592 MHz, `TH1=FD`, SMOD=1 configuration produces one bit every 48 machine
+cycles, exactly 19200 bits/s, without host time or floating-point scheduling.
+
+SAB SBUF reads and writes use physically separate modeled storage. A write
+captures the transmit byte and current TB8 without overwriting unread receive
+data. TX begins on the next divider boundary and emits START, D0..D7, TB8 and
+STOP; TI rises when STOP begins and remains software-clear. One pending write
+can produce a contiguous next frame after the complete STOP interval.
+
+`em8051_sab_uart_inject_rx_frame(cpu, data, ninth)` begins one deterministic
+valid in-memory receive frame when mode 3 and REN are enabled. Its independent
+receive phase updates receive SBUF, RB8 and RI at STOP start only when RI is
+clear and SM2 accepts the ninth bit. No RxD/TxD electrical model or live serial
+transport is opened. `em8051_set_sab_uart_trace()` optionally observes
+immutable logical frame records with exact virtual-cycle boundaries. RI and TI
+feed only the existing shared SAB vector `0023` and remain software-clear.
 
 Install
 =======

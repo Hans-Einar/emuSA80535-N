@@ -181,6 +181,36 @@ struct em8051_timer_overflow_record
 typedef void (*em8051timeroverflow)(
     const struct em8051_timer_overflow_record *aRecord, void *aUser);
 
+/* SAB80535 mode-3 UART records describe logical in-memory frame progress.
+ * Bit indexes use the architectural eleven-bit frame layout:
+ * 0=START, 1..8=D0..D7, 9=TB8/RB8, 10=STOP. */
+enum em8051_sab_uart_trace_event
+{
+    EM8051_SAB_UART_TRACE_TX_START = 0,
+    EM8051_SAB_UART_TRACE_TX_BIT,
+    EM8051_SAB_UART_TRACE_TX_STOP,
+    EM8051_SAB_UART_TRACE_TX_END,
+    EM8051_SAB_UART_TRACE_RX_START,
+    EM8051_SAB_UART_TRACE_RX_ACCEPT,
+    EM8051_SAB_UART_TRACE_RX_DROP,
+    EM8051_SAB_UART_TRACE_RX_END
+};
+
+struct em8051_sab_uart_trace_record
+{
+    enum em8051_sab_uart_trace_event event;
+    uint64_t machine_cycle;
+    uint16_t pc;
+    uint8_t data;
+    bool ninth_bit;
+    uint8_t bit_index;
+    bool bit_value;
+};
+
+/* UART observers receive only an immutable record and caller-owned context. */
+typedef void (*em8051sabuarttrace)(
+    const struct em8051_sab_uart_trace_record *aRecord, void *aUser);
+
 #define EM8051_SFR_UNAVAILABLE 0xFFFFu
 
 struct em8051_variant_descriptor
@@ -279,6 +309,8 @@ struct em8051
     uint64_t mTimerOverflowCount[EM8051_TIMER_COUNT];
     em8051timeroverflow timer_overflow;
     void *timer_overflow_user;
+    em8051sabuarttrace sab_uart_trace;
+    void *sab_uart_trace_user;
     bool mBreakpointEnabled;
     uint16_t mBreakpoint;
     bool mExceptionRaised;
@@ -305,6 +337,24 @@ struct em8051
     uint8_t mSABIrqSavedPSW[4];
     uint8_t mSABIrqSavedSP[4];
     uint8_t mSABIrqInhibitInstructions;
+
+    /* SAB mode-3 UART state. The global divider is a continuous five-bit
+     * Timer1-overflow phase; SMOD selects its /16 or /32 boundary. RX owns an
+     * independent phase reset when a valid in-memory start is injected. */
+    uint8_t mSABUartDividerPhase;
+    uint8_t mSABUartRxDividerPhase;
+    uint8_t mSABUartRxData;
+    uint8_t mSABUartTxPendingData;
+    uint8_t mSABUartTxData;
+    uint8_t mSABUartTxBitIndex;
+    uint8_t mSABUartRxPendingData;
+    uint8_t mSABUartRxBitIndex;
+    bool mSABUartTxPendingNinth;
+    bool mSABUartTxNinth;
+    bool mSABUartTxPending;
+    bool mSABUartTxActive;
+    bool mSABUartRxPendingNinth;
+    bool mSABUartRxActive;
 
     // Internal handling of UART
     char serial_out[18]; // The shown size is only 18 chars
@@ -356,6 +406,16 @@ void em8051_set_sab_irq_trace(struct em8051 *aCPU,
 void em8051_set_timer_overflow_callback(struct em8051 *aCPU,
                                         em8051timeroverflow aCallback,
                                         void *aUser);
+
+/* Install a record-only SAB80535 mode-3 UART observer. */
+void em8051_set_sab_uart_trace(struct em8051 *aCPU,
+                               em8051sabuarttrace aTrace, void *aUser);
+
+/* Begin one deterministic, valid in-memory mode-3 receive frame. The API
+ * models no RxD pin edges or host transport. A false result means the CPU is
+ * not in enabled SAB mode 3 or another injected frame is still active. */
+bool em8051_sab_uart_inject_rx_frame(struct em8051 *aCPU, uint8_t aData,
+                                     bool aNinthBit);
 
 /* Set or clear the canonical request flag(s) for one generic SAB80535
  * interrupt source. This API models no physical pin, board or protocol. */
@@ -513,6 +573,13 @@ enum SCON_MASKS
     SCONMASK_SM0  = 0x80,
 };
 
+enum PCON_MASKS
+{
+    PCONMASK_IDLE = 0x01,
+    PCONMASK_POWER_DOWN = 0x02,
+    PCONMASK_SMOD = 0x80
+};
+
 enum ISR_VECTORS
 {
     ISR_RST  = 0x00,
@@ -558,6 +625,11 @@ enum SAB_IRCON_MASKS
     SAB_IRCONMASK_IEX6 = 0x20,
     SAB_IRCONMASK_TF2 = 0x40,
     SAB_IRCONMASK_EXF2 = 0x80
+};
+
+enum SAB_ADCON_MASKS
+{
+    SAB_ADCONMASK_BD = 0x80
 };
 
 #endif /* EMU8051_H */
