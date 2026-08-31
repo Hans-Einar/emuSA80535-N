@@ -42,12 +42,44 @@
 
 //#define static
 
-void mem_memonic(int aValue, char *aBuffer)
+static void mem_memonic_for_variant(struct em8051 *aCPU, int aValue,
+                                    char *aBuffer)
 {
     int done = 0;
 
     if (aValue > 0x7f)
     {
+        if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
+        {
+            const char *name = NULL;
+            switch (aValue)
+            {
+            case EM8051_SAB_SFR_IEN0: name = "IEN0"; break;
+            case EM8051_SAB_SFR_IP0: name = "IP0"; break;
+            case EM8051_SAB_SFR_IEN1: name = "IEN1"; break;
+            case EM8051_SAB_SFR_IP1: name = "IP1"; break;
+            case EM8051_SAB_SFR_IRCON: name = "IRCON"; break;
+            case EM8051_SAB_SFR_CCEN: name = "CCEN"; break;
+            case EM8051_SAB_SFR_T2CON: name = "T2CON"; break;
+            case EM8051_SAB_SFR_CRCL: name = "CRCL"; break;
+            case EM8051_SAB_SFR_CRCH: name = "CRCH"; break;
+            case EM8051_SAB_SFR_TL2: name = "TL2"; break;
+            case EM8051_SAB_SFR_TH2: name = "TH2"; break;
+            case EM8051_SAB_SFR_ADCON: name = "ADCON"; break;
+            case EM8051_SAB_SFR_ADDAT: name = "ADDAT"; break;
+            case EM8051_SAB_SFR_DAPR: name = "DAPR"; break;
+            case EM8051_SAB_SFR_P6: name = "P6"; break;
+            case EM8051_SAB_SFR_P4: name = "P4"; break;
+            case EM8051_SAB_SFR_P5: name = "P5"; break;
+            }
+            if (name)
+            {
+                strcpy(aBuffer, name);
+                done = 1;
+            }
+        }
+        if (done)
+            return;
         switch (aValue - 0x80)
         {
         case REG_ACC:
@@ -142,77 +174,59 @@ void mem_memonic(int aValue, char *aBuffer)
     }
 }
 
-void bitaddr_memonic(int aValue, char *aBuffer)
+static void bitaddr_memonic_for_variant(struct em8051 *aCPU, int aValue,
+                                        char *aBuffer)
 {
     char regname[16];
 
     if (aValue > 0x7f)
     {
-        switch ((aValue & 0xf8) - 0x80)
+        const char *variant_name = NULL;
+        if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
         {
-        case REG_ACC:
-            strcpy(regname, "ACC"); 
-            break;
-        case REG_B:
-            strcpy(regname, "B");
-            break;
-        case REG_PSW:
-            strcpy(regname, "PSW");
-            break;
-        case REG_SP:
-            strcpy(regname, "SP");
-            break;
-        case REG_DPL:
-            strcpy(regname, "DPL");
-            break;
-        case REG_DPH:
-            strcpy(regname, "DPH");
-            break;
-        case REG_P0:
-            strcpy(regname, "P0");
-            break;
-        case REG_P1:
-            strcpy(regname, "P1");
-            break;
-        case REG_P2:
-            strcpy(regname, "P2");
-            break;
-        case REG_P3:
-            strcpy(regname, "P3");
-            break;
-        case REG_IP:
-            strcpy(regname, "IP");
-            break;
-        case REG_IE:
-            strcpy(regname, "IE");
-            break;
-        case REG_TMOD:
-            strcpy(regname, "TMOD");
-            break;
-        case REG_TCON:
-            strcpy(regname, "TCON");
-            break;
-        case REG_TH0:
-            strcpy(regname, "TH0");
-            break;
-        case REG_TL0:
-            strcpy(regname, "TL0");
-            break;
-        case REG_TH1:
-            strcpy(regname, "TH1");
-            break;
-        case REG_TL1:
-            strcpy(regname, "TL1");
-            break;
-        case REG_SCON:
-            strcpy(regname, "SCON");
-            break;
-        case REG_PCON:
-            strcpy(regname, "PCON");
-            break;
-        default:
-            sprintf(regname, "%02Xh",(aValue & 0xF8));
-            break;
+            switch (aValue & 0xf8)
+            {
+            case EM8051_SAB_SFR_IEN0: variant_name = "IEN0"; break;
+            case EM8051_SAB_SFR_IEN1: variant_name = "IEN1"; break;
+            case EM8051_SAB_SFR_IRCON: variant_name = "IRCON"; break;
+            case EM8051_SAB_SFR_T2CON: variant_name = "T2CON"; break;
+            case EM8051_SAB_SFR_ADCON: variant_name = "ADCON"; break;
+            case EM8051_SAB_SFR_P4: variant_name = "P4"; break;
+            case EM8051_SAB_SFR_P5: variant_name = "P5"; break;
+            }
+        }
+        if (variant_name)
+        {
+            strcpy(regname, variant_name);
+        }
+        else
+        {
+            switch ((aValue & 0xf8) - 0x80)
+            {
+            case REG_ACC: strcpy(regname, "ACC"); break;
+            case REG_B: strcpy(regname, "B"); break;
+            case REG_PSW: strcpy(regname, "PSW"); break;
+            case REG_SP: strcpy(regname, "SP"); break;
+            case REG_DPL: strcpy(regname, "DPL"); break;
+            case REG_DPH: strcpy(regname, "DPH"); break;
+            case REG_P0: strcpy(regname, "P0"); break;
+            case REG_P1: strcpy(regname, "P1"); break;
+            case REG_P2: strcpy(regname, "P2"); break;
+            case REG_P3: strcpy(regname, "P3"); break;
+            case REG_IP: strcpy(regname, "IP"); break;
+            case REG_IE: strcpy(regname, "IE"); break;
+            case REG_TMOD: strcpy(regname, "TMOD"); break;
+            case REG_TCON: strcpy(regname, "TCON"); break;
+            case REG_TH0: strcpy(regname, "TH0"); break;
+            case REG_TL0: strcpy(regname, "TL0"); break;
+            case REG_TH1: strcpy(regname, "TH1"); break;
+            case REG_TL1: strcpy(regname, "TL1"); break;
+            case REG_SCON: strcpy(regname, "SCON"); break;
+            case REG_PCON: strcpy(regname, "PCON"); break;
+            default:
+                sprintf(regname, "%02Xh", (aValue & 0xf8));
+                break;
+            }
         }
     }
     else
@@ -222,6 +236,13 @@ void bitaddr_memonic(int aValue, char *aBuffer)
 
     sprintf(aBuffer, "%s.%d", regname, aValue & 7);
 }
+
+/* Every decoder below has aCPU in scope; keep the existing compact call sites
+ * while making SFR names variant-aware and reentrant. */
+#define mem_memonic(value, buffer) \
+    mem_memonic_for_variant(aCPU, (value), (buffer))
+#define bitaddr_memonic(value, buffer) \
+    bitaddr_memonic_for_variant(aCPU, (value), (buffer))
 
 
 static uint8_t disasm_ajmp_offset(struct em8051 *aCPU, uint16_t aPosition, char *aBuffer)

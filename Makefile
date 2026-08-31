@@ -31,3 +31,8 @@ clean:
 .PHONY: clean all
 
 all: $(BIN)
+
+core-test:
+	$(MAKE) -C tests clean test
+
+.PHONY: core-test

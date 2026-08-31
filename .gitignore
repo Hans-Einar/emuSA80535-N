@@ -14,6 +14,9 @@
 
 #binary file
 emu
+tests/stage0_tests
+tests/stage0_tests.exe
+tests/stage0-*.bin
 
 #editor temp files
 \#*

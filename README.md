@@ -72,6 +72,38 @@ Current features include:
 - The emulator performs callbacks on register area or external memory read/write, which can be used to implement simulation of new special features or whatever is connected to the IO ports.
 - Timer 0 and 1 modes 0, 1, 2 and 3, as well as interrupt priorities.
 
+Core-only Stage-0 API
+=====================
+
+The repository also provides a curses-independent core test gate:
+
+    make core-test
+
+The gate compiles `core.c`, `opcodes.c`, `disasm.c`, and `binary_loader.c`
+with focused classic and SAB80535-N tests. The normal `make` target remains the
+upstream curses frontend build.
+
+`em8051_init_variant()` selects classic 8051, classic 8052, or SAB80535. The
+SAB variant owns its upper 128 bytes of IRAM and keeps indirect addresses
+`80..FF` separate from direct SFR addresses. Its default oscillator is
+11.0592 MHz. The public variant descriptor distinguishes classic `IP=B8` from
+SAB80535 `IEN1=B8`; SAB interrupt-controller behavior is intentionally not
+implemented in Stage 0.
+
+The deterministic embedding surface provides an exact 65536-byte raw CODE
+loader, 64-bit instruction and machine-cycle counters, bounded run and
+run-until-PC calls, a breakpoint, typed stop reasons, and optional normalized
+instruction/SFR-write/MOVX trace records. Missing MOVX backing is reported as
+an unsupported trace record. Specialized accumulator/PSW opcode forms and
+internal peripheral SFR changes do not yet pass through the SFR-write trace
+gateway, so Stage 0 does not claim complete SFR observation.
+
+Hardware power-on IRAM and SBUF contents are undefined. The original `reset()`
+entry point remains available for classic callers; explicit variant
+initialization configures a deterministic default seed. Call
+`em8051_set_reset_seed()` before a cold `reset(cpu, true)` to reproduce a
+chosen pseudo-random power-on state. A warm `reset(cpu, false)` preserves IRAM.
+
 Install
 =======
 
