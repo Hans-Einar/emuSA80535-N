@@ -2,7 +2,7 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-08-31
 
 active:
-  sprint: SPR-003
+  sprint: null
   iteration: null
   slice: null
 
@@ -44,7 +44,7 @@ items:
   REV-SLC-005: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-005.md}
   VER-SLC-005: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-005.md}
   DES-019..DES-026: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-SAB80535-DES-003.md}
-  SPR-003: {kind: sprint, status: ready-for-pr, state: current, source: SDP/Sprints/SPR-003--sab80535-timers/sprint.md}
+  SPR-003: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-003--sab80535-timers/sprint.md}
   ITR-006: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-003--sab80535-timers/ScrumIterations.md}
   SLC-006: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-003--sab80535-timers/ScrumIterations.md}
   REV-SLC-006: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-006.md}

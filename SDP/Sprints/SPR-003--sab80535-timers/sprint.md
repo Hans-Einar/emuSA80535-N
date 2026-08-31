@@ -1,6 +1,6 @@
 # SPR-003 — SAB80535 Timer0/Timer1 timing
 
-Status: ready-for-pr
+Status: complete
 Sprint ID: SPR-003
 Started: 2026-08-31
 Steering authority: Issue #2 SLC-006 checkpoint
@@ -50,4 +50,7 @@ future UART Slice, without implementing UART behavior.
 
 All technical exit criteria are satisfied at product HEAD
 `30cf42efa845d29a47a950eca7bbaf657490fbe6` through REV-SLC-006 and
-VER-SLC-006. Sprint remains `ready-for-pr` until the real PR identity exists.
+VER-SLC-006. The verified branch is published as PR #4:
+`https://github.com/Hans-Einar/emuSA80535-N/pull/4`.
+
+SPR-003 is complete. REQ-011 remains unauthorized.

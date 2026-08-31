@@ -20,3 +20,7 @@ Status: active; no verified SLC-006 product implementation yet.
   master-ancestry checks.
 - REQ-010/SLC-006 is accepted technically and ready for PR. REQ-011 remains
   unauthorized.
+- PR #4 opened against master:
+  `https://github.com/Hans-Einar/emuSA80535-N/pull/4`.
+- Exact CPU revision reported to Ponsse Issue #26:
+  `https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5484439484`.

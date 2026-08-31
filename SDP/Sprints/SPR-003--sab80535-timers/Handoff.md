@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Push the verified branch, open the focused SLC-006 PR and record PR/Ponsse
-checkpoint identities.
+SPR-003 is complete. Review/merge focused PR #4. Do not start REQ-011 UART work
+without a new SteeringGroup checkpoint.
 
 ## Authoritative Source Documents
 
@@ -23,20 +23,22 @@ checkpoint identities.
 - Worker product/test commit `30cf42efa845d29a47a950eca7bbaf657490fbe6`
   completed; fresh REV-SLC-006 review is running.
 - REV-SLC-006 approved with no findings; VER-SLC-006 passed.
+- PR #4 opened; exact product commit reported to Ponsse Issue #26.
 
 ## Not Done
 
-- Focused PR publication and Ponsse Issue #26 checkpoint.
+- PR #4 review/merge. UART remains unauthorized.
 - 9-bit UART and every later Issue #2 scope; unauthorized.
 
 ## Exact Next Step
 
-Open the timer branch PR against current master. Do not start UART work.
+Review/merge PR #4. Stop at this completed Slice boundary.
 
 ## Verification Completed
 
 REV-SLC-006 and VER-SLC-006 passed cross-platform, sanitizer and independent
 timing probes. Stage0/controller suites remain green.
+GitHub reports PR #4 open and mergeable with no configured check runs.
 
 ## Traceability IDs In Play
 
@@ -45,7 +47,7 @@ SPR-003, ITR-006, SLC-006, REV-SLC-006 and VER-SLC-006.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-006 accepted; Sprint ready-for-pr.
+- CurrentIndex updated: yes, Sprint complete and no active item.
 - Relations updated: yes.
 - Ledger updated: integration gate and Sprint/Iteration/Slice start recorded.
 
@@ -72,3 +74,19 @@ Worker completion checkpoint:
 
 Reviewer/Master acceptance checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5484416928`.
+
+PR checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5484442155`.
+
+## Pull Request
+
+- PR: `https://github.com/Hans-Einar/emuSA80535-N/pull/4`
+- Base: `master`
+- Head: `codex/sab80535-timers`
+- State at closure: open, mergeable, no configured check runs.
+
+## Cross-Repository Checkpoint
+
+Reviewed CPU product HEAD `30cf42efa845d29a47a950eca7bbaf657490fbe6`
+reported to Ponsse Issue #26:
+`https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5484439484`.
