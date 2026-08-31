@@ -38,3 +38,5 @@ Status: active; verified implementation has not yet been recorded.
   foundation, 256-byte SAB indirect IRAM, exact raw loader, deterministic
   counters/run control/reset, bounded diagnostics/trace and tests. Stage 1
   peripherals remain unimplemented.
+- Branch `codex/sab80535-foundation` was pushed and opened as PR #1:
+  `https://github.com/Hans-Einar/emuSA80535-N/pull/1`.

@@ -2,7 +2,8 @@
 
 ## Current Objective
 
-Push the verified branch, open the first PR and record the real PR identity.
+Stage 0 / SPR-001 is complete and available for review in PR #1. The next
+authorized work boundary is a future Stage 1 Sprint/Slice.
 
 ## Authoritative Source Documents
 
@@ -27,15 +28,16 @@ Push the verified branch, open the first PR and record the real PR identity.
 - SLC-002 corrected most findings; REV-SLC-002 left two residual high findings.
 - SLC-003 closed both residual findings; REV-SLC-003 approved and VER-SLC-003
   passed.
+- Branch pushed; PR #1 opened and recorded.
 
 ## Not Done
 
-- Branch push, PR creation and final Sprint PR-identity reconciliation.
+- Stage 1 implementation. It is not authorized by this closed Sprint.
 
 ## Exact Next Step
 
-Push `codex/sab80535-foundation`, open the first PR against `master`, then update
-this handoff and the ledger with the real PR URL/number.
+Review/merge PR #1. Before Stage 1 implementation, create a new active Sprint,
+Iteration and Slice for the Siemens interrupt controller.
 
 ## Verification Completed
 
@@ -45,6 +47,8 @@ and targeted failure probes. REV-SLC-002 verified SLC-002 corrections and
 reproduced its two residual gaps.
 REV-SLC-003 approved the final exact HEAD with no findings; VER-SLC-003 records
 the independent Master matrix.
+GitHub reports PR #1 open and mergeable against `master`; no repository check
+runs are configured yet.
 Full frontend baseline remains blocked by missing external curses development
 headers.
 
@@ -56,7 +60,7 @@ VER-SLC-003.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-003 accepted; Sprint ready-for-pr.
+- CurrentIndex updated: yes, Sprint complete and no active work item.
 - Relations updated: yes, correction/review/finding links recorded.
 - Ledger updated: yes, implementation/review and corrective Slice events appended.
 
@@ -65,6 +69,13 @@ VER-SLC-003.
 - Upstream full UI build still needs an external curses development package.
 - Stage 1 begins with the Siemens interrupt controller and requires a new
   authorized Sprint/Slice; it must not be folded into this PR silently.
+
+## Pull Request
+
+- PR: `https://github.com/Hans-Einar/emuSA80535-N/pull/1`
+- Base: `master`
+- Head branch: `codex/sab80535-foundation`
+- State at handoff: open, mergeable, no configured check runs.
 - Upstream full UI build needs curses development headers; core-only evidence
   must not be mislabeled as a full frontend build.
 

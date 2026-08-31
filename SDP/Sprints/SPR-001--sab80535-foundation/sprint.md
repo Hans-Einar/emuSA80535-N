@@ -1,6 +1,6 @@
 # SPR-001 — SAB80535 deterministic foundation
 
-Status: ready-for-pr  
+Status: complete  
 Sprint ID: SPR-001  
 Started: 2026-08-31
 
@@ -51,5 +51,8 @@ IRAM and focused tests without implementing P1000 board behavior.
 
 All technical exit criteria are satisfied at
 `dbcc6b74adbc34896a71401366991229c0d58922` through accepted SLC-003,
-REV-SLC-003 and VER-SLC-003. The branch is ready to push and open as the first
-PR. Sprint status remains `ready-for-pr` until the real PR URL exists.
+REV-SLC-003 and VER-SLC-003. The verified branch was pushed and opened as
+`Hans-Einar/emuSA80535-N` PR #1:
+`https://github.com/Hans-Einar/emuSA80535-N/pull/1`.
+
+SPR-001 is complete. Stage 1 requires a new authorized Sprint/Slice.
