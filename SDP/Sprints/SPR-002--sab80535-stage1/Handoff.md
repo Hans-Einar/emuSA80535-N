@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Correct REV-SLC-004-F001/F002 through active ITR-005 / SLC-005, then obtain a
-fresh independent review.
+Complete fresh REV-SLC-005 review of corrective HEAD `85fa6e1f...`, then run
+Master verification only if approved.
 
 ## Authoritative Source Documents
 
@@ -25,15 +25,18 @@ fresh independent review.
   completed and reported; fresh REV-SLC-004 review is running.
 - REV-SLC-004 completed with `changes-required`: reversed IRCON C6/C7 Timer2
   identities and lost SAB Timer1 pending under startup-like serial settings.
+- SLC-005 corrective product/test commit `85fa6e1f8318c691598b9a2ae191d1bd94b436c8`
+  completed; fresh review is running.
 
 ## Not Done
 
-- SLC-005 correction, fresh review, Master verification and stacked PR.
+- SLC-005 fresh review, Master verification and stacked PR.
 - Timer0/Timer1 and UART later slices; these are not authorized.
 
 ## Exact Next Step
 
-Fresh Worker implements only the SLC-005 contract in `ScrumIterations.md`.
+Fresh Reviewer independently probes exact corrective HEAD, including literal
+C6/C7 and startup-like masked TF1 scenarios.
 
 ## Verification Completed
 
@@ -78,3 +81,6 @@ Worker completion checkpoint:
 
 Reviewer changes-required checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483555073`.
+
+Corrective Worker checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5483642648`.

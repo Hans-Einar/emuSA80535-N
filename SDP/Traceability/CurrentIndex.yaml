@@ -39,6 +39,6 @@ items:
   REV-SLC-004-F001: {kind: finding, status: open, severity: blocking, state: current, source: SDP/CodeReview/REV-SLC-004.md}
   REV-SLC-004-F002: {kind: finding, status: open, severity: high, state: current, source: SDP/CodeReview/REV-SLC-004.md}
   ITR-005: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
-  SLC-005: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
-  REV-SLC-005: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-005.md}
+  SLC-005: {kind: slice, status: in-review, state: current, source: SDP/Sprints/SPR-002--sab80535-stage1/ScrumIterations.md}
+  REV-SLC-005: {kind: review, status: active, state: target, source: SDP/CodeReview/REV-SLC-005.md}
   VER-SLC-005: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-005.md}

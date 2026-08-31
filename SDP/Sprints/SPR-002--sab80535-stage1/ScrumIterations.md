@@ -86,7 +86,7 @@ accepted; corrective work moves to ITR-005 / SLC-005.
 
 ## ITR-005 — Raw IRCON and Timer1 pending correction
 
-Status: active
+Status: in-review
 Iteration ID: ITR-005
 Active Slice: SLC-005
 
@@ -127,3 +127,10 @@ serial regression; diff/no-target audit.
 
 **Completion signal:** fresh Worker commits only the two bounded corrections;
 fresh Reviewer approves exact corrective HEAD; Master reruns verification.
+
+### Worker result
+
+Corrective commit `85fa6e1f8318c691598b9a2ae191d1bd94b436c8`
+changes only `emu8051.h`, `core.c` and focused Stage 1 tests. Worker reports the
+full Windows/WSL/strict/sanitizer matrix passing with raw C6/C7 and masked TF1
+regressions. REV-SLC-005 is reviewing exact HEAD; no acceptance is recorded yet.
