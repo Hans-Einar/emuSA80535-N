@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Push the verified branch, open the focused SLC-010 PR and record PR/Ponsse
-checkpoint identities. Then stop.
+SPR-005 is complete. Review/merge focused PR #8. Do not begin external-edge or
+other later scope without a new Steering checkpoint.
 
 ## Authoritative Source Documents
 
@@ -24,20 +24,22 @@ checkpoint identities. Then stop.
 - Worker product/test commit `ba00ef17af57076b01c7f548e8996a7d36a5c591`
   completed; fresh REV-SLC-010 review is running.
 - REV-SLC-010 approved with no findings; VER-SLC-010 passed.
+- PR #8 opened and exact product commit reported to Ponsse Issue #26.
 
 ## Not Done
 
-- Focused PR publication and Ponsse Issue #26 checkpoint.
+- PR #8 review/merge only. All later scope is unauthorized.
 - external-edge Slice, ADC, Timer2, target logic or live/physical I/O.
 
 ## Exact Next Step
 
-Open the ports/MOVX branch PR against current master. Do not start edge work.
+Review/merge PR #8 and stop.
 
 ## Verification Completed
 
 REV-SLC-010 and VER-SLC-010 passed independent/cross-platform evidence. All
 accepted suites remain green.
+GitHub reports PR #8 open and mergeable with no configured check runs.
 
 ## Traceability IDs In Play
 
@@ -46,7 +48,7 @@ DES-039..DES-049, SPR-005, ITR-010, SLC-010, REV-SLC-010 and VER-SLC-010.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-010 accepted; Sprint ready-for-pr.
+- CurrentIndex updated: yes, Sprint complete and no active item.
 - Relations updated: yes.
 - Ledger updated: PR #5 merge and Sprint/Iteration/Slice start recorded.
 
@@ -72,3 +74,19 @@ Worker completion checkpoint:
 
 Reviewer/Master acceptance checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5491506540`.
+
+PR checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5491532067`.
+
+## Pull Request
+
+- PR: `https://github.com/Hans-Einar/emuSA80535-N/pull/8`
+- Base: `master`
+- Head: `codex/sab80535-ports-bus`
+- State at closure: open, mergeable, no configured check runs.
+
+## Cross-Repository Checkpoint
+
+Reviewed CPU product HEAD `ba00ef17af57076b01c7f548e8996a7d36a5c591`
+reported to Ponsse Issue #26:
+`https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5491529256`.

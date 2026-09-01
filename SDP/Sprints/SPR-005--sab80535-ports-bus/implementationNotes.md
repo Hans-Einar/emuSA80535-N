@@ -19,3 +19,7 @@ Status: active; no verified SLC-010 product implementation yet.
   ancestry gates.
 - SLC-010 is accepted technically and ready for PR. REQ-012 remains target
   pending later external-edge authorization.
+- PR #8 opened against master:
+  `https://github.com/Hans-Einar/emuSA80535-N/pull/8`.
+- Exact reviewed CPU revision reported to Ponsse Issue #26:
+  `https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5491529256`.
