@@ -65,4 +65,5 @@ Branch `codex/emu-debug-runtime` starts exactly at
 
 ## Issue Checkpoint
 
-Pending baseline/activation comment on Issue #6.
+Baseline/activation checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5492796877
