@@ -30,3 +30,10 @@ survival and protocol 1.0 backward compatibility.
 REV-SLC-013 and VER-SLC-013 accepted those design points. The process-level
 Python suite must be rerun on a supported Python version in the first product
 Slice.
+
+## Pull request
+
+- PR: https://github.com/Hans-Einar/emuSA80535-N/pull/11
+- Branch: `codex/tracepoint-debugger-spec`
+- Design commit: `f279b94`
+- Scope: documentation and SDP records only
