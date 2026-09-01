@@ -78,3 +78,6 @@ REV-SLC-013 and VER-SLC-013.
 
 Baseline/activation checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5500619112
+
+Worker completion checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5500869079
