@@ -2,9 +2,8 @@
 
 ## Current Objective
 
-Implement and verify SLC-011, the complete frozen `emu-debug` protocol 1.0
-runtime, without changing DAP product sources or entering unrelated emulator
-scope.
+Publish the verified SPR-006 `emu-debug` protocol 1.0 implementation PR and
+leave it unmerged for Steering review.
 
 ## Authoritative Source Documents
 
@@ -31,41 +30,40 @@ scope.
 - Corrective Worker commit `7a547d12deac2d533a29c36a79df48210d099967`
   completed and published; Worker checkpoint reported.
 - REV-SLC-012 approved without findings; F001/F002 resolved.
+- VER-SLC-012 passed the complete Master emulator/DAP/safety matrix.
+- SLC-012 accepted and SPR-006 ready for PR.
 
 ## Not Done
 
-- Master verification/real-DAP rerun, final SDP closure and implementation PR.
+- Focused implementation PR opening and final Issue #6 PR checkpoint.
 
 ## Exact Next Step
 
-Master independently verifies exact product/test HEAD
-`7a547d12deac2d533a29c36a79df48210d099967`, including real DAP exact-HEAD
-integration. Accept only if VER-SLC-012 passes.
+Open the focused PR from `codex/emu-debug-runtime` to `master`, record its exact
+HEAD, update Issue #6, and do not merge it.
 
 ## Verification Completed
 
-Worker reports the complete emulator/DAP matrix passing. Independent Master
-verification is not yet recorded.
+VER-SLC-012 passed all required Windows/Linux emulator, process, strict,
+sanitizer, real-DAP and package gates at the exact accepted product HEAD.
 
 ## Traceability IDs In Play
 
 MND-001, STU-002, REQ-016, ARCH-007..ARCH-010, DES-050..DES-063, SPR-006,
-ITR-011, SLC-011, REV-SLC-011 and VER-SLC-011.
+ITR-011/SLC-011/REV-SLC-011/VER-SLC-011, ITR-012/SLC-012/REV-SLC-012/
+VER-SLC-012 and REV-SLC-011-F001/F002.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes; SPR-006 / ITR-011 / SLC-011 active.
+- CurrentIndex updated: yes; no active Sprint/Iteration/Slice after acceptance.
 - Relations updated: yes.
-- Ledger updated: baseline, Sprint, Iteration and Slice events appended.
+- Ledger updated: implementation, review, finding resolution, verification and
+  acceptance events appended.
 
 ## Open Risks Or Ambiguities
 
-- Wire details must match the frozen DAP fake/client exactly, not merely the
-  prose summary.
-- Decode predecessor knowledge and breakpoint replacement must remain
-  deterministic across load/reset/run invalidation.
-- Windows stdio/text-mode behavior must not corrupt NDJSON or executable
-  lifecycle.
+- No technical blocker remains. DAP fake parity/one-cycle simplifications are
+  recorded as test normalization; real core behavior is verified separately.
 
 ## Worktree Notes
 
@@ -88,3 +86,6 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493528256
 
 REV-SLC-012 checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493673826
+
+Master verification/acceptance checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493792697

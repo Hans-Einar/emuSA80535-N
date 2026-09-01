@@ -2,9 +2,9 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-09-01
 
 active:
-  sprint: SPR-006
-  iteration: ITR-012
-  slice: SLC-012
+  sprint: null
+  iteration: null
+  slice: null
 
 items:
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
@@ -16,9 +16,9 @@ items:
   REQ-011: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   REQ-012: {kind: requirement, status: active, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   REQ-013..REQ-015: {kind: requirement-range, status: planned, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
-  REQ-016: {kind: requirement, status: active, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
+  REQ-016: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   ARCH-001..ARCH-006: {kind: architecture-range, status: active, state: target, source: SDP/04--Architecture/EMU-SAB80535-ARCH-001.md}
-  ARCH-007..ARCH-010: {kind: architecture-range, status: active, state: target, source: SDP/04--Architecture/EMU-DEBUG-ARCH-002.md}
+  ARCH-007..ARCH-010: {kind: architecture-range, status: active, state: current, source: SDP/04--Architecture/EMU-DEBUG-ARCH-002.md}
   DES-001..DES-010: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-001.md}
   SPR-001: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/sprint.md}
   ITR-001: {kind: iteration, status: changes-required, state: current, source: SDP/Sprints/SPR-001--sab80535-foundation/ScrumIterations.md}
@@ -77,15 +77,15 @@ items:
   SLC-010: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-005--sab80535-ports-bus/ScrumIterations.md}
   REV-SLC-010: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-010.md}
   VER-SLC-010: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-010.md}
-  DES-050..DES-063: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-DEBUG-DES-006.md}
-  SPR-006: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/sprint.md}
+  DES-050..DES-063: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-DEBUG-DES-006.md}
+  SPR-006: {kind: sprint, status: ready-for-pr, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/sprint.md}
   ITR-011: {kind: iteration, status: changes-required, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
   SLC-011: {kind: slice, status: changes-required, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
   REV-SLC-011: {kind: review, status: changes-required, state: current, source: SDP/CodeReview/REV-SLC-011.md}
-  VER-SLC-011: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-011.md}
+  VER-SLC-011: {kind: verification, status: superseded, state: current, source: SDP/Verification/VER-SLC-011.md}
   REV-SLC-011-F001: {kind: finding, status: resolved, severity: high, state: current, source: SDP/CodeReview/REV-SLC-011.md}
   REV-SLC-011-F002: {kind: finding, status: resolved, severity: medium, state: current, source: SDP/CodeReview/REV-SLC-011.md}
-  ITR-012: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
-  SLC-012: {kind: slice, status: verification-pending, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
+  ITR-012: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
+  SLC-012: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
   REV-SLC-012: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-012.md}
-  VER-SLC-012: {kind: verification, status: active, state: target, source: SDP/Verification/VER-SLC-012.md}
+  VER-SLC-012: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-012.md}

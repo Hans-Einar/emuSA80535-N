@@ -1,6 +1,6 @@
 # SPR-006 — emu-debug protocol 1.0 headless runtime
 
-Status: active
+Status: ready-for-pr
 Sprint ID: SPR-006
 Started: 2026-09-01
 Steering authority: Issue #6
@@ -43,3 +43,10 @@ DAP PR #4 can use the real emulator unchanged.
 - independent review covers protocol, semantics, safety and DAP compatibility;
 - DAP exact HEAD runs against the real executable with no product changes;
 - exact reviewed product HEAD is captured and an unmerged PR is opened.
+
+## Verified result
+
+REV-SLC-012 and VER-SLC-012 accept exact product/test HEAD
+`7a547d12deac2d533a29c36a79df48210d099967`. All EMU-BLK items, emulator
+regressions, Windows/Linux process gates and unchanged DAP exact-HEAD real
+integration gates pass. SPR-006 is ready for the focused unmerged PR.

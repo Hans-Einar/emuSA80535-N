@@ -1,6 +1,6 @@
 # Implementation notes
 
-Status: review pending; no accepted SLC-011 product implementation yet.
+Status: verified; SLC-012 accepted.
 
 ## Frozen baseline
 
@@ -11,8 +11,15 @@ Status: review pending; no accepted SLC-011 product implementation yet.
 
 ## Verified work
 
-None yet. Record only Worker results that survive independent review and
-Master verification.
+- Exact accepted product/test HEAD:
+  `7a547d12deac2d533a29c36a79df48210d099967`.
+- Complete no-curses emu-debug 1.0 facade/server, nine commands, seven
+  capabilities, portable build/docs and facade/process/real-DAP tests.
+- REV-SLC-012 approved without findings; F001/F002 resolved.
+- VER-SLC-012 passed Windows GCC/strict Clang, WSL GCC/ASan+UBSan, all accepted
+  regressions, Windows/Linux process, exact DAP 99/99 and 45/45, real F5 and
+  VSIX/package smoke with zero orphans.
+- All EMU-BLK-001..010 are satisfied; REQ-016 is satisfied.
 
 ## Worker result awaiting review
 
@@ -44,5 +51,4 @@ SLC-012 is the only authorized corrective scope.
 ## Accepted review
 
 REV-SLC-012 approved the exact corrective product/test HEAD with no findings
-and independently resolved F001/F002. Product acceptance remains pending the
-Master-owned VER-SLC-012 evidence record.
+and independently resolved F001/F002. VER-SLC-012 now accepts the product.

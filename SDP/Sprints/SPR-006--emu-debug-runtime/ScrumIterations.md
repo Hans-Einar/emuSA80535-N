@@ -84,7 +84,7 @@ slice below.
 
 ## ITR-012 — Transactional decode and canonical JSON correction
 
-Status: verification-pending
+Status: complete
 Iteration ID: ITR-012
 Active Slice: SLC-012
 
@@ -140,3 +140,10 @@ REV-SLC-012 approved exact corrective product/test HEAD
 `7a547d12deac2d533a29c36a79df48210d099967` with no new findings. Both
 REV-SLC-011 findings are resolved. All EMU-BLK items are Reviewer-satisfied;
 Master verification and exact-DAP rerun remain before Slice acceptance.
+
+### Final result
+
+Accepted. VER-SLC-012 passed the independent Master matrix against exact
+product/test HEAD `7a547d12deac2d533a29c36a79df48210d099967` and exact DAP HEAD
+`36639b48ddb2ffbafa14c00da794fe1734f7483b`. SLC-012 corrects SLC-011,
+resolves F001/F002 and satisfies REQ-016. No unauthorized scope entered.
