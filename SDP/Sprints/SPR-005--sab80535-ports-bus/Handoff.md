@@ -2,7 +2,8 @@
 
 ## Current Objective
 
-Implement and independently review SLC-010 port latch/pin and MOVX context only.
+Independently review SLC-010 product HEAD `ba00ef17...`, then run Master
+verification only if approved.
 
 ## Authoritative Source Documents
 
@@ -20,20 +21,23 @@ Implement and independently review SLC-010 port latch/pin and MOVX context only.
 - UART PR #5 merged to current master `88ccb2b...`.
 - SLC-010 authority and RMW set reconciled.
 - SPR-005 / ITR-010 / SLC-010 opened from current master.
+- Worker product/test commit `ba00ef17af57076b01c7f548e8996a7d36a5c591`
+  completed; fresh REV-SLC-010 review is running.
 
 ## Not Done
 
-- SLC-010 product implementation, review, verification and PR.
+- SLC-010 independent review, Master verification and PR.
 - external-edge Slice, ADC, Timer2, target logic or live/physical I/O.
 
 ## Exact Next Step
 
-Fresh Worker implements the active port/MOVX contract and focused tests. Fresh
-Reviewer then audits exact product HEAD and full RMW classification.
+Fresh Reviewer audits exact product HEAD, full RMW set, callbacks and MOVX
+snapshot ordering.
 
 ## Verification Completed
 
-Authority/readiness only. All accepted suites are the regression baseline.
+Worker-reported cross-platform evidence exists but is not accepted yet. All
+accepted suites remain the regression baseline.
 
 ## Traceability IDs In Play
 
@@ -42,7 +46,7 @@ DES-039..DES-049, SPR-005, ITR-010, SLC-010, REV-SLC-010 and VER-SLC-010.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-010 active.
+- CurrentIndex updated: yes, SLC-010 in review.
 - Relations updated: yes.
 - Ledger updated: PR #5 merge and Sprint/Iteration/Slice start recorded.
 
@@ -62,3 +66,6 @@ Branch `codex/sab80535-ports-bus` starts exactly from current master
 
 Master opening checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5491228924`.
+
+Worker completion checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5491395269`.

@@ -2,7 +2,7 @@
 
 ## ITR-010 — Port latch/pin and MOVX context
 
-Status: active
+Status: in-review
 Iteration ID: ITR-010
 Active Slice: SLC-010
 
@@ -55,3 +55,9 @@ no-target/no-edge/no-live audits.
 **Completion signal:** fresh Worker commits bounded product/tests; fresh
 Reviewer approves or opens findings; Master accepts only after verification.
 
+### Worker result
+
+Worker commit `ba00ef17af57076b01c7f548e8996a7d36a5c591`
+implements bounded ports/RMW/MOVX context and a focused Stage2 suite. Worker
+reports all five suites passing cross-platform/sanitizer and scope audits clean.
+REV-SLC-010 is reviewing exact HEAD; no acceptance is recorded yet.
