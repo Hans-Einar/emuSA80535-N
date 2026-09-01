@@ -1,6 +1,6 @@
 # EMU-SAB80535-DES-005 — Port latch/pin and MOVX context design
 
-Status: active target design
+Status: active current design
 Design items: DES-039..DES-049
 Established: 2026-09-01
 Steering authority: Issue #7 SLC-010

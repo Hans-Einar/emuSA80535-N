@@ -2,7 +2,7 @@
 
 ## ITR-013 — Deterministic external interrupt edges
 
-Status: active
+Status: complete
 Iteration ID: ITR-013
 Active Slice: SLC-013
 
@@ -101,3 +101,10 @@ independently confirmed the Siemens pin/flag/edge matrix, queue and multi-cycle
 ordering, canonical resolved-pin/callback coherence, controller-only service,
 trace immutability, consumer fixtures, all cross-platform gates and the
 unauthorized-scope boundary. Master VER-SLC-013 remains before acceptance.
+
+### Final result
+
+Accepted. VER-SLC-013 passed the independent Master matrix against exact
+product/test HEAD `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b`, including
+the exact frozen DAP real-integration gate. SLC-013 completes REQ-012 with no
+review findings and no unauthorized scope.

@@ -1,6 +1,6 @@
 # Implementation notes
 
-Status: review pending; Worker implementation recorded but not accepted.
+Status: verified; SLC-013 accepted.
 
 ## Frozen baseline
 
@@ -11,7 +11,7 @@ Status: review pending; Worker implementation recorded but not accepted.
 - Consumer evidence: Ponsse PR #25 exact HEAD
   `6a22d8713b607308c94f02df17d35ddbe8a36d6a` plus `doc/P1000/`.
 
-## Worker result awaiting review
+## Worker result
 
 - Exact product/test HEAD:
   `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b`.
@@ -23,21 +23,24 @@ Status: review pending; Worker implementation recorded but not accepted.
 - Updates one SLC-010 negative edge assertion while preserving latch
   immutability and proving there is no direct vector/PC service.
 - Worker reports Windows GCC/strict Clang full core+debug gates and WSL GCC/
-  sanitizer core/facade gates passing.
-- WSL Python 3.6 cannot parse the accepted process test; the same test passes
-  on Windows. The available DAP checkout is not the accepted pinned revision,
-  so no identity-bypassing integration result is claimed.
+  sanitizer core/facade gates passing. Later Reviewer/Master runs also pass the
+  WSL process suite with Python 3.13.9.
 - Frozen `emu-debug` protocol modules, SDP and all unauthorized scope are
   unchanged by the product commit.
-
-REV-SLC-013 must independently audit exact product HEAD before acceptance.
 
 ## Accepted review
 
 REV-SLC-013 approved exact product/test HEAD `3cfc4a8...` with no findings.
 Its independent Siemens, adversarial queue/callback, cross-platform sanitizer,
-scope and product-identity audits pass. VER-SLC-013 is still required before
-the Slice is accepted.
+scope and product-identity audits pass.
+
+## Verified acceptance
+
+- VER-SLC-013 passed the complete Windows GCC/strict Clang, WSL GCC,
+  WSL ASan+UBSan, core, debug facade/process and exact-DAP real matrix.
+- Product/test HEAD `3cfc4a8...` is accepted; later commits are SDP-only.
+- REQ-012 is satisfied/current through accepted SLC-010 plus SLC-013.
+- The frozen debug protocol and all stop-boundary exclusions remain intact.
 
 ## Stop boundary
 

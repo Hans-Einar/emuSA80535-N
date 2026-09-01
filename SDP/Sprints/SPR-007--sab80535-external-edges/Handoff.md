@@ -2,7 +2,7 @@
 
 ## Current Objective
 
-Execute only SPR-007 / ITR-013 / SLC-013 and leave its implementation PR
+SLC-013 is accepted. Open the focused SPR-007 implementation PR and leave it
 unmerged for Steering.
 
 ## Authoritative Source Documents
@@ -28,24 +28,27 @@ unmerged for Steering.
   accepted executable gates green where the required tool versions exist.
 - Fresh REV-SLC-013 approved the exact product/test HEAD with no findings and
   independently passed Siemens, adversarial, cross-platform and scope audits.
+- VER-SLC-013 passed the complete Master matrix, including exact frozen-DAP
+  real integration. SLC-013 and REQ-012 are accepted.
 
 ## Not Done
 
-- Master verification, acceptance, implementation PR and cross-repository
-  handoffs.
+- Implementation PR and Issue #7/Ponsse cross-repository handoffs.
 
 ## Exact Next Step
 
-Publish the REV-SLC-013 checkpoint, then run independent Master VER-SLC-013
-against exact product HEAD `3cfc4a8...`.
+Open the focused implementation PR against `master`, leave it unmerged, then
+publish final Issue #7 and Ponsse Issue #26/#47 checkpoints.
 
 ## Verification Completed
 
 - Worker: focused all-23-class suite, accepted core/debug suites, strict Clang,
-  WSL GCC and WSL sanitizer gates reported passing. Master verification has not
-  started.
+  WSL GCC and WSL sanitizer gates reported passing.
 - Reviewer: the complete Windows/strict/WSL/sanitizer core+debug matrix plus
   independent queue/callback probes and scope/identity audits passed.
+- Master: repeated Windows GCC/strict Clang, WSL GCC/ASan+UBSan core+debug
+  suites and exact DAP `36639b4...` real contract/equivalence/F5 smoke; all
+  passed. Identity, scope, ledger and cleanup gates passed.
 
 ## Traceability IDs In Play
 
@@ -55,22 +58,18 @@ REV-SLC-013 and VER-SLC-013.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes; SPR-007 / ITR-013 / SLC-013 active.
+- CurrentIndex updated: yes; no active item after SLC-013 acceptance.
 - Relations updated: yes; requirement/design/review/verification chain added.
-- Ledger updated: yes; baseline, Sprint, Iteration and Slice start recorded.
+- Ledger updated: yes; baseline through review, verification and acceptance
+  recorded.
 
 ## Open Risks Or Ambiguities
 
-- Worker and Reviewer must independently record Siemens manual references for
-  the exact INT4..INT6 fixed edge direction and full pin/flag table.
-- Existing mutable SFR callbacks must not separate detector state from
-  canonical resolved pins.
-- No need for a debug-protocol change has been identified; discovery of one is
-  a Steering blocker, not implicit scope.
-- WSL Python is 3.6 and cannot run the accepted future-annotations process
-  script; the Windows process gate passes.
-- The sibling DAP checkout is not the accepted pinned revision; it was left
-  unchanged and no integration pass is claimed from it.
+- No technical blocker remains. The pre-existing DES-012 synthetic IE0/IE1
+  seam differs from Siemens physical level-mode write restrictions; the new
+  hardware-line path is independently verified as line-controlled.
+- The sibling DAP checkout remains on another clean commit. Master verified the
+  frozen exact DAP revision through a removed detached temporary worktree.
 
 ## Worktree Notes
 

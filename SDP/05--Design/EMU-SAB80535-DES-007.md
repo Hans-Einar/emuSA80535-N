@@ -1,6 +1,6 @@
 # EMU-SAB80535-DES-007 — External interrupt edge design
 
-Status: active target design
+Status: active current design
 Design items: DES-064..DES-073
 Established: 2026-09-01
 Steering authority: Issue #7 SLC-013 checkpoint
