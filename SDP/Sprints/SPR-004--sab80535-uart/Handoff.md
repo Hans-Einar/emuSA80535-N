@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Correct REV-SLC-007-F001/F002 through active ITR-008 / SLC-008, then obtain a
-fresh independent review.
+Complete fresh REV-SLC-008 review of corrective HEAD `336c50a0...`, then run
+Master verification only if approved.
 
 ## Authoritative Source Documents
 
@@ -24,15 +24,17 @@ fresh independent review.
   completed; fresh REV-SLC-007 review is running.
 - REV-SLC-007 completed with `changes-required`: broken SAB SBUF callbacks and
   unsupported mode/BD writes replacing pending mode3 frames.
+- SLC-008 corrective commit `336c50a03da4067c22d9567de6075724261a66e9`
+  completed; fresh review is running.
 
 ## Not Done
 
-- SLC-008 correction, fresh review, Master verification and PR.
+- SLC-008 fresh review, Master verification and PR.
 - Stage 2, ADC, Timer2, P1000 target or any live/physical I/O; unauthorized.
 
 ## Exact Next Step
 
-Fresh Worker implements only the SLC-008 contract in `ScrumIterations.md`.
+Fresh Reviewer probes callback/mode isolation on exact corrective HEAD.
 
 ## Verification Completed
 
@@ -47,7 +49,7 @@ VER-SLC-008.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-008 active and findings open.
+- CurrentIndex updated: yes, SLC-008 in review.
 - Relations updated: yes.
 - Ledger updated: PR #4 merge and Sprint/Iteration/Slice start recorded.
 
@@ -74,3 +76,6 @@ Worker completion checkpoint:
 
 Reviewer changes-required checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486557035`.
+
+Corrective Worker checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486601021`.

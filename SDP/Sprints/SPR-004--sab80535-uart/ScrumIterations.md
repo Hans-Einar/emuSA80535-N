@@ -73,7 +73,7 @@ not accepted; corrective work moves to ITR-008 / SLC-008.
 
 ## ITR-008 — SBUF callback and mode-isolation correction
 
-Status: active
+Status: in-review
 Iteration ID: ITR-008
 Active Slice: SLC-008
 
@@ -110,3 +110,10 @@ isolation/restoration; trace value; all 18 SLC-007 classes and classic SBUF.
 
 **Completion signal:** fresh Worker commits only the correction; fresh Reviewer
 approves exact corrective HEAD; Master reruns and accepts.
+
+### Worker result
+
+Corrective commit `336c50a03da4067c22d9567de6075724261a66e9`
+changes only `core.c` and focused UART tests. Worker reports callback override/
+observation and mode1/BD isolation regressions plus all four cross-platform
+suites passing. REV-SLC-008 is reviewing exact HEAD; no acceptance yet.
