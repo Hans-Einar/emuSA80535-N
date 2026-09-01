@@ -20,4 +20,3 @@ implementation and Worker evidence have not started.
 
 No ADC, Siemens Timer2, P1000 board/NEC logic, target signal semantics,
 live/physical I/O or frozen `emu-debug` protocol change is authorized.
-

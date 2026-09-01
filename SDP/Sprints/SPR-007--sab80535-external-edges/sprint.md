@@ -50,4 +50,3 @@ the accepted Siemens interrupt controller.
 - traceability, verification, handoff and Issue #7/Ponsse checkpoints are
   complete;
 - a focused implementation PR is opened and left unmerged.
-

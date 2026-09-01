@@ -146,4 +146,3 @@ P1000/NEC/board logic, live GPIO/serial/CAN/USB, physical control or
 
 DES-064..DES-073 refine ARCH-002..ARCH-006 and complete the authorized
 external-edge portion of REQ-012 through SPR-007 / ITR-013 / SLC-013.
-

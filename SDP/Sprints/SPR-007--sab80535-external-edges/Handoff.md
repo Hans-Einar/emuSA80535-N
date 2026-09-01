@@ -64,4 +64,3 @@ REV-SLC-013 and VER-SLC-013.
 - Branch starts exactly at authorized master `d9f80eb...`.
 - The separate Ponsse checkout has unrelated untracked `MVP1/` content and
   must not be modified by this work.
-

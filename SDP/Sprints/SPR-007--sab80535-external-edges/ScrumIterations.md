@@ -75,4 +75,3 @@ audits.
 and a compliance report with exact evidence. A separate fresh Reviewer audits
 the exact product HEAD and either approves it or opens stable findings. Master
 accepts only after independent exact-HEAD verification.
-
