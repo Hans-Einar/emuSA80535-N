@@ -16,3 +16,6 @@ Status: active; no verified SLC-007 product implementation yet.
   but REV-SLC-007 reproduced two blocking findings. It is not accepted.
 - Independently verified positive behavior covers divider/framing/TI/back-to-
   back/RX/full-duplex/interrupt/reset/classic behavior outside F001/F002.
+- Corrective commit `336c50a03da4067c22d9567de6075724261a66e9`
+  resolved REV-SLC-007-F001/F002, but REV-SLC-008 opened one post-callback RX
+  mirror-coherence finding. It is not accepted.

@@ -87,3 +87,10 @@ relations:
   - {from: ITR-008, type: belongs_to, to: SPR-004}
   - {from: REV-SLC-008, type: reviews, to: SLC-008}
   - {from: VER-SLC-008, type: verifies, to: SLC-008}
+  - {from: REV-SLC-008, type: opens, to: REV-SLC-008-F001}
+  - {from: SLC-009, type: corrects, to: SLC-008}
+  - {from: SLC-009, type: addresses, to: REV-SLC-008-F001}
+  - {from: SLC-009, type: belongs_to, to: ITR-009}
+  - {from: ITR-009, type: belongs_to, to: SPR-004}
+  - {from: REV-SLC-009, type: reviews, to: SLC-009}
+  - {from: VER-SLC-009, type: verifies, to: SLC-009}

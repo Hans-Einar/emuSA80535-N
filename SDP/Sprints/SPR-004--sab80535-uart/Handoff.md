@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Complete fresh REV-SLC-008 review of corrective HEAD `336c50a0...`, then run
-Master verification only if approved.
+Correct REV-SLC-008-F001 through active ITR-009 / SLC-009, then obtain a fresh
+independent review.
 
 ## Authoritative Source Documents
 
@@ -26,30 +26,32 @@ Master verification only if approved.
   unsupported mode/BD writes replacing pending mode3 frames.
 - SLC-008 corrective commit `336c50a03da4067c22d9567de6075724261a66e9`
   completed; fresh review is running.
+- REV-SLC-008 confirmed prior findings resolved but opened stale RX mirror
+  coherence finding REV-SLC-008-F001.
 
 ## Not Done
 
-- SLC-008 fresh review, Master verification and PR.
+- SLC-009 minimal correction, fresh review, Master verification and PR.
 - Stage 2, ADC, Timer2, P1000 target or any live/physical I/O; unauthorized.
 
 ## Exact Next Step
 
-Fresh Reviewer probes callback/mode isolation on exact corrective HEAD.
+Fresh Worker implements only SLC-009 post-callback canonical mirror sync.
 
 ## Verification Completed
 
 REV-SLC-007 reran all platforms/sanitizers and reproduced F001/F002. Prior
 suites remain green.
+REV-SLC-008 reran all suites and reproduced F001 with callback mutation.
 
 ## Traceability IDs In Play
 
 MND-001, STU-001, REQ-011, ARCH-002/003/004/005/006, DES-027..DES-038,
-SPR-004, ITR-008, SLC-008, REV-SLC-007-F001/F002, REV-SLC-008 and
-VER-SLC-008.
+SPR-004, ITR-009, SLC-009, REV-SLC-008-F001, REV-SLC-009 and VER-SLC-009.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-008 in review.
+- CurrentIndex updated: yes, SLC-009 active and finding open.
 - Relations updated: yes.
 - Ledger updated: PR #4 merge and Sprint/Iteration/Slice start recorded.
 
@@ -79,3 +81,6 @@ Reviewer changes-required checkpoint:
 
 Corrective Worker checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486601021`.
+
+Second review changes-required checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486652825`.

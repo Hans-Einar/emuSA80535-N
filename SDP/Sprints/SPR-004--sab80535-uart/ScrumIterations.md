@@ -73,7 +73,7 @@ not accepted; corrective work moves to ITR-008 / SLC-008.
 
 ## ITR-008 — SBUF callback and mode-isolation correction
 
-Status: in-review
+Status: changes-required
 Iteration ID: ITR-008
 Active Slice: SLC-008
 
@@ -117,3 +117,39 @@ Corrective commit `336c50a03da4067c22d9567de6075724261a66e9`
 changes only `core.c` and focused UART tests. Worker reports callback override/
 observation and mode1/BD isolation regressions plus all four cross-platform
 suites passing. REV-SLC-008 is reviewing exact HEAD; no acceptance yet.
+
+### Review result
+
+REV-SLC-008 confirmed REV-SLC-007-F001/F002 resolved but opened
+REV-SLC-008-F001 for stale post-callback RX mirror restoration. SLC-008 is not
+accepted; corrective work moves to ITR-009 / SLC-009.
+
+## ITR-009 — Post-callback RX mirror coherence
+
+Status: active
+Iteration ID: ITR-009
+Active Slice: SLC-009
+
+### Slice contract — SLC-009
+
+**Goal:** close REV-SLC-008-F001 without changing any UART timing, callback
+override, mode-isolation or storage behavior.
+
+**Expected product files:** minimal SBUF write callback restoration in `core.c`
+and focused UART regression only.
+
+**Required correction:** after the transient TX mirror/write callback completes,
+set `mSFR[SBUF]` from the current canonical `mSABUartRxData`, not a saved stale
+mirror. Cover callback mutation of canonical+mirror and guarded reentrant receive
+progress. Preserve read override, write observation, TX trace and RX separation.
+
+**Non-goals:** any new UART feature/mode or other peripheral/target behavior.
+
+**Traceability:** SLC-009 corrects SLC-008 and addresses REV-SLC-008-F001.
+Expected review REV-SLC-009 and verification VER-SLC-009.
+
+**Required verification:** full four-suite matrix plus callback mutation/
+reentrancy coherence and all SLC-007/008 regressions.
+
+**Completion signal:** fresh Worker commits the minimal fix; fresh Reviewer
+approves exact HEAD; Master reruns verification.

@@ -3,8 +3,8 @@ updated: 2026-08-31
 
 active:
   sprint: SPR-004
-  iteration: ITR-008
-  slice: SLC-008
+  iteration: ITR-009
+  slice: SLC-009
 
 items:
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
@@ -58,7 +58,12 @@ items:
   VER-SLC-007: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-007.md}
   REV-SLC-007-F001: {kind: finding, status: open, severity: high, state: current, source: SDP/CodeReview/REV-SLC-007.md}
   REV-SLC-007-F002: {kind: finding, status: open, severity: high, state: current, source: SDP/CodeReview/REV-SLC-007.md}
-  ITR-008: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-004--sab80535-uart/ScrumIterations.md}
-  SLC-008: {kind: slice, status: in-review, state: current, source: SDP/Sprints/SPR-004--sab80535-uart/ScrumIterations.md}
-  REV-SLC-008: {kind: review, status: active, state: target, source: SDP/CodeReview/REV-SLC-008.md}
+  ITR-008: {kind: iteration, status: changes-required, state: current, source: SDP/Sprints/SPR-004--sab80535-uart/ScrumIterations.md}
+  SLC-008: {kind: slice, status: changes-required, state: current, source: SDP/Sprints/SPR-004--sab80535-uart/ScrumIterations.md}
+  REV-SLC-008: {kind: review, status: changes-required, state: current, source: SDP/CodeReview/REV-SLC-008.md}
   VER-SLC-008: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-008.md}
+  REV-SLC-008-F001: {kind: finding, status: open, severity: high, state: current, source: SDP/CodeReview/REV-SLC-008.md}
+  ITR-009: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-004--sab80535-uart/ScrumIterations.md}
+  SLC-009: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-004--sab80535-uart/ScrumIterations.md}
+  REV-SLC-009: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-009.md}
+  VER-SLC-009: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-009.md}
