@@ -506,34 +506,6 @@ static bool token_raw_equals(const struct json_document *aDocument,
            memcmp(aDocument->text + token->start, aText, length) == 0;
 }
 
-static int json_member(const struct json_document *aDocument, int aObject,
-                       const char *aName)
-{
-    int cursor;
-    int found = -1;
-    const struct json_token *object = &aDocument->tokens[aObject];
-    if (object->type != JSON_OBJECT)
-        return -1;
-    cursor = aObject + 1;
-    while (cursor < aDocument->count &&
-           aDocument->tokens[cursor].start < object->end)
-    {
-        int value = cursor + 1;
-        if (aDocument->tokens[cursor].type != JSON_STRING ||
-            value >= aDocument->count ||
-            aDocument->tokens[value].start >= object->end)
-            return -2;
-        if (token_raw_equals(aDocument, cursor, aName))
-        {
-            if (found >= 0)
-                return -2;
-            found = value;
-        }
-        cursor = json_next(aDocument, value);
-    }
-    return found;
-}
-
 static bool json_integer(const struct json_document *aDocument, int aToken,
                          int64_t aMinimum, uint64_t aMaximum,
                          int64_t *aValue)
@@ -607,8 +579,9 @@ static bool append_utf8(char *aOutput, size_t aCapacity, size_t *aUsed,
     return true;
 }
 
-static bool json_string(const struct json_document *aDocument, int aToken,
-                        char *aOutput, size_t aCapacity)
+static bool json_string_decode(const struct json_document *aDocument,
+                               int aToken, char *aOutput, size_t aCapacity,
+                               bool aAllowNull, size_t *aLength)
 {
     const struct json_token *token;
     size_t used = 0;
@@ -653,7 +626,7 @@ static bool json_string(const struct json_document *aDocument, int aToken,
             }
             else if (codepoint >= 0xdc00u && codepoint <= 0xdfffu)
                 return false;
-            if (codepoint == 0u)
+            if (codepoint == 0u && !aAllowNull)
                 return false;
             if (!append_utf8(aOutput, aCapacity, &used, codepoint))
                 return false;
@@ -679,7 +652,61 @@ static bool json_string(const struct json_document *aDocument, int aToken,
         }
     }
     aOutput[used] = '\0';
+    if (aLength)
+        *aLength = used;
     return true;
+}
+
+static bool json_string(const struct json_document *aDocument, int aToken,
+                        char *aOutput, size_t aCapacity)
+{
+    return json_string_decode(aDocument, aToken, aOutput, aCapacity, false,
+                              NULL);
+}
+
+static int json_member(const struct json_document *aDocument, int aObject,
+                       const char *aName)
+{
+    int cursor;
+    int found = -1;
+    const struct json_token *object = &aDocument->tokens[aObject];
+    if (object->type != JSON_OBJECT)
+        return -1;
+    cursor = aObject + 1;
+    while (cursor < aDocument->count &&
+           aDocument->tokens[cursor].start < object->end)
+    {
+        const struct json_token *key = &aDocument->tokens[cursor];
+        size_t capacity;
+        size_t decoded_length;
+        char *decoded;
+        bool matches;
+        int value = cursor + 1;
+        if (key->type != JSON_STRING || value >= aDocument->count ||
+            aDocument->tokens[value].start >= object->end)
+            return -2;
+        capacity = (size_t)(key->end - key->start) + 1u;
+        decoded = (char *)malloc(capacity);
+        if (!decoded)
+            return -2;
+        if (!json_string_decode(aDocument, cursor, decoded, capacity, true,
+                                &decoded_length))
+        {
+            free(decoded);
+            return -2;
+        }
+        matches = decoded_length == strlen(aName) &&
+                  memcmp(decoded, aName, decoded_length) == 0;
+        free(decoded);
+        if (matches)
+        {
+            if (found >= 0)
+                return -2;
+            found = value;
+        }
+        cursor = json_next(aDocument, value);
+    }
+    return found;
 }
 
 static void output_raw(struct output *aOutput, const char *aText)

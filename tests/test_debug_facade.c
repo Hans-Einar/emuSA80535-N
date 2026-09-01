@@ -135,6 +135,15 @@ static int facade_test(void)
           EM8051_DEBUG_OK);
     CHECK(decoded[0].valid && decoded[0].address == 0 &&
           decoded[1].address == 2);
+    CHECK(em8051_debugger_decode_code(debugger, 0xffffu, 0, -1, 1,
+          decoded) == EM8051_DEBUG_OK);
+    CHECK(!decoded[0].valid && decoded[0].address == 0xfffeu);
+    CHECK(em8051_debugger_decode_code(debugger, 0xfffeu, 0, 0, 3,
+          decoded) == EM8051_DEBUG_RANGE);
+    CHECK(em8051_debugger_decode_code(debugger, 0xffffu, 0, -1, 1,
+          decoded) == EM8051_DEBUG_OK);
+    CHECK(!decoded[0].valid && decoded[0].address == 0xfffeu &&
+          strcmp(decoded[0].text, "<invalid>") == 0);
     CHECK(em8051_debugger_decode_code(debugger, 0xffffu, 1, 0, 1, decoded) ==
           EM8051_DEBUG_RANGE);
 

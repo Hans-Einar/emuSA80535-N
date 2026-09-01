@@ -450,6 +450,65 @@ def lifecycle_cases(executable: Path) -> None:
     stdout, stderr = raw_case(executable, b"x" * 65_537 + b"\n", 65)
     assert stdout == b"" and stderr
 
+    raw_hello = json.dumps(hello(), separators=(",", ":")).encode()
+    escaped_names = raw_hello
+    for raw_name, escaped_name in (
+        (b'"type"', b'"t\\u0079pe"'),
+        (b'"id"', b'"\\u0069d"'),
+        (b'"command"', b'"comm\\u0061nd"'),
+        (b'"arguments"', b'"argum\\u0065nts"'),
+        (b'"protocol"', b'"protoc\\u006fl"'),
+        (b'"major"', b'"maj\\u006fr"'),
+        (b'"minor"', b'"min\\u006fr"'),
+        (b'"requiredCapabilities"', b'"requiredCapabilit\\u0069es"'),
+    ):
+        escaped_names = escaped_names.replace(raw_name, escaped_name, 1)
+    stdout, stderr = raw_case(executable, escaped_names + b"\n", 0)
+    assert json.loads(stdout)["success"] is True
+    assert stderr == b""
+
+    semantic_duplicate = raw_hello.replace(
+        b'"id":1', b'"id":1,"\\u0069d":2', 1
+    )
+    stdout, stderr = raw_case(executable, semantic_duplicate + b"\n", 65)
+    assert stdout == b"" and stderr
+
+    nested_duplicate = raw_hello.replace(
+        b'"requiredCapabilities":',
+        b'"protoc\\u006fl":{"major":1,"minor":0},"requiredCapabilities":',
+        1,
+    )
+    stdout, stderr = raw_case(executable, nested_duplicate + b"\n", 0)
+    assert_error(json.loads(stdout), "INVALID_REQUEST")
+    assert stderr == b""
+
+    nested_malformed_surrogate = raw_hello.replace(
+        b'"protocol":', b'"\\ud800":true,"protocol":', 1
+    )
+    stdout, stderr = raw_case(executable, nested_malformed_surrogate + b"\n", 0)
+    assert_error(json.loads(stdout), "INVALID_REQUEST")
+    assert stderr == b""
+
+    valid_surrogate_key = raw_hello[:-1] + b',"\\ud83d\\ude00":true}'
+    stdout, stderr = raw_case(executable, valid_surrogate_key + b"\n", 0)
+    assert json.loads(stdout)["success"] is True
+    assert stderr == b""
+
+    valid_null_key = raw_hello[:-1] + b',"\\u0000":true}'
+    stdout, stderr = raw_case(executable, valid_null_key + b"\n", 0)
+    assert json.loads(stdout)["success"] is True
+    assert stderr == b""
+
+    for malformed_key in (
+        b'"\\ud800"',
+        b'"\\udc00"',
+        b'"\\ud800\\u0041"',
+        b'"\\u12xz"',
+    ):
+        malformed = raw_hello[:-1] + b"," + malformed_key + b":true}"
+        stdout, stderr = raw_case(executable, malformed + b"\n", 65)
+        assert stdout == b"" and stderr
+
     record = hello()
     record["padding"] = ""
     encoded = json.dumps(record, separators=(",", ":")).encode()

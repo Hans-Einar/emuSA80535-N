@@ -442,6 +442,9 @@ enum em8051_debug_status em8051_debugger_decode_code(
     int64_t base;
     uint32_t cursor;
     size_t output = 0;
+    uint16_t staged_addresses[EM8051_DEBUG_MAX_DECODE_INSTRUCTIONS];
+    uint16_t staged_predecessors[EM8051_DEBUG_MAX_DECODE_INSTRUCTIONS];
+    size_t staged_count = 0;
     int32_t step;
     enum em8051_debug_status status;
 
@@ -527,13 +530,20 @@ enum em8051_debug_status em8051_debugger_decode_code(
         next = cursor + aRecords[output].size;
         if (next < CODE_SIZE)
         {
-            aDebugger->predecessor[next] = (uint16_t)cursor;
-            aDebugger->predecessor_known[next] = 1;
+            staged_addresses[staged_count] = (uint16_t)next;
+            staged_predecessors[staged_count] = (uint16_t)cursor;
+            staged_count++;
         }
         cursor = next;
         output++;
         if (output < aCount && cursor > 0xffffu)
             return EM8051_DEBUG_RANGE;
+    }
+    for (output = 0; output < staged_count; output++)
+    {
+        aDebugger->predecessor[staged_addresses[output]] =
+            staged_predecessors[output];
+        aDebugger->predecessor_known[staged_addresses[output]] = 1;
     }
     return EM8051_DEBUG_OK;
 }
