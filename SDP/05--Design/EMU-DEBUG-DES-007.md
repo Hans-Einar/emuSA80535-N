@@ -213,9 +213,18 @@ maintains its own interval even when destinations are shared.
 
 ## DES-084 — Watch matches are derived ordered events
 
-A matched watchpoint produces one newly sequenced `watch.match` event after the
-source event has completed fan-out. It contains `watch_id`,
-`source_event_sequence`, matched address/value summary and actions. Actions
+A watch has an access selector plus independently conditional actions. Each
+action may compare immutable `old`, `new` or checked `delta` against a constant
+with `eq`, `ne`, `lt`, `le`, `gt` or `ge`. Operand width and signedness are
+explicit; mixed types and out-of-range constants are rejected. Unknown input
+evaluates false. An action without a condition fires for every access match.
+Thus route may record every match while stop fires only for a threshold such
+as `new >= 200`. Conditions use the bounded DES-070 evaluator, do not reread
+CPU state and coalesce multiple matching stop actions into one boundary stop.
+
+A watchpoint with at least one fired action produces one newly sequenced
+`watch.match` event after the source event has completed fan-out. It contains
+`watch_id`, `source_event_sequence`, matched address/value summary and fired actions. Actions
 are independently combinable: request boundary stop, write the interactive
 console, remain quiet, and route to a bounded sorted trace-ID set. `quiet`
 suppresses the watch's own console output, not stops or trace routes. A watch
@@ -282,7 +291,9 @@ Golden tests cover two traces sharing and not sharing destinations, stable
 sorted route IDs, all four gate timings, conflicting gates, nested interrupt
 policies, suppression summaries on resume/flush, watch source correlation,
 quiet/console/stop/route combinations, non-recursive derived events, deletion
-and atomic replacement, every advertised bound, destination failure, and raw
+and atomic replacement, action `eq`/`ne`/`lt`/`le`/`gt`/`ge` thresholds,
+signed/unsigned boundaries, unknown operands and stop coalescing, every
+advertised bound, destination failure, and raw
 stdout rejection in NDJSON mode. Disabled or unmatched tracing remains
 architecturally equivalent to tracing absent.
 

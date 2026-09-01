@@ -336,9 +336,44 @@ generation is bounded and non-recursive.
 
 ## Watchpoint actions and derived events
 
-A matched watch emits one ordered `watch.match` after source-event fan-out.
-It contains `watchId`, `sourceEventSequence`, matched address/value detail and
-actions. Actions combine independently: `stop` requests the established safe
+A watch separates its access match from its action triggers. The access match
+selects address space, address/range and read/write access. Each optional
+action trigger compares one immutable source-event value (`old`, `new` or
+`delta`) with an integer constant using `eq`, `ne`, `lt`, `le`, `gt` or `ge`.
+
+```json
+{
+  "id":12,
+  "type":"watchpoint",
+  "events":["memory.write"],
+  "address":{"space":"xdata","from":29465,"to":29465},
+  "valueType":{"width":8,"signed":false},
+  "actions":[
+    {"kind":"stop","when":{"value":"new","op":"ge","constant":200}},
+    {"kind":"console","when":{"value":"new","op":"gt","constant":180}},
+    {"kind":"route","traceIds":[23]}
+  ]
+}
+```
+
+`eq` means equal and the ordered operators mean strictly less/greater or
+less/greater-or-equal. Width is 8, 16, 32 or 64 bits. Signedness is explicit;
+implicit signed/unsigned mixing is rejected. Both operands are converted to
+the declared type. `delta` is `new - old` in a checked signed value one bit
+wider than the declared operand where representable. Unknown input evaluates
+false, and configuration rejects out-of-range constants. An action without
+`when` fires on every access match.
+
+This lets route record every value while stop fires only at a threshold, such
+as `new >= 200`. Action triggers are evaluated in listed order against the
+same immutable source event, without CPU reads, and share the bounded condition
+operation limit. Multiple matching stop triggers coalesce into one stop request
+while all fired action metadata remains visible.
+
+A watch for which at least one action fires emits one ordered `watch.match`
+after source-event fan-out. It contains `watchId`, `sourceEventSequence`,
+matched address/value detail and the fired actions. Actions combine
+independently: `stop` requests the established safe
 boundary; `console` prints a bounded interactive notice; `quiet` suppresses
 only that notice; and `route` sends the match to a bounded trace-ID list. If
 `console` and `quiet` are both set, `quiet` wins without cancelling `stop` or
@@ -503,6 +538,7 @@ trace on 23
 trace off 23
 gate add 41 off after traces 7,23 pc 0x6a1a
 watch add write xdata 0x7319-0x731a actions stop,route traces 23 quiet
+watch add write xdata 0x7319 u8 stop when new ge 200 route traces 23
 routes list
 points list
 point disable 17
@@ -592,7 +628,7 @@ full instruction tracing. No sampling based on wall time is allowed.
 | A | event schema, sequence, fan-out | existing callback compatibility; sequence/order |
 | B | IRAM/SFR/XDATA/CODE instrumentation | opcode access matrix; old/new/unknown; no duplicate events |
 | C | control flow and IRQ ordering | calls/returns, RETI, nested/simultaneous IRQ golden traces |
-| D | matcher and watchpoint stops | selectors, condition limits, change-only, skip/hit, priority |
+| D | matcher and watchpoint stops | selectors, condition limits, action-specific eq/ne/lt/le/gt/ge triggers, signedness, change-only, skip/hit, priority |
 | E | bounded ring/loss | wrap, coalesced loss, zero capacity, stop-on-full, allocation failure |
 | F | JSONL/rotation | golden schema, exact count/byte rotation, partial write and disk-full simulation |
 | G | C facade and TUI | atomic replacement, parser bounds, compatibility shortcut, paged display |
@@ -607,6 +643,8 @@ Linux and Windows, strict warnings and sanitizers. Dedicated audits assert:
 - shared-destination events are coalesced and trace IDs are sorted/stable;
 - all four gate timings and nested interrupt suppression produce golden traces;
 - watch derivation cannot recurse and preserves source-event correlation;
+- watch action thresholds cover equality and ordered comparisons for
+  signed/unsigned widths, unknown values, boundary constants and stop coalescing;
 - callbacks cannot obtain mutable CPU storage;
 - buffers, input, event rate and file rotation are bounded;
 - reset/load/restore behavior matches the lifecycle table;
