@@ -1,5 +1,5 @@
 schema_version: emu-sab80535-current-index-v1
-updated: 2026-09-01
+updated: 2026-09-02
 
 active:
   sprint: SPR-007
@@ -92,6 +92,6 @@ items:
   DES-064..DES-073: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-007.md}
   SPR-007: {kind: sprint, status: active, state: target, source: SDP/Sprints/SPR-007--sab80535-external-edges/sprint.md}
   ITR-013: {kind: iteration, status: active, state: target, source: SDP/Sprints/SPR-007--sab80535-external-edges/ScrumIterations.md}
-  SLC-013: {kind: slice, status: review-pending, state: target, source: SDP/Sprints/SPR-007--sab80535-external-edges/ScrumIterations.md}
-  REV-SLC-013: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-013.md}
+  SLC-013: {kind: slice, status: verification-pending, state: target, source: SDP/Sprints/SPR-007--sab80535-external-edges/ScrumIterations.md}
+  REV-SLC-013: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-013.md}
   VER-SLC-013: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-013.md}

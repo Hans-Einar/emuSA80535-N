@@ -26,22 +26,26 @@ unmerged for Steering.
 - Fresh Worker product/test commit
   `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b` completed with all focused and
   accepted executable gates green where the required tool versions exist.
+- Fresh REV-SLC-013 approved the exact product/test HEAD with no findings and
+  independently passed Siemens, adversarial, cross-platform and scope audits.
 
 ## Not Done
 
-- Independent REV-SLC-013, Master verification, acceptance, implementation PR
-  and cross-repository handoffs.
+- Master verification, acceptance, implementation PR and cross-repository
+  handoffs.
 
 ## Exact Next Step
 
-Publish the Worker completion checkpoint and dispatch a separate fresh
-Reviewer against exact product HEAD `3cfc4a8...`.
+Publish the REV-SLC-013 checkpoint, then run independent Master VER-SLC-013
+against exact product HEAD `3cfc4a8...`.
 
 ## Verification Completed
 
 - Worker: focused all-23-class suite, accepted core/debug suites, strict Clang,
   WSL GCC and WSL sanitizer gates reported passing. Master verification has not
   started.
+- Reviewer: the complete Windows/strict/WSL/sanitizer core+debug matrix plus
+  independent queue/callback probes and scope/identity audits passed.
 
 ## Traceability IDs In Play
 

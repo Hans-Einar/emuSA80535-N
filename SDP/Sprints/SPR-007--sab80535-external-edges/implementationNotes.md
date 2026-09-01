@@ -32,6 +32,13 @@ Status: review pending; Worker implementation recorded but not accepted.
 
 REV-SLC-013 must independently audit exact product HEAD before acceptance.
 
+## Accepted review
+
+REV-SLC-013 approved exact product/test HEAD `3cfc4a8...` with no findings.
+Its independent Siemens, adversarial queue/callback, cross-platform sanitizer,
+scope and product-identity audits pass. VER-SLC-013 is still required before
+the Slice is accepted.
+
 ## Stop boundary
 
 No ADC, Siemens Timer2, P1000 board/NEC logic, target signal semantics,
