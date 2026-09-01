@@ -19,3 +19,10 @@ Status: active; no verified SLC-007 product implementation yet.
 - Corrective commit `336c50a03da4067c22d9567de6075724261a66e9`
   resolved REV-SLC-007-F001/F002, but REV-SLC-008 opened one post-callback RX
   mirror-coherence finding. It is not accepted.
+- Final corrective commit `d2d3f63b1a10a0b042d052dd6d872c708db967e0`
+  synchronizes post-callback SBUF mirror from canonical RX and adds direct/
+  reentrant coherence regressions.
+- REV-SLC-009 approved without findings. VER-SLC-009 passed all four platform/
+  sanitizer suites, three product diff checks, no-target/no-live, NDJSON and
+  master-ancestry gates.
+- REQ-011/SLC-007 is accepted technically and ready for PR.

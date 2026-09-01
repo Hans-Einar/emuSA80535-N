@@ -94,3 +94,6 @@ relations:
   - {from: ITR-009, type: belongs_to, to: SPR-004}
   - {from: REV-SLC-009, type: reviews, to: SLC-009}
   - {from: VER-SLC-009, type: verifies, to: SLC-009}
+  - {from: SLC-008, type: resolves, to: REV-SLC-007-F001}
+  - {from: SLC-008, type: resolves, to: REV-SLC-007-F002}
+  - {from: SLC-009, type: resolves, to: REV-SLC-008-F001}

@@ -1,6 +1,6 @@
 # SPR-004 — SAB80535 mode-3 9-bit UART
 
-Status: active
+Status: ready-for-pr
 Sprint ID: SPR-004
 Started: 2026-09-01
 Steering authority: Issue #2 SLC-007 checkpoint
@@ -45,3 +45,8 @@ injection and shared interrupt integration.
 - Issue #2/Ponsse checkpoints and focused PR are published;
 - no unauthorized Stage 2/ADC/Timer2/target/live-I/O behavior enters the diff.
 
+## Verified result
+
+All technical exit criteria are satisfied at product HEAD
+`d2d3f63b1a10a0b042d052dd6d872c708db967e0` through REV-SLC-009 and
+VER-SLC-009. Sprint remains `ready-for-pr` until the real PR identity exists.

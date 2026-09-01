@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Complete fresh REV-SLC-009 review of product HEAD `d2d3f63b...`, then run
-Master verification only if approved.
+Push the verified branch, open the focused UART PR and record PR/Ponsse
+checkpoint identities. Then stop.
 
 ## Authoritative Source Documents
 
@@ -30,30 +30,32 @@ Master verification only if approved.
   coherence finding REV-SLC-008-F001.
 - SLC-009 minimal correction `d2d3f63b1a10a0b042d052dd6d872c708db967e0`
   completed; fresh review is running.
+- REV-SLC-009 approved with no findings; VER-SLC-009 passed.
 
 ## Not Done
 
-- SLC-009 fresh review, Master verification and PR.
+- Focused PR publication and Ponsse Issue #26 checkpoint.
 - Stage 2, ADC, Timer2, P1000 target or any live/physical I/O; unauthorized.
 
 ## Exact Next Step
 
-Fresh Reviewer probes final callback/reentrant coherence on exact HEAD.
+Open the UART branch PR against current master. Do not start any later scope.
 
 ## Verification Completed
 
 REV-SLC-007 reran all platforms/sanitizers and reproduced F001/F002. Prior
 suites remain green.
 REV-SLC-008 reran all suites and reproduced F001 with callback mutation.
+REV-SLC-009 approved final coherence and VER-SLC-009 passed all gates.
 
 ## Traceability IDs In Play
 
 MND-001, STU-001, REQ-011, ARCH-002/003/004/005/006, DES-027..DES-038,
-SPR-004, ITR-009, SLC-009, REV-SLC-008-F001, REV-SLC-009 and VER-SLC-009.
+SPR-004, ITR-009, SLC-009, REV-SLC-009 and VER-SLC-009.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-009 in review.
+- CurrentIndex updated: yes, SLC-009 accepted; Sprint ready-for-pr.
 - Relations updated: yes.
 - Ledger updated: PR #4 merge and Sprint/Iteration/Slice start recorded.
 
@@ -89,3 +91,6 @@ Second review changes-required checkpoint:
 
 Final corrective Worker checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486700737`.
+
+Final Reviewer/Master acceptance checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486758165`.

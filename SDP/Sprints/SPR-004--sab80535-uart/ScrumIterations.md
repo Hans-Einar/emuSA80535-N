@@ -126,7 +126,7 @@ accepted; corrective work moves to ITR-009 / SLC-009.
 
 ## ITR-009 — Post-callback RX mirror coherence
 
-Status: in-review
+Status: complete
 Iteration ID: ITR-009
 Active Slice: SLC-009
 
@@ -160,3 +160,10 @@ Minimal corrective commit `d2d3f63b1a10a0b042d052dd6d872c708db967e0`
 changes only `core.c` and focused UART tests. Worker reports direct callback
 mutation and reentrant RX final-shift coherence plus all four platform suites
 passing. REV-SLC-009 is reviewing exact HEAD; no acceptance yet.
+
+### Final result
+
+Accepted. REV-SLC-009 approved exact product HEAD
+`d2d3f63b1a10a0b042d052dd6d872c708db967e0` with no findings and confirmed
+the entire SLC-007/SLC-008 corrective chain resolved. VER-SLC-009 passed the
+independent Master matrix. UART scope is complete; no later scope is authorized.
