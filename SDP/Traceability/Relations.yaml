@@ -97,3 +97,15 @@ relations:
   - {from: SLC-008, type: resolves, to: REV-SLC-007-F001}
   - {from: SLC-008, type: resolves, to: REV-SLC-007-F002}
   - {from: SLC-009, type: resolves, to: REV-SLC-008-F001}
+  - {from: DES-039..DES-049, type: refines, to: ARCH-002}
+  - {from: DES-039..DES-049, type: refines, to: ARCH-003}
+  - {from: DES-039..DES-049, type: refines, to: ARCH-004}
+  - {from: DES-039..DES-049, type: refines, to: ARCH-005}
+  - {from: DES-039..DES-049, type: refines, to: ARCH-006}
+  - {from: SPR-005, type: schedules, to: REQ-012}
+  - {from: SLC-010, type: belongs_to, to: ITR-010}
+  - {from: ITR-010, type: belongs_to, to: SPR-005}
+  - {from: SLC-010, type: implements_partial, to: REQ-012}
+  - {from: SLC-010, type: implements_design, to: DES-039..DES-049}
+  - {from: REV-SLC-010, type: reviews, to: SLC-010}
+  - {from: VER-SLC-010, type: verifies, to: SLC-010}
