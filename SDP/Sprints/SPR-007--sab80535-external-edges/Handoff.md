@@ -31,16 +31,18 @@ SPR-007 is complete. Review PR #10 and leave merge authority to Steering.
   real integration. SLC-013 and REQ-012 are accepted.
 - Focused implementation PR #10 opened against unchanged authorized `master`;
   it is clean/mergeable, has no configured check runs and remains unmerged.
+- Exact CPU product revision reported to Ponsse convergence Issue #26 and
+  peripheral-simulator Issue #47.
+- Focused PR and cross-repository handoffs checkpointed on Issue #7.
 
 ## Not Done
 
-- Issue #7/Ponsse cross-repository checkpoints. PR #10 merge is not authorized
-  by this execution.
+- PR #10 Steering review/merge only. Merge is not authorized by this execution.
 
 ## Exact Next Step
 
-Publish final Issue #7 and Ponsse Issue #26/#47 checkpoints, confirm exact PR
-HEAD/state, and stop.
+Confirm exact final PR HEAD/state, publish the final Sprint-closed checkpoint,
+and stop.
 
 ## Verification Completed
 
@@ -93,6 +95,9 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5501048782
 Master verification/acceptance checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5501118620
 
+PR/cross-repository checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5501145538
+
 ## Pull Request
 
 - PR: https://github.com/Hans-Einar/emuSA80535-N/pull/10
@@ -100,3 +105,10 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5501118620
 - Branch: `codex/sab80535-external-edges`
 - Exact product/test HEAD: `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b`
 - State: open, mergeable, no configured check runs, intentionally unmerged.
+
+## Cross-Repository Checkpoints
+
+- Ponsse convergence Issue #26:
+  https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5501143385
+- Ponsse peripheral-simulator Issue #47:
+  https://github.com/Hans-Einar/ponsse/issues/47#issuecomment-5501143546
