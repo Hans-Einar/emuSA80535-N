@@ -1,8 +1,10 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-08-31
+updated: 2026-09-01
 
 relations:
   - {from: STU-001, type: informs, to: MND-001}
+  - {from: STU-002, type: revalidates, to: MND-001}
+  - {from: BLK-EMU-DEBUG-001, type: blocks, to: STU-002}
   - {from: REQ-001..REQ-015, type: derives_from, to: MND-001}
   - {from: REQ-001..REQ-015, type: informed_by, to: STU-001}
   - {from: ARCH-001..ARCH-006, type: realizes, to: REQ-001..REQ-015}
