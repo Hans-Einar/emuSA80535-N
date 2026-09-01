@@ -2,6 +2,8 @@
 *.slo
 *.lo
 *.o
+*.ilk
+*.pdb
 
 # Compiled Dynamic libraries
 *.so
@@ -14,9 +16,18 @@
 
 #binary file
 emu
+emu.exe
+emu-debug
+emu-debug.exe
 tests/stage0_tests
 tests/stage0_tests.exe
 tests/stage0-*.bin
+tests/stage1_irq_tests*
+tests/stage1_timer_tests*
+tests/stage1_uart_tests*
+tests/stage2_port_tests*
+tests/debug_facade_tests*
+tests/debug-*.bin
 
 #editor temp files
 \#*

@@ -207,6 +207,55 @@ and the full P1 output-latch snapshot captured before a legacy XDATA callback.
 Existing `xread`/`xwrite` callbacks and generic XDATA backing remain unchanged.
 The CPU assigns no board or bank meaning to P1 bits and opens no live I/O.
 
+Headless emu-debug 1.0 runtime
+==============================
+
+The repository provides a separate no-curses `emu-debug` child-process
+runtime for generic SAB80535 debugging. Build it without the legacy TUI or a
+curses development package:
+
+    make emu-debug
+
+On Windows the result is `emu-debug.exe`; on Linux it is `emu-debug`. The
+program accepts `--headless-debug` for adapter launches and `--version` for a
+diagnostic version check. The headless mode never initializes curses and does
+not open serial, GPIO, CAN, field-bus or machine-control endpoints.
+
+Child stdin/stdout uses `emu-debug` protocol 1.0: one UTF-8 JSON object per
+line. Stdout is reserved for correlated protocol responses and stderr is
+reserved for bounded human diagnostics. This stream is NDJSON, not DAP
+`Content-Length` framing. The first command is `hello`; the implemented
+minimum is `hello`, `load`, `reset`, `getState`, `decodeCode`,
+`replaceCodeBreakpoints`, `run`, `stepInstruction` and `terminate`.
+
+The handshake advertises `rawCode64k`, `deterministicReset`,
+`snapshotBasicRegisters`, `decodeCode`, `replaceCodeBreakpoints`, `boundedRun`
+and `stepInstruction`. Image loading accepts only an absolute path to an exact
+65,536-byte raw CODE image and verifies its lowercase SHA-256. Execution is
+synchronous and virtual-time-only; every reset, state, yield, breakpoint,
+step, exception or halt result contains one value-only instruction-boundary
+snapshot. `emu_debug.h` exposes the same stable snapshot and debugger facade
+without publishing private `struct em8051` layout on the wire.
+
+Run the accepted emulator regressions and the focused debug-runtime gates with:
+
+    make core-test
+    make debug-test
+
+`debug-test` runs the C facade suite and a cross-platform child-process suite
+covering framing bounds, schema/errors, image/hash/reset replay, snapshots,
+decode windows, replacement breakpoints, bounded run, exact step, terminate,
+EOF and malformed-input cleanup. It requires Python 3 only for the process
+owner test; the runtime itself has no Python or external JSON/crypto runtime
+dependency.
+
+With the frozen `emuSA80535-DAP` checkout available as the sibling directory
+and its TypeScript output already built, `make dap-integration-test` drives the
+real DAP client and adapter session against this executable. It checks direct
+contract/fake-equivalence plus launch, disassembly, instruction breakpoint,
+register, step, continue/pause and disconnect behavior without modifying DAP
+product sources.
+
 Install
 =======
 
