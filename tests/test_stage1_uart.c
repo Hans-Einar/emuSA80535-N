@@ -50,6 +50,7 @@ static uint8_t gSbufReadOverride;
 static uint8_t gSbufWriteObserved;
 static unsigned gSbufReadCount;
 static unsigned gSbufWriteCount;
+static bool gSbufReceiveProgressActive;
 
 static uint8_t sbuf_read_override(struct em8051 *aCPU, uint8_t aRegister)
 {
@@ -64,6 +65,13 @@ static void sbuf_write_observer(struct em8051 *aCPU, uint8_t aRegister)
     CHECK(aRegister == 0x99u);
     gSbufWriteObserved = aCPU->mSFR[REG_SBUF];
     gSbufWriteCount++;
+}
+
+static void sbuf_write_mutate_rx(struct em8051 *aCPU, uint8_t aRegister)
+{
+    sbuf_write_observer(aCPU, aRegister);
+    aCPU->mSABUartRxData = 0x22u;
+    aCPU->mSFR[REG_SBUF] = 0x22u;
 }
 
 static void capture_trace(const struct em8051_trace_record *aRecord,
@@ -108,6 +116,17 @@ static void run_cycles(struct em8051 *aCPU, uint64_t aCycles)
     uint64_t cycle;
     for (cycle = 0; cycle < aCycles; cycle++)
         (void)tick(aCPU);
+}
+
+static void sbuf_write_progress_rx(struct em8051 *aCPU, uint8_t aRegister)
+{
+    sbuf_write_observer(aCPU, aRegister);
+    if (gSbufReceiveProgressActive)
+        return;
+
+    gSbufReceiveProgressActive = true;
+    run_cycles(aCPU, 480u);
+    gSbufReceiveProgressActive = false;
 }
 
 static void configure_uart(struct em8051 *aCPU, bool aSmod, bool aRen)
@@ -177,6 +196,49 @@ static void test_sbuf_callback_and_trace_contract(void)
     CHECK(fixture.cpu.mSFR[REG_SBUF] == 0x11u);
     fixture.cpu.sfrread[REG_SBUF] = NULL;
     CHECK(em8051_sfr_read(&fixture.cpu, 0x99u) == 0x11u);
+}
+
+static void test_sbuf_callback_rx_coherence(void)
+{
+    struct fixture fixture;
+
+    setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
+    configure_uart(&fixture.cpu, true, true);
+    fixture.cpu.mSABUartRxData = 0x11u;
+    fixture.cpu.mSFR[REG_SBUF] = 0x11u;
+    fixture.cpu.sfrwrite[REG_SBUF] = sbuf_write_mutate_rx;
+    gSbufWriteObserved = 0;
+    gSbufWriteCount = 0;
+
+    em8051_sfr_write(&fixture.cpu, 0x99u, 0xa5u);
+    CHECK(gSbufWriteCount == 1u);
+    CHECK(gSbufWriteObserved == 0xa5u);
+    CHECK(fixture.cpu.mSABUartRxData == 0x22u);
+    CHECK(fixture.cpu.mSFR[REG_SBUF] == 0x22u);
+    CHECK(em8051_sfr_read(&fixture.cpu, 0x99u) == 0x22u);
+
+    setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
+    configure_uart(&fixture.cpu, true, true);
+    fixture.code[0] = 0x80u; /* Keep reentrant progress away from SBUF writes. */
+    fixture.code[1] = 0xfeu;
+    fixture.cpu.mSABUartRxData = 0x33u;
+    fixture.cpu.mSFR[REG_SBUF] = 0x33u;
+    CHECK(em8051_sab_uart_inject_rx_frame(&fixture.cpu, 0x6du, true));
+    fixture.cpu.sfrwrite[REG_SBUF] = sbuf_write_progress_rx;
+    gSbufWriteObserved = 0;
+    gSbufWriteCount = 0;
+    gSbufReceiveProgressActive = false;
+
+    em8051_sfr_write(&fixture.cpu, 0x99u, 0xb6u);
+    CHECK(!gSbufReceiveProgressActive);
+    CHECK(gSbufWriteCount == 1u);
+    CHECK(gSbufWriteObserved == 0xb6u);
+    CHECK(fixture.cpu.mSABUartRxBitIndex == 10u);
+    CHECK(fixture.cpu.mSABUartRxData == 0x6du);
+    CHECK(fixture.cpu.mSFR[REG_SBUF] == 0x6du);
+    CHECK(em8051_sfr_read(&fixture.cpu, 0x99u) == 0x6du);
+    CHECK((fixture.cpu.mSFR[REG_SCON] & SCONMASK_RI) != 0);
+    CHECK((fixture.cpu.mSFR[REG_SCON] & SCONMASK_RB8) != 0);
 }
 
 static void test_unsupported_writes_preserve_mode3_state(void)
@@ -824,6 +886,7 @@ static void test_classic_sbuf_regression(void)
 int main(void)
 {
     test_sbuf_callback_and_trace_contract();
+    test_sbuf_callback_rx_coherence();
     test_unsupported_writes_preserve_mode3_state();
     test_exact_startup_baud_and_long_phase();
     test_smod_divide_16_and_32();

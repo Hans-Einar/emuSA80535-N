@@ -487,14 +487,14 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
         aAddress == (uint8_t)(REG_SBUF + 0x80u))
     {
-        uint8_t rx_mirror = aCPU->mSFR[index];
         sab_uart_sbuf_write(aCPU, aValue);
-        /* Preserve separate RX storage while presenting the architectural
-         * write value through the established parent SFR callback surface. */
+        /* Present TX through the established callback surface, then restore
+         * the SBUF mirror from canonical RX state as it exists after the
+         * callback (which may advance or otherwise update receive state). */
         aCPU->mSFR[index] = aValue;
         if (aCPU->sfrwrite[index])
             aCPU->sfrwrite[index](aCPU, aAddress);
-        aCPU->mSFR[index] = rx_mirror;
+        aCPU->mSFR[index] = aCPU->mSABUartRxData;
         em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
         return;
     }
