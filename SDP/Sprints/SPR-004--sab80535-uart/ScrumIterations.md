@@ -126,7 +126,7 @@ accepted; corrective work moves to ITR-009 / SLC-009.
 
 ## ITR-009 — Post-callback RX mirror coherence
 
-Status: active
+Status: in-review
 Iteration ID: ITR-009
 Active Slice: SLC-009
 
@@ -153,3 +153,10 @@ reentrancy coherence and all SLC-007/008 regressions.
 
 **Completion signal:** fresh Worker commits the minimal fix; fresh Reviewer
 approves exact HEAD; Master reruns verification.
+
+### Worker result
+
+Minimal corrective commit `d2d3f63b1a10a0b042d052dd6d872c708db967e0`
+changes only `core.c` and focused UART tests. Worker reports direct callback
+mutation and reentrant RX final-shift coherence plus all four platform suites
+passing. REV-SLC-009 is reviewing exact HEAD; no acceptance yet.

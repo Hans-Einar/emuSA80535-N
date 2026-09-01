@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Correct REV-SLC-008-F001 through active ITR-009 / SLC-009, then obtain a fresh
-independent review.
+Complete fresh REV-SLC-009 review of product HEAD `d2d3f63b...`, then run
+Master verification only if approved.
 
 ## Authoritative Source Documents
 
@@ -28,15 +28,17 @@ independent review.
   completed; fresh review is running.
 - REV-SLC-008 confirmed prior findings resolved but opened stale RX mirror
   coherence finding REV-SLC-008-F001.
+- SLC-009 minimal correction `d2d3f63b1a10a0b042d052dd6d872c708db967e0`
+  completed; fresh review is running.
 
 ## Not Done
 
-- SLC-009 minimal correction, fresh review, Master verification and PR.
+- SLC-009 fresh review, Master verification and PR.
 - Stage 2, ADC, Timer2, P1000 target or any live/physical I/O; unauthorized.
 
 ## Exact Next Step
 
-Fresh Worker implements only SLC-009 post-callback canonical mirror sync.
+Fresh Reviewer probes final callback/reentrant coherence on exact HEAD.
 
 ## Verification Completed
 
@@ -51,7 +53,7 @@ SPR-004, ITR-009, SLC-009, REV-SLC-008-F001, REV-SLC-009 and VER-SLC-009.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-009 active and finding open.
+- CurrentIndex updated: yes, SLC-009 in review.
 - Relations updated: yes.
 - Ledger updated: PR #4 merge and Sprint/Iteration/Slice start recorded.
 
@@ -84,3 +86,6 @@ Corrective Worker checkpoint:
 
 Second review changes-required checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486652825`.
+
+Final corrective Worker checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486700737`.
