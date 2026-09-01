@@ -41,6 +41,8 @@ scope and product-identity audits pass.
 - Product/test HEAD `3cfc4a8...` is accepted; later commits are SDP-only.
 - REQ-012 is satisfied/current through accepted SLC-010 plus SLC-013.
 - The frozen debug protocol and all stop-boundary exclusions remain intact.
+- Focused implementation PR #10 is open and intentionally unmerged:
+  https://github.com/Hans-Einar/emuSA80535-N/pull/10
 
 ## Stop boundary
 

@@ -90,7 +90,7 @@ items:
   REV-SLC-012: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-012.md}
   VER-SLC-012: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-012.md}
   DES-064..DES-073: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-SAB80535-DES-007.md}
-  SPR-007: {kind: sprint, status: ready-for-pr, state: current, source: SDP/Sprints/SPR-007--sab80535-external-edges/sprint.md}
+  SPR-007: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-007--sab80535-external-edges/sprint.md}
   ITR-013: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-007--sab80535-external-edges/ScrumIterations.md}
   SLC-013: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--sab80535-external-edges/ScrumIterations.md}
   REV-SLC-013: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-013.md}

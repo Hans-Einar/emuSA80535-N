@@ -1,6 +1,6 @@
 # SPR-007 — SAB80535 deterministic external edges
 
-Status: ready-for-pr
+Status: complete
 Sprint ID: SPR-007
 Started: 2026-09-01
 Steering authority: Issue #7 SLC-013 checkpoint
@@ -57,4 +57,7 @@ REV-SLC-013 approved exact product/test HEAD
 `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b` with no findings.
 VER-SLC-013 passed the full Windows/strict Clang/WSL/sanitizer/core/debug and
 exact frozen-DAP matrix. SLC-013 is accepted and, together with SLC-010,
-completes REQ-012. SPR-007 is ready for its focused unmerged PR.
+completes REQ-012. The focused implementation is published as PR #10:
+https://github.com/Hans-Einar/emuSA80535-N/pull/10
+
+SPR-007 is complete. PR #10 remains open and unmerged for Steering review.
