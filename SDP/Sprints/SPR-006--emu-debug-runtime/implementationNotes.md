@@ -1,6 +1,6 @@
 # Implementation notes
 
-Status: active; no verified SLC-011 product implementation yet.
+Status: review pending; no accepted SLC-011 product implementation yet.
 
 ## Frozen baseline
 
@@ -13,3 +13,13 @@ Status: active; no verified SLC-011 product implementation yet.
 
 None yet. Record only Worker results that survive independent review and
 Master verification.
+
+## Worker result awaiting review
+
+- Exact product HEAD: `84358bf05a400f53daace8805c8c15c6514fd03a`.
+- Adds the public debugger facade, no-curses NDJSON executable, nine frozen
+  commands, seven capabilities, build/docs and facade/process/real-DAP tests.
+- Worker reports Windows GCC/strict Clang, WSL GCC/ASan+UBSan, all accepted
+  regressions, DAP 99/99 plus 45/45 contract, real runtime/F5 and package smoke
+  passing with the DAP worktree unchanged.
+- This evidence is not accepted until REV-SLC-011 and VER-SLC-011 complete.

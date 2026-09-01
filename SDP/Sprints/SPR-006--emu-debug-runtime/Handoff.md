@@ -23,20 +23,25 @@ scope.
 - Exact post-merge master and exact DAP authority frozen.
 - Contract revalidated with no architectural conflict found.
 - SPR-006 / ITR-011 / SLC-011 defined and traceability activated.
+- Fresh Worker product/test commit
+  `84358bf05a400f53daace8805c8c15c6514fd03a` completed and published.
+- Worker completion checkpoint reported on Issue #6.
 
 ## Not Done
 
-- Worker implementation, review, verification, DAP real integration and PR.
+- Independent review, Master verification/real-DAP rerun, final SDP closure and
+  implementation PR.
 
 ## Exact Next Step
 
-Dispatch one fresh Worker against SLC-011. Immediately after its committed
-result, dispatch a separate fresh Reviewer before acceptance.
+Dispatch a separate fresh Reviewer against exact product HEAD
+`84358bf05a400f53daace8805c8c15c6514fd03a`. If findings open, define a
+corrective fresh-Worker slice before any acceptance.
 
 ## Verification Completed
 
-Only baseline ancestry and frozen-authority checks. No SLC-011 product evidence
-yet.
+Worker reports the complete emulator/DAP matrix passing. Independent Master
+verification is not yet recorded.
 
 ## Traceability IDs In Play
 
@@ -67,3 +72,6 @@ Branch `codex/emu-debug-runtime` starts exactly at
 
 Baseline/activation checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5492796877
+
+Worker completion checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493181132

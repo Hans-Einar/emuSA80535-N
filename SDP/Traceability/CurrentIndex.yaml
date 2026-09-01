@@ -80,6 +80,6 @@ items:
   DES-050..DES-063: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-DEBUG-DES-006.md}
   SPR-006: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/sprint.md}
   ITR-011: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
-  SLC-011: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
-  REV-SLC-011: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-011.md}
+  SLC-011: {kind: slice, status: review-pending, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
+  REV-SLC-011: {kind: review, status: active, state: target, source: SDP/CodeReview/REV-SLC-011.md}
   VER-SLC-011: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-011.md}
