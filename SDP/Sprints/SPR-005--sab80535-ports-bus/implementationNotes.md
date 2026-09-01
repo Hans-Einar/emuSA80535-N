@@ -11,5 +11,11 @@ Status: active; no verified SLC-010 product implementation yet.
 
 ## Verified work
 
-None yet. Record only independently reviewed or Master-rerun evidence.
-
+- Product commit `ba00ef17af57076b01c7f548e8996a7d36a5c591`
+  implements SAB P1/P3/P4/P5 latch/external/resolved state, virtual API,
+  ordinary-vs-RMW semantics and immutable P1-latch MOVX context.
+- REV-SLC-010 approved without findings. VER-SLC-010 passed all five suites on
+  Windows GCC/strict Clang and WSL GCC/ASan+UBSan plus diff/scope/NDJSON/
+  ancestry gates.
+- SLC-010 is accepted technically and ready for PR. REQ-012 remains target
+  pending later external-edge authorization.

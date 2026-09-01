@@ -2,7 +2,7 @@
 
 ## ITR-010 — Port latch/pin and MOVX context
 
-Status: in-review
+Status: complete
 Iteration ID: ITR-010
 Active Slice: SLC-010
 
@@ -61,3 +61,10 @@ Worker commit `ba00ef17af57076b01c7f548e8996a7d36a5c591`
 implements bounded ports/RMW/MOVX context and a focused Stage2 suite. Worker
 reports all five suites passing cross-platform/sanitizer and scope audits clean.
 REV-SLC-010 is reviewing exact HEAD; no acceptance is recorded yet.
+
+### Final result
+
+Accepted. REV-SLC-010 approved exact product HEAD
+`ba00ef17af57076b01c7f548e8996a7d36a5c591` with no findings. VER-SLC-010
+passed the independent Master matrix. SLC-010 is complete; external-edge scope
+remains unauthorized.

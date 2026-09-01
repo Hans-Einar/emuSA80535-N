@@ -3,8 +3,8 @@ updated: 2026-09-01
 
 active:
   sprint: SPR-005
-  iteration: ITR-010
-  slice: SLC-010
+  iteration: null
+  slice: null
 
 items:
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
@@ -68,9 +68,9 @@ items:
   SLC-009: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-004--sab80535-uart/ScrumIterations.md}
   REV-SLC-009: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-009.md}
   VER-SLC-009: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-009.md}
-  DES-039..DES-049: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-005.md}
-  SPR-005: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-005--sab80535-ports-bus/sprint.md}
-  ITR-010: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-005--sab80535-ports-bus/ScrumIterations.md}
-  SLC-010: {kind: slice, status: in-review, state: current, source: SDP/Sprints/SPR-005--sab80535-ports-bus/ScrumIterations.md}
-  REV-SLC-010: {kind: review, status: active, state: target, source: SDP/CodeReview/REV-SLC-010.md}
-  VER-SLC-010: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-010.md}
+  DES-039..DES-049: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-SAB80535-DES-005.md}
+  SPR-005: {kind: sprint, status: ready-for-pr, state: current, source: SDP/Sprints/SPR-005--sab80535-ports-bus/sprint.md}
+  ITR-010: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-005--sab80535-ports-bus/ScrumIterations.md}
+  SLC-010: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-005--sab80535-ports-bus/ScrumIterations.md}
+  REV-SLC-010: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-010.md}
+  VER-SLC-010: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-010.md}
