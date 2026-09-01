@@ -23,20 +23,25 @@ unmerged for Steering.
 - Ponsse PR #25 evidence HEAD `6a22d87...` revalidated.
 - SPR-007 / ITR-013 / SLC-013 and DES-064..DES-073 defined.
 - Active traceability established before product-code work.
+- Fresh Worker product/test commit
+  `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b` completed with all focused and
+  accepted executable gates green where the required tool versions exist.
 
 ## Not Done
 
-- Worker implementation, independent review, Master verification, acceptance,
-  implementation PR and cross-repository handoffs.
+- Independent REV-SLC-013, Master verification, acceptance, implementation PR
+  and cross-repository handoffs.
 
 ## Exact Next Step
 
-Commit the activation surface, publish the Issue #7 baseline checkpoint, then
-dispatch one fresh Worker against SLC-013.
+Publish the Worker completion checkpoint and dispatch a separate fresh
+Reviewer against exact product HEAD `3cfc4a8...`.
 
 ## Verification Completed
 
-- Authority, baseline identity and branch-boundary checks only.
+- Worker: focused all-23-class suite, accepted core/debug suites, strict Clang,
+  WSL GCC and WSL sanitizer gates reported passing. Master verification has not
+  started.
 
 ## Traceability IDs In Play
 
@@ -58,6 +63,10 @@ REV-SLC-013 and VER-SLC-013.
   canonical resolved pins.
 - No need for a debug-protocol change has been identified; discovery of one is
   a Steering blocker, not implicit scope.
+- WSL Python is 3.6 and cannot run the accepted future-annotations process
+  script; the Windows process gate passes.
+- The sibling DAP checkout is not the accepted pinned revision; it was left
+  unchanged and no integration pass is claimed from it.
 
 ## Worktree Notes
 

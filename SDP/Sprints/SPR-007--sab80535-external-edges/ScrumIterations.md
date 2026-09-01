@@ -75,3 +75,20 @@ audits.
 and a compliance report with exact evidence. A separate fresh Reviewer audits
 the exact product HEAD and either approves it or opens stable findings. Master
 accepts only after independent exact-HEAD verification.
+
+### Worker result
+
+Fresh Worker commit `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b`
+implements the bounded external-line scheduler/detector, canonical request
+integration, immutable trace and focused SLC-013 tests from parent
+`a9167b3acfb317315534b5059fad22d58f105dd8`.
+
+The Worker reports all 23 Steering classes and accepted Stage0/IRQ/timer/UART/
+port/debug facade/process gates passing on Windows GCC and strict Clang, with
+all core suites plus sanitizer coverage passing in WSL. The WSL process test is
+environment-blocked by Python 3.6, while its identical Windows gate passes.
+The DAP integration checkout is not the accepted pinned revision and was not
+modified to bypass identity.
+
+The exact product HEAD is not accepted until fresh REV-SLC-013 and independent
+Master verification complete.
