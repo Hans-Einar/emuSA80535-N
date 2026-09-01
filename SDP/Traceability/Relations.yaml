@@ -130,3 +130,5 @@ relations:
   - {from: ITR-012, type: belongs_to, to: SPR-006}
   - {from: REV-SLC-012, type: reviews, to: SLC-012}
   - {from: VER-SLC-012, type: verifies, to: SLC-012}
+  - {from: SLC-012, type: resolves, to: REV-SLC-011-F001}
+  - {from: SLC-012, type: resolves, to: REV-SLC-011-F002}

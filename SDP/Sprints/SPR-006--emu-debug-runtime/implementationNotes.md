@@ -40,3 +40,9 @@ SLC-012 is the only authorized corrective scope.
   duplicates, with focused escape/surrogate regressions.
 - Worker reports all emulator, strict, sanitizer and Windows/Linux exact-DAP
   gates passing. REV-SLC-012 and VER-SLC-012 remain mandatory.
+
+## Accepted review
+
+REV-SLC-012 approved the exact corrective product/test HEAD with no findings
+and independently resolved F001/F002. Product acceptance remains pending the
+Master-owned VER-SLC-012 evidence record.

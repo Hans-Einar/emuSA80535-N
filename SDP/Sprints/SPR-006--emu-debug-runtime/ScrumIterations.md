@@ -84,7 +84,7 @@ slice below.
 
 ## ITR-012 — Transactional decode and canonical JSON correction
 
-Status: review-pending
+Status: verification-pending
 Iteration ID: ITR-012
 Active Slice: SLC-012
 
@@ -133,3 +133,10 @@ Fresh corrective Worker commit
 modules and two focused tests. Worker reports F001/F002 reproductions red before
 fix, resolved after fix, and the complete Windows/WSL/sanitizer/DAP real matrix
 passing. REV-SLC-012 must independently confirm resolution before acceptance.
+
+### Review result
+
+REV-SLC-012 approved exact corrective product/test HEAD
+`7a547d12deac2d533a29c36a79df48210d099967` with no new findings. Both
+REV-SLC-011 findings are resolved. All EMU-BLK items are Reviewer-satisfied;
+Master verification and exact-DAP rerun remain before Slice acceptance.

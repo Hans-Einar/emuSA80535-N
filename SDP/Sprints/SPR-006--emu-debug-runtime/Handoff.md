@@ -30,16 +30,17 @@ scope.
 - Corrective ITR-012 / SLC-012 activated.
 - Corrective Worker commit `7a547d12deac2d533a29c36a79df48210d099967`
   completed and published; Worker checkpoint reported.
+- REV-SLC-012 approved without findings; F001/F002 resolved.
 
 ## Not Done
 
-- Independent REV-SLC-012, Master verification/real-DAP rerun, final SDP
-  closure and implementation PR.
+- Master verification/real-DAP rerun, final SDP closure and implementation PR.
 
 ## Exact Next Step
 
-Dispatch a separate fresh REV-SLC-012 Reviewer against exact corrective HEAD
-`7a547d12deac2d533a29c36a79df48210d099967`.
+Master independently verifies exact product/test HEAD
+`7a547d12deac2d533a29c36a79df48210d099967`, including real DAP exact-HEAD
+integration. Accept only if VER-SLC-012 passes.
 
 ## Verification Completed
 
@@ -84,3 +85,6 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493338077
 
 SLC-012 Worker checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493528256
+
+REV-SLC-012 checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493673826
