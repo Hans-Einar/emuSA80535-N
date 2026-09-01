@@ -142,6 +142,15 @@ void em8051_set_timer_overflow_callback(struct em8051 *aCPU,
     aCPU->timer_overflow_user = aUser;
 }
 
+void em8051_set_sab_uart_trace(struct em8051 *aCPU,
+                               em8051sabuarttrace aTrace, void *aUser)
+{
+    if (!aCPU)
+        return;
+    aCPU->sab_uart_trace = aTrace;
+    aCPU->sab_uart_trace_user = aUser;
+}
+
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
                        uint16_t aAddress, uint8_t aValue)
 {
@@ -261,12 +270,209 @@ static uint8_t sab_irq_priority(const struct em8051 *aCPU,
                      ((ip1 & bit) ? 2u : 0u));
 }
 
+static bool sab_uart_mode3(const struct em8051 *aCPU)
+{
+    return aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
+           (aCPU->mSFR[REG_SCON] & (SCONMASK_SM0 | SCONMASK_SM1)) ==
+               (SCONMASK_SM0 | SCONMASK_SM1) &&
+           (aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_ADCON)] &
+            SAB_ADCONMASK_BD) == 0;
+}
+
+static void sab_uart_trace_emit(struct em8051 *aCPU,
+                                enum em8051_sab_uart_trace_event aEvent,
+                                uint64_t aMachineCycle, uint8_t aData,
+                                bool aNinthBit, uint8_t aBitIndex,
+                                bool aBitValue)
+{
+    struct em8051_sab_uart_trace_record record;
+    if (!aCPU->sab_uart_trace)
+        return;
+
+    record.event = aEvent;
+    record.machine_cycle = aMachineCycle;
+    record.pc = aCPU->mPC;
+    record.data = aData;
+    record.ninth_bit = aNinthBit;
+    record.bit_index = aBitIndex;
+    record.bit_value = aBitValue;
+    aCPU->sab_uart_trace(&record, aCPU->sab_uart_trace_user);
+}
+
+static bool sab_uart_divider_step(uint8_t *aPhase, bool aSmod)
+{
+    *aPhase = (uint8_t)((*aPhase + 1u) & 0x1fu);
+    return *aPhase == 0u || (aSmod && *aPhase == 16u);
+}
+
+static bool sab_uart_tx_bit_value(const struct em8051 *aCPU,
+                                  uint8_t aBitIndex)
+{
+    if (aBitIndex == 0u)
+        return false;
+    if (aBitIndex <= 8u)
+        return ((aCPU->mSABUartTxData >> (aBitIndex - 1u)) & 1u) != 0;
+    if (aBitIndex == 9u)
+        return aCPU->mSABUartTxNinth;
+    return true;
+}
+
+static void sab_uart_tx_start(struct em8051 *aCPU, uint64_t aMachineCycle)
+{
+    aCPU->mSABUartTxData = aCPU->mSABUartTxPendingData;
+    aCPU->mSABUartTxNinth = aCPU->mSABUartTxPendingNinth;
+    aCPU->mSABUartTxPending = false;
+    aCPU->mSABUartTxActive = true;
+    aCPU->mSABUartTxBitIndex = 0;
+    sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_START,
+                        aMachineCycle, aCPU->mSABUartTxData,
+                        aCPU->mSABUartTxNinth, 0, false);
+}
+
+static void sab_uart_tx_boundary(struct em8051 *aCPU,
+                                 uint64_t aMachineCycle)
+{
+    if (!aCPU->mSABUartTxActive)
+    {
+        if (aCPU->mSABUartTxPending)
+            sab_uart_tx_start(aCPU, aMachineCycle);
+        return;
+    }
+
+    if (aCPU->mSABUartTxBitIndex < 9u)
+    {
+        aCPU->mSABUartTxBitIndex++;
+        sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_BIT,
+                            aMachineCycle, aCPU->mSABUartTxData,
+                            aCPU->mSABUartTxNinth,
+                            aCPU->mSABUartTxBitIndex,
+                            sab_uart_tx_bit_value(
+                                aCPU, aCPU->mSABUartTxBitIndex));
+        return;
+    }
+
+    if (aCPU->mSABUartTxBitIndex == 9u)
+    {
+        aCPU->mSABUartTxBitIndex = 10u;
+        aCPU->mSFR[REG_SCON] |= SCONMASK_TI;
+        sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_STOP,
+                            aMachineCycle, aCPU->mSABUartTxData,
+                            aCPU->mSABUartTxNinth, 10u, true);
+        return;
+    }
+
+    sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_END,
+                        aMachineCycle, aCPU->mSABUartTxData,
+                        aCPU->mSABUartTxNinth, 10u, true);
+    aCPU->mSABUartTxActive = false;
+    if (aCPU->mSABUartTxPending)
+        sab_uart_tx_start(aCPU, aMachineCycle);
+}
+
+static void sab_uart_rx_boundary(struct em8051 *aCPU,
+                                 uint64_t aMachineCycle)
+{
+    bool accepted;
+
+    aCPU->mSABUartRxBitIndex++;
+    if (aCPU->mSABUartRxBitIndex == 10u)
+    {
+        accepted = (aCPU->mSFR[REG_SCON] & SCONMASK_RI) == 0 &&
+                   ((aCPU->mSFR[REG_SCON] & SCONMASK_SM2) == 0 ||
+                    aCPU->mSABUartRxPendingNinth);
+        if (accepted)
+        {
+            aCPU->mSABUartRxData = aCPU->mSABUartRxPendingData;
+            aCPU->mSFR[REG_SBUF] = aCPU->mSABUartRxData;
+            aCPU->mSFR[REG_SCON] &= (uint8_t)~SCONMASK_RB8;
+            if (aCPU->mSABUartRxPendingNinth)
+                aCPU->mSFR[REG_SCON] |= SCONMASK_RB8;
+            aCPU->mSFR[REG_SCON] |= SCONMASK_RI;
+            sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_ACCEPT,
+                                aMachineCycle,
+                                aCPU->mSABUartRxPendingData,
+                                aCPU->mSABUartRxPendingNinth, 10u, true);
+        }
+        else
+        {
+            sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_DROP,
+                                aMachineCycle,
+                                aCPU->mSABUartRxPendingData,
+                                aCPU->mSABUartRxPendingNinth, 10u, true);
+        }
+    }
+    else if (aCPU->mSABUartRxBitIndex == 11u)
+    {
+        aCPU->mSABUartRxActive = false;
+        sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_END,
+                            aMachineCycle, aCPU->mSABUartRxPendingData,
+                            aCPU->mSABUartRxPendingNinth, 10u, true);
+    }
+}
+
+static void sab_uart_timer1_overflow(struct em8051 *aCPU)
+{
+    bool smod;
+    uint64_t completed_cycle;
+
+    if (!sab_uart_mode3(aCPU))
+        return;
+
+    smod = (aCPU->mSFR[REG_PCON] & PCONMASK_SMOD) != 0;
+    completed_cycle = aCPU->mMachineCycleCount + 1u;
+    if (sab_uart_divider_step(&aCPU->mSABUartDividerPhase, smod))
+        sab_uart_tx_boundary(aCPU, completed_cycle);
+    if (aCPU->mSABUartRxActive &&
+        sab_uart_divider_step(&aCPU->mSABUartRxDividerPhase, smod))
+    {
+        sab_uart_rx_boundary(aCPU, completed_cycle);
+    }
+}
+
+static void sab_uart_sbuf_write(struct em8051 *aCPU, uint8_t aValue)
+{
+    if (!sab_uart_mode3(aCPU))
+        return;
+
+    aCPU->mSABUartTxPendingData = aValue;
+    aCPU->mSABUartTxPendingNinth =
+        (aCPU->mSFR[REG_SCON] & SCONMASK_TB8) != 0;
+    aCPU->mSABUartTxPending = true;
+}
+
+bool em8051_sab_uart_inject_rx_frame(struct em8051 *aCPU, uint8_t aData,
+                                     bool aNinthBit)
+{
+    if (!aCPU || !sab_uart_mode3(aCPU) ||
+        (aCPU->mSFR[REG_SCON] & SCONMASK_REN) == 0 ||
+        aCPU->mSABUartRxActive)
+    {
+        return false;
+    }
+
+    aCPU->mSABUartRxPendingData = aData;
+    aCPU->mSABUartRxPendingNinth = aNinthBit;
+    aCPU->mSABUartRxDividerPhase = 0;
+    aCPU->mSABUartRxBitIndex = 0;
+    aCPU->mSABUartRxActive = true;
+    sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_START,
+                        aCPU->mMachineCycleCount, aData, aNinthBit, 0, false);
+    return true;
+}
+
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
 {
     uint8_t index;
     if (!aCPU || aAddress < 0x80u)
         return 0xffu;
     index = (uint8_t)(aAddress - 0x80u);
+    if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
+        aAddress == (uint8_t)(REG_SBUF + 0x80u))
+    {
+        if (aCPU->sfrread[index])
+            return aCPU->sfrread[index](aCPU, aAddress);
+        return aCPU->mSABUartRxData;
+    }
     if (aCPU->sfrread[index])
         return aCPU->sfrread[index](aCPU, aAddress);
     return aCPU->mSFR[index];
@@ -278,6 +484,20 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     if (!aCPU || aAddress < 0x80u)
         return;
     index = (uint8_t)(aAddress - 0x80u);
+    if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
+        aAddress == (uint8_t)(REG_SBUF + 0x80u))
+    {
+        sab_uart_sbuf_write(aCPU, aValue);
+        /* Present TX through the established callback surface, then restore
+         * the SBUF mirror from canonical RX state as it exists after the
+         * callback (which may advance or otherwise update receive state). */
+        aCPU->mSFR[index] = aValue;
+        if (aCPU->sfrwrite[index])
+            aCPU->sfrwrite[index](aCPU, aAddress);
+        aCPU->mSFR[index] = aCPU->mSABUartRxData;
+        em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
+        return;
+    }
     aCPU->mSFR[index] = aValue;
     if (aCPU->sfrwrite[index])
         aCPU->sfrwrite[index](aCPU, aAddress);
@@ -407,6 +627,13 @@ static void timer_overflow_emit(struct em8051 *aCPU,
     struct em8051_timer_overflow_record record;
 
     aCPU->mTimerOverflowCount[aTimer]++;
+    if (aTimer == EM8051_TIMER1 &&
+        aCPU->mVariant == EM8051_VARIANT_SAB80535)
+    {
+        /* Consume the producer event directly. TF1 and the public observer
+         * remain independent views of the same completed timer overflow. */
+        sab_uart_timer1_overflow(aCPU);
+    }
     if (!aCPU->timer_overflow)
         return;
 
@@ -1282,6 +1509,20 @@ void reset(struct em8051 *aCPU, bool aWipe)
     aCPU->mSABIrqInhibitInstructions = 0;
     memset(aCPU->mTimerOverflowCount, 0,
            sizeof(aCPU->mTimerOverflowCount));
+    aCPU->mSABUartDividerPhase = 0;
+    aCPU->mSABUartRxDividerPhase = 0;
+    aCPU->mSABUartRxData = aCPU->mSFR[REG_SBUF];
+    aCPU->mSABUartTxPendingData = 0;
+    aCPU->mSABUartTxData = 0;
+    aCPU->mSABUartTxBitIndex = 0;
+    aCPU->mSABUartRxPendingData = 0;
+    aCPU->mSABUartRxBitIndex = 0;
+    aCPU->mSABUartTxPendingNinth = false;
+    aCPU->mSABUartTxNinth = false;
+    aCPU->mSABUartTxPending = false;
+    aCPU->mSABUartTxActive = false;
+    aCPU->mSABUartRxPendingNinth = false;
+    aCPU->mSABUartRxActive = false;
     aCPU->mInstructionCount = 0;
     aCPU->mMachineCycleCount = 0;
     aCPU->mExceptionRaised = false;

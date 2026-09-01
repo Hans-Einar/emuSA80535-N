@@ -66,3 +66,34 @@ relations:
   - {from: SLC-006, type: implements_design, to: DES-019..DES-026}
   - {from: REV-SLC-006, type: reviews, to: SLC-006}
   - {from: VER-SLC-006, type: verifies, to: SLC-006}
+  - {from: DES-027..DES-038, type: refines, to: ARCH-002}
+  - {from: DES-027..DES-038, type: refines, to: ARCH-003}
+  - {from: DES-027..DES-038, type: refines, to: ARCH-004}
+  - {from: DES-027..DES-038, type: refines, to: ARCH-005}
+  - {from: DES-027..DES-038, type: refines, to: ARCH-006}
+  - {from: SPR-004, type: schedules, to: REQ-011}
+  - {from: SLC-007, type: belongs_to, to: ITR-007}
+  - {from: ITR-007, type: belongs_to, to: SPR-004}
+  - {from: SLC-007, type: satisfies, to: REQ-011}
+  - {from: SLC-007, type: implements_design, to: DES-027..DES-038}
+  - {from: REV-SLC-007, type: reviews, to: SLC-007}
+  - {from: VER-SLC-007, type: verifies, to: SLC-007}
+  - {from: REV-SLC-007, type: opens, to: REV-SLC-007-F001}
+  - {from: REV-SLC-007, type: opens, to: REV-SLC-007-F002}
+  - {from: SLC-008, type: corrects, to: SLC-007}
+  - {from: SLC-008, type: addresses, to: REV-SLC-007-F001}
+  - {from: SLC-008, type: addresses, to: REV-SLC-007-F002}
+  - {from: SLC-008, type: belongs_to, to: ITR-008}
+  - {from: ITR-008, type: belongs_to, to: SPR-004}
+  - {from: REV-SLC-008, type: reviews, to: SLC-008}
+  - {from: VER-SLC-008, type: verifies, to: SLC-008}
+  - {from: REV-SLC-008, type: opens, to: REV-SLC-008-F001}
+  - {from: SLC-009, type: corrects, to: SLC-008}
+  - {from: SLC-009, type: addresses, to: REV-SLC-008-F001}
+  - {from: SLC-009, type: belongs_to, to: ITR-009}
+  - {from: ITR-009, type: belongs_to, to: SPR-004}
+  - {from: REV-SLC-009, type: reviews, to: SLC-009}
+  - {from: VER-SLC-009, type: verifies, to: SLC-009}
+  - {from: SLC-008, type: resolves, to: REV-SLC-007-F001}
+  - {from: SLC-008, type: resolves, to: REV-SLC-007-F002}
+  - {from: SLC-009, type: resolves, to: REV-SLC-008-F001}
