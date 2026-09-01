@@ -121,3 +121,12 @@ relations:
   - {from: SLC-011, type: implements_design, to: DES-050..DES-063}
   - {from: REV-SLC-011, type: reviews, to: SLC-011}
   - {from: VER-SLC-011, type: verifies, to: SLC-011}
+  - {from: REV-SLC-011, type: opens, to: REV-SLC-011-F001}
+  - {from: REV-SLC-011, type: opens, to: REV-SLC-011-F002}
+  - {from: SLC-012, type: corrects, to: SLC-011}
+  - {from: SLC-012, type: addresses, to: REV-SLC-011-F001}
+  - {from: SLC-012, type: addresses, to: REV-SLC-011-F002}
+  - {from: SLC-012, type: belongs_to, to: ITR-012}
+  - {from: ITR-012, type: belongs_to, to: SPR-006}
+  - {from: REV-SLC-012, type: reviews, to: SLC-012}
+  - {from: VER-SLC-012, type: verifies, to: SLC-012}

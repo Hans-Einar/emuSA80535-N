@@ -26,17 +26,18 @@ scope.
 - Fresh Worker product/test commit
   `84358bf05a400f53daace8805c8c15c6514fd03a` completed and published.
 - Worker completion checkpoint reported on Issue #6.
+- REV-SLC-011 completed changes-required with F001/F002.
+- Corrective ITR-012 / SLC-012 activated.
 
 ## Not Done
 
-- Independent review, Master verification/real-DAP rerun, final SDP closure and
-  implementation PR.
+- Corrective Worker, independent REV-SLC-012, Master verification/real-DAP
+  rerun, final SDP closure and implementation PR.
 
 ## Exact Next Step
 
-Dispatch a separate fresh Reviewer against exact product HEAD
-`84358bf05a400f53daace8805c8c15c6514fd03a`. If findings open, define a
-corrective fresh-Worker slice before any acceptance.
+Dispatch a fresh corrective Worker against SLC-012 for only F001/F002 and their
+regressions. Then dispatch a separate fresh REV-SLC-012 Reviewer.
 
 ## Verification Completed
 
@@ -75,3 +76,6 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5492796877
 
 Worker completion checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493181132
+
+REV-SLC-011 checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493338077

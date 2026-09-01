@@ -2,7 +2,7 @@
 
 ## ITR-011 — Complete emu-debug 1.0 runtime
 
-Status: review-pending
+Status: changes-required
 Iteration ID: ITR-011
 Active Slice: SLC-011
 
@@ -73,3 +73,55 @@ implements the full SLC-011 product/test surface from activation base
 emulator suites, new facade/process tests, cross-platform strict/sanitizer
 gates and exact-DAP real integration passing. REV-SLC-011 must independently
 review the exact product HEAD before Master acceptance.
+
+### Review result
+
+REV-SLC-011 requires changes. F001 finds rejected RANGE decode mutating
+predecessor knowledge; F002 finds raw escaped JSON key spelling bypassing
+canonical required-member and duplicate handling. All other reviewed areas and
+cross-platform/DAP evidence pass. Continue only through the bounded corrective
+slice below.
+
+## ITR-012 — Transactional decode and canonical JSON correction
+
+Status: active
+Iteration ID: ITR-012
+Active Slice: SLC-012
+
+### Slice contract — SLC-012
+
+**Goal:** resolve exactly REV-SLC-011-F001 and REV-SLC-011-F002 without
+changing the frozen protocol or any other emulator behavior.
+
+**Expected product files:** `emu_debug.c`, `emu_debug_server.c`, focused
+facade/process tests. Touch build/docs only if the corrective tests require it.
+
+**Required behavior:**
+
+1. a failed `decodeCode` request, including RANGE after partial traversal,
+   leaves all predecessor knowledge unchanged;
+2. successful decode preserves the existing known-predecessor contract;
+3. JSON member names are compared after standards-compliant string unescaping;
+4. escaped spellings of required members behave as their canonical names;
+5. semantic duplicates, including raw+escaped equivalents, are rejected;
+6. malformed surrogate/escape input remains bounded and structured;
+7. all SLC-011 commands, capabilities and accepted regressions remain green.
+
+**Invariants:** no DAP product/contract changes; atomic lifecycle/state rules;
+protocol-only stdout; current core/peripheral semantics; no target/live/physical
+scope.
+
+**Non-goals:** any feature beyond F001/F002, parser redesign unrelated to key
+canonicalization, Issue #7 edges, ADC, Timer2, P1000 or physical I/O.
+
+**Traceability:** SLC-012 corrects SLC-011 and addresses
+REV-SLC-011-F001/F002 under REQ-016, ARCH-007..010 and DES-051/052/056/059.
+Expected review/verification IDs are REV-SLC-012 and VER-SLC-012.
+
+**Required verification:** exact independent reproductions; escaped canonical
+and duplicate raw-NDJSON matrix; all facade/process/accepted suites; Windows
+strict and Linux sanitizer gates; real DAP exact-HEAD rerun.
+
+**Completion signal:** a fresh Worker commits only corrective product/tests; a
+separate fresh Reviewer confirms both findings resolved before Master reruns
+the complete verification and DAP integration gates.

@@ -23,3 +23,10 @@ Master verification.
   regressions, DAP 99/99 plus 45/45 contract, real runtime/F5 and package smoke
   passing with the DAP worktree unchanged.
 - This evidence is not accepted until REV-SLC-011 and VER-SLC-011 complete.
+
+## Review disposition
+
+REV-SLC-011 is changes-required. F001 keeps EMU-BLK-006 open because a failed
+RANGE decode mutates predecessor knowledge. F002 keeps EMU-BLK-002 open because
+escaped semantic duplicate JSON keys bypass canonical handling. ITR-012 /
+SLC-012 is the only authorized corrective scope.
