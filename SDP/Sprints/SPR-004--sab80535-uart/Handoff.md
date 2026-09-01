@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Independently review SLC-007 product HEAD `d2fe5d31...`, then run Master
-verification only if approved.
+Correct REV-SLC-007-F001/F002 through active ITR-008 / SLC-008, then obtain a
+fresh independent review.
 
 ## Authoritative Source Documents
 
@@ -22,30 +22,32 @@ verification only if approved.
 - SPR-004 / ITR-007 / SLC-007 opened from current master.
 - Worker product/test commit `d2fe5d31ac887d81f0dfd17cbbfa222abba1acf3`
   completed; fresh REV-SLC-007 review is running.
+- REV-SLC-007 completed with `changes-required`: broken SAB SBUF callbacks and
+  unsupported mode/BD writes replacing pending mode3 frames.
 
 ## Not Done
 
-- SLC-007 independent review, Master verification and PR.
+- SLC-008 correction, fresh review, Master verification and PR.
 - Stage 2, ADC, Timer2, P1000 target or any live/physical I/O; unauthorized.
 
 ## Exact Next Step
 
-Fresh Reviewer independently challenges exact UART timing/storage/interrupt
-behavior on product HEAD.
+Fresh Worker implements only the SLC-008 contract in `ScrumIterations.md`.
 
 ## Verification Completed
 
-Worker-reported cross-platform evidence exists but is not accepted yet.
-Stage0/IRQ/timer suites remain the regression baseline.
+REV-SLC-007 reran all platforms/sanitizers and reproduced F001/F002. Prior
+suites remain green.
 
 ## Traceability IDs In Play
 
 MND-001, STU-001, REQ-011, ARCH-002/003/004/005/006, DES-027..DES-038,
-SPR-004, ITR-007, SLC-007, REV-SLC-007 and VER-SLC-007.
+SPR-004, ITR-008, SLC-008, REV-SLC-007-F001/F002, REV-SLC-008 and
+VER-SLC-008.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-007 in review.
+- CurrentIndex updated: yes, SLC-008 active and findings open.
 - Relations updated: yes.
 - Ledger updated: PR #4 merge and Sprint/Iteration/Slice start recorded.
 
@@ -69,3 +71,6 @@ Master opening checkpoint:
 
 Worker completion checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486494375`.
+
+Reviewer changes-required checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486557035`.

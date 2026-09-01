@@ -2,7 +2,7 @@
 
 ## ITR-007 — Mode-3 9-bit UART
 
-Status: in-review
+Status: changes-required
 Iteration ID: ITR-007
 Active Slice: SLC-007
 
@@ -64,3 +64,49 @@ implements bounded SAB mode-3 TX/RX/divider/interrupt/trace state and focused
 UART tests. Worker reports all four suites passing on Windows GCC/strict Clang
 and WSL GCC/ASan+UBSan. REV-SLC-007 is reviewing exact HEAD; no acceptance is
 recorded yet.
+
+### Review result
+
+REV-SLC-007 reviewed exact product HEAD `d2fe5d31ac887d81f0dfd17cbbfa222abba1acf3`
+and set `changes-required`. Open findings are REV-SLC-007-F001/F002. SLC-007 is
+not accepted; corrective work moves to ITR-008 / SLC-008.
+
+## ITR-008 — SBUF callback and mode-isolation correction
+
+Status: active
+Iteration ID: ITR-008
+Active Slice: SLC-008
+
+### Slice contract — SLC-008
+
+**Goal:** close REV-SLC-007-F001/F002 without changing accepted UART timing or
+adding any new mode/peripheral behavior.
+
+**Expected product files:** minimal SBUF gateway/UART pending logic in `core.c`
+and focused `tests/test_stage1_uart.c`; header/README only if contract wording
+needs clarification.
+
+**Required corrections:**
+
+1. SAB SBUF read callback return overrides the architectural read value;
+2. SAB SBUF write callback observes the actual TX write byte while separate RX
+   storage remains unchanged after callback completion;
+3. generic SFR trace continues to record the TX write value;
+4. unsupported non-mode3 or ADCON.BD SBUF writes do not create or replace any
+   mode3 pending/in-flight byte or TB8;
+5. restoring supported mode/source transmits the original pending frame;
+6. callback fixes do not re-couple TX/RX storage or regress classic variants;
+7. preserve all REV-SLC-007 positive timing/interrupt/full-duplex behavior.
+
+**Non-goals:** adding behavior for modes 0/1/2 or dedicated generator, Stage2,
+ADC, Timer2, target logic or live/physical I/O.
+
+**Traceability:** SLC-008 corrects SLC-007 and addresses REV-SLC-007-F001/F002.
+Expected review REV-SLC-008 and verification VER-SLC-008.
+
+**Required verification:** full four-suite Windows/WSL/strict/sanitizer matrix;
+read override and TX-write callback probes; RX preservation; pending mode1/BD
+isolation/restoration; trace value; all 18 SLC-007 classes and classic SBUF.
+
+**Completion signal:** fresh Worker commits only the correction; fresh Reviewer
+approves exact corrective HEAD; Master reruns and accepts.

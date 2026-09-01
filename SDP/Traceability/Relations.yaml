@@ -78,3 +78,12 @@ relations:
   - {from: SLC-007, type: implements_design, to: DES-027..DES-038}
   - {from: REV-SLC-007, type: reviews, to: SLC-007}
   - {from: VER-SLC-007, type: verifies, to: SLC-007}
+  - {from: REV-SLC-007, type: opens, to: REV-SLC-007-F001}
+  - {from: REV-SLC-007, type: opens, to: REV-SLC-007-F002}
+  - {from: SLC-008, type: corrects, to: SLC-007}
+  - {from: SLC-008, type: addresses, to: REV-SLC-007-F001}
+  - {from: SLC-008, type: addresses, to: REV-SLC-007-F002}
+  - {from: SLC-008, type: belongs_to, to: ITR-008}
+  - {from: ITR-008, type: belongs_to, to: SPR-004}
+  - {from: REV-SLC-008, type: reviews, to: SLC-008}
+  - {from: VER-SLC-008, type: verifies, to: SLC-008}

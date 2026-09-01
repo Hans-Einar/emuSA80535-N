@@ -11,5 +11,8 @@ Status: active; no verified SLC-007 product implementation yet.
 
 ## Verified work
 
-None yet. Record only independently reviewed or Master-rerun evidence.
-
+- Product commit `d2fe5d31ac887d81f0dfd17cbbfa222abba1acf3`
+  passed all submitted/cross-platform suites and most independent semantics,
+  but REV-SLC-007 reproduced two blocking findings. It is not accepted.
+- Independently verified positive behavior covers divider/framing/TI/back-to-
+  back/RX/full-duplex/interrupt/reset/classic behavior outside F001/F002.
