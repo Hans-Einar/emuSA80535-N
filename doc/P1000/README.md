@@ -9,7 +9,7 @@ Primary source at this sync:
 - repository: `Hans-Einar/ponsse`
 - PR: `#25 — P1000: reconstruct 386AM firmware and I/O architecture`
 - branch: `codex/p1000-386am-reconstruction`
-- reviewed snapshot HEAD used here: `6a22d8713b607308c94f02df17d35ddbe8a36d6a`
+- source snapshot HEAD used here: `6a22d8713b607308c94f02df17d35ddbe8a36d6a`
 - reference ROM: `p1000/MAI386AM-19.03.2004.bin`
 - ROM SHA-256: `d1b5702e931330269c75ff8f08c32e9f107bb01c5ee89d852eda4bf14bfa073e`
 
