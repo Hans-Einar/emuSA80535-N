@@ -20,6 +20,8 @@ Status: verified; SLC-012 accepted.
   regressions, Windows/Linux process, exact DAP 99/99 and 45/45, real F5 and
   VSIX/package smoke with zero orphans.
 - All EMU-BLK-001..010 are satisfied; REQ-016 is satisfied.
+- Focused implementation PR #9 opened against master and intentionally left
+  unmerged: https://github.com/Hans-Einar/emuSA80535-N/pull/9
 
 ## Worker result awaiting review
 

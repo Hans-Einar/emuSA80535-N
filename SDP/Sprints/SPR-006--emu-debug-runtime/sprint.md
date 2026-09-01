@@ -1,6 +1,6 @@
 # SPR-006 — emu-debug protocol 1.0 headless runtime
 
-Status: ready-for-pr
+Status: complete
 Sprint ID: SPR-006
 Started: 2026-09-01
 Steering authority: Issue #6
@@ -50,3 +50,8 @@ REV-SLC-012 and VER-SLC-012 accept exact product/test HEAD
 `7a547d12deac2d533a29c36a79df48210d099967`. All EMU-BLK items, emulator
 regressions, Windows/Linux process gates and unchanged DAP exact-HEAD real
 integration gates pass. SPR-006 is ready for the focused unmerged PR.
+
+The verified branch is published as PR #9:
+https://github.com/Hans-Einar/emuSA80535-N/pull/9
+
+SPR-006 is complete. PR #9 remains open and unmerged for Steering review.

@@ -2,8 +2,7 @@
 
 ## Current Objective
 
-Publish the verified SPR-006 `emu-debug` protocol 1.0 implementation PR and
-leave it unmerged for Steering review.
+SPR-006 is complete. Review PR #9 and leave merge authority to Steering.
 
 ## Authoritative Source Documents
 
@@ -32,15 +31,15 @@ leave it unmerged for Steering review.
 - REV-SLC-012 approved without findings; F001/F002 resolved.
 - VER-SLC-012 passed the complete Master emulator/DAP/safety matrix.
 - SLC-012 accepted and SPR-006 ready for PR.
+- Focused implementation PR #9 opened against master and left unmerged.
 
 ## Not Done
 
-- Focused implementation PR opening and final Issue #6 PR checkpoint.
+- PR #9 Steering review/merge only. Merge is not authorized by this execution.
 
 ## Exact Next Step
 
-Open the focused PR from `codex/emu-debug-runtime` to `master`, record its exact
-HEAD, update Issue #6, and do not merge it.
+Publish the final Issue #6 PR checkpoint, confirm exact PR HEAD/state, and stop.
 
 ## Verification Completed
 
@@ -89,3 +88,11 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493673826
 
 Master verification/acceptance checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493792697
+
+## Pull Request
+
+- PR: https://github.com/Hans-Einar/emuSA80535-N/pull/9
+- Base: `master` at `b8a8fe67f37af250cbe20e3ce3450edfe4ea5fdf`
+- Head branch: `codex/emu-debug-runtime`
+- Exact product/test HEAD: `7a547d12deac2d533a29c36a79df48210d099967`
+- State: open and intentionally unmerged.
