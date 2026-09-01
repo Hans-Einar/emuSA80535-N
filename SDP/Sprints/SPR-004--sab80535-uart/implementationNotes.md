@@ -26,3 +26,7 @@ Status: active; no verified SLC-007 product implementation yet.
   sanitizer suites, three product diff checks, no-target/no-live, NDJSON and
   master-ancestry gates.
 - REQ-011/SLC-007 is accepted technically and ready for PR.
+- PR #5 opened against master:
+  `https://github.com/Hans-Einar/emuSA80535-N/pull/5`.
+- Exact reviewed CPU revision reported to Ponsse Issue #26:
+  `https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5486776430`.

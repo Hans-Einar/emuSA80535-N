@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Push the verified branch, open the focused UART PR and record PR/Ponsse
-checkpoint identities. Then stop.
+SPR-004 is complete. Review/merge focused PR #5. Do not begin any further scope
+without new Steering authorization.
 
 ## Authoritative Source Documents
 
@@ -31,15 +31,16 @@ checkpoint identities. Then stop.
 - SLC-009 minimal correction `d2d3f63b1a10a0b042d052dd6d872c708db967e0`
   completed; fresh review is running.
 - REV-SLC-009 approved with no findings; VER-SLC-009 passed.
+- PR #5 opened and exact product commit reported to Ponsse Issue #26.
 
 ## Not Done
 
-- Focused PR publication and Ponsse Issue #26 checkpoint.
+- PR #5 review/merge only. All later scope is unauthorized.
 - Stage 2, ADC, Timer2, P1000 target or any live/physical I/O; unauthorized.
 
 ## Exact Next Step
 
-Open the UART branch PR against current master. Do not start any later scope.
+Review/merge PR #5 and stop.
 
 ## Verification Completed
 
@@ -47,6 +48,7 @@ REV-SLC-007 reran all platforms/sanitizers and reproduced F001/F002. Prior
 suites remain green.
 REV-SLC-008 reran all suites and reproduced F001 with callback mutation.
 REV-SLC-009 approved final coherence and VER-SLC-009 passed all gates.
+GitHub reports PR #5 open and mergeable with no configured check runs.
 
 ## Traceability IDs In Play
 
@@ -55,7 +57,7 @@ SPR-004, ITR-009, SLC-009, REV-SLC-009 and VER-SLC-009.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-009 accepted; Sprint ready-for-pr.
+- CurrentIndex updated: yes, Sprint complete and no active item.
 - Relations updated: yes.
 - Ledger updated: PR #4 merge and Sprint/Iteration/Slice start recorded.
 
@@ -94,3 +96,19 @@ Final corrective Worker checkpoint:
 
 Final Reviewer/Master acceptance checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486758165`.
+
+PR checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486777959`.
+
+## Pull Request
+
+- PR: `https://github.com/Hans-Einar/emuSA80535-N/pull/5`
+- Base: `master`
+- Head: `codex/sab80535-uart`
+- State at closure: open, mergeable, no configured check runs.
+
+## Cross-Repository Checkpoint
+
+Reviewed CPU product HEAD `d2d3f63b1a10a0b042d052dd6d872c708db967e0`
+reported to Ponsse Issue #26:
+`https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5486776430`.
