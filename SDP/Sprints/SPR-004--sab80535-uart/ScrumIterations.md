@@ -2,7 +2,7 @@
 
 ## ITR-007 — Mode-3 9-bit UART
 
-Status: active
+Status: in-review
 Iteration ID: ITR-007
 Active Slice: SLC-007
 
@@ -57,3 +57,10 @@ openSUSE WSL GCC and ASan/UBSan; no-target/no-live-I/O audit; exact product diff
 approves or opens stable findings; Master accepts only after independent
 verification and stops at this Slice boundary.
 
+### Worker result
+
+Worker commit `d2fe5d31ac887d81f0dfd17cbbfa222abba1acf3`
+implements bounded SAB mode-3 TX/RX/divider/interrupt/trace state and focused
+UART tests. Worker reports all four suites passing on Windows GCC/strict Clang
+and WSL GCC/ASan+UBSan. REV-SLC-007 is reviewing exact HEAD; no acceptance is
+recorded yet.

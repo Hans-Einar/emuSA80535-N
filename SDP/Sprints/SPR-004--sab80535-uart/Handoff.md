@@ -2,7 +2,8 @@
 
 ## Current Objective
 
-Implement and independently review SLC-007 mode-3 9-bit UART only.
+Independently review SLC-007 product HEAD `d2fe5d31...`, then run Master
+verification only if approved.
 
 ## Authoritative Source Documents
 
@@ -19,20 +20,23 @@ Implement and independently review SLC-007 mode-3 9-bit UART only.
 - Timer PR #4 merged to current master `c0cd6f2...`.
 - SLC-007 authority reconciled with Siemens TX/RX timing and SBUF separation.
 - SPR-004 / ITR-007 / SLC-007 opened from current master.
+- Worker product/test commit `d2fe5d31ac887d81f0dfd17cbbfa222abba1acf3`
+  completed; fresh REV-SLC-007 review is running.
 
 ## Not Done
 
-- SLC-007 product implementation, review, verification and PR.
+- SLC-007 independent review, Master verification and PR.
 - Stage 2, ADC, Timer2, P1000 target or any live/physical I/O; unauthorized.
 
 ## Exact Next Step
 
-Fresh Worker implements only the active UART contract, commits focused product/
-tests and reports evidence. Fresh Reviewer then inspects exact HEAD.
+Fresh Reviewer independently challenges exact UART timing/storage/interrupt
+behavior on product HEAD.
 
 ## Verification Completed
 
-Authority/readiness only. Stage0/IRQ/timer suites are the regression baseline.
+Worker-reported cross-platform evidence exists but is not accepted yet.
+Stage0/IRQ/timer suites remain the regression baseline.
 
 ## Traceability IDs In Play
 
@@ -41,7 +45,7 @@ SPR-004, ITR-007, SLC-007, REV-SLC-007 and VER-SLC-007.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes, SLC-007 active.
+- CurrentIndex updated: yes, SLC-007 in review.
 - Relations updated: yes.
 - Ledger updated: PR #4 merge and Sprint/Iteration/Slice start recorded.
 
@@ -62,3 +66,6 @@ Branch `codex/sab80535-uart` starts exactly from current master
 
 Master opening checkpoint:
 `https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486344066`.
+
+Worker completion checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/2#issuecomment-5486494375`.
