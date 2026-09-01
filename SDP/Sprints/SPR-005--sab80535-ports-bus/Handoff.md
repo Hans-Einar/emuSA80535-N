@@ -58,3 +58,7 @@ DES-039..DES-049, SPR-005, ITR-010, SLC-010, REV-SLC-010 and VER-SLC-010.
 Branch `codex/sab80535-ports-bus` starts exactly from current master
 `88ccb2b45976c137820cdc56eec550d953bcf76d`.
 
+## Issue Checkpoint
+
+Master opening checkpoint:
+`https://github.com/Hans-Einar/emuSA80535-N/issues/7#issuecomment-5491228924`.
