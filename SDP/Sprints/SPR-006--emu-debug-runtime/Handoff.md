@@ -89,6 +89,9 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493673826
 Master verification/acceptance checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493792697
 
+Final PR/READY checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/6#issuecomment-5493837877
+
 ## Pull Request
 
 - PR: https://github.com/Hans-Einar/emuSA80535-N/pull/9
