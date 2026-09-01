@@ -30,3 +30,13 @@ REV-SLC-011 is changes-required. F001 keeps EMU-BLK-006 open because a failed
 RANGE decode mutates predecessor knowledge. F002 keeps EMU-BLK-002 open because
 escaped semantic duplicate JSON keys bypass canonical handling. ITR-012 /
 SLC-012 is the only authorized corrective scope.
+
+## Corrective Worker result awaiting review
+
+- Exact corrective product/test HEAD:
+  `7a547d12deac2d533a29c36a79df48210d099967`.
+- F001 fix stages predecessor metadata until complete decode success.
+- F002 fix canonicalizes decoded JSON member names and rejects semantic
+  duplicates, with focused escape/surrogate regressions.
+- Worker reports all emulator, strict, sanitizer and Windows/Linux exact-DAP
+  gates passing. REV-SLC-012 and VER-SLC-012 remain mandatory.

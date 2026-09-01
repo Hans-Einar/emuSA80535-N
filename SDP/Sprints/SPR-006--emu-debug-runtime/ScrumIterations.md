@@ -84,7 +84,7 @@ slice below.
 
 ## ITR-012 — Transactional decode and canonical JSON correction
 
-Status: active
+Status: review-pending
 Iteration ID: ITR-012
 Active Slice: SLC-012
 
@@ -125,3 +125,11 @@ strict and Linux sanitizer gates; real DAP exact-HEAD rerun.
 **Completion signal:** a fresh Worker commits only corrective product/tests; a
 separate fresh Reviewer confirms both findings resolved before Master reruns
 the complete verification and DAP integration gates.
+
+### Worker result
+
+Fresh corrective Worker commit
+`7a547d12deac2d533a29c36a79df48210d099967` changes only the two runtime
+modules and two focused tests. Worker reports F001/F002 reproductions red before
+fix, resolved after fix, and the complete Windows/WSL/sanitizer/DAP real matrix
+passing. REV-SLC-012 must independently confirm resolution before acceptance.
