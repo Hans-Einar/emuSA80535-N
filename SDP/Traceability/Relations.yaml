@@ -1,5 +1,5 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-08-31
+updated: 2026-09-01
 
 relations:
   - {from: STU-001, type: informs, to: MND-001}
@@ -109,3 +109,26 @@ relations:
   - {from: SLC-010, type: implements_design, to: DES-039..DES-049}
   - {from: REV-SLC-010, type: reviews, to: SLC-010}
   - {from: VER-SLC-010, type: verifies, to: SLC-010}
+  - {from: STU-002, type: informs, to: REQ-016}
+  - {from: REQ-016, type: derives_from, to: MND-001}
+  - {from: REQ-016, type: informed_by, to: STU-002}
+  - {from: ARCH-007..ARCH-010, type: realizes, to: REQ-016}
+  - {from: DES-050..DES-063, type: refines, to: ARCH-007..ARCH-010}
+  - {from: SPR-006, type: schedules, to: REQ-016}
+  - {from: SLC-011, type: belongs_to, to: ITR-011}
+  - {from: ITR-011, type: belongs_to, to: SPR-006}
+  - {from: SLC-011, type: satisfies, to: REQ-016}
+  - {from: SLC-011, type: implements_design, to: DES-050..DES-063}
+  - {from: REV-SLC-011, type: reviews, to: SLC-011}
+  - {from: VER-SLC-011, type: verifies, to: SLC-011}
+  - {from: REV-SLC-011, type: opens, to: REV-SLC-011-F001}
+  - {from: REV-SLC-011, type: opens, to: REV-SLC-011-F002}
+  - {from: SLC-012, type: corrects, to: SLC-011}
+  - {from: SLC-012, type: addresses, to: REV-SLC-011-F001}
+  - {from: SLC-012, type: addresses, to: REV-SLC-011-F002}
+  - {from: SLC-012, type: belongs_to, to: ITR-012}
+  - {from: ITR-012, type: belongs_to, to: SPR-006}
+  - {from: REV-SLC-012, type: reviews, to: SLC-012}
+  - {from: VER-SLC-012, type: verifies, to: SLC-012}
+  - {from: SLC-012, type: resolves, to: REV-SLC-011-F001}
+  - {from: SLC-012, type: resolves, to: REV-SLC-011-F002}

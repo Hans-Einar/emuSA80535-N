@@ -59,3 +59,6 @@ The CPU repository never depends on Ponsse/P1000 source.
 ARCH-001..ARCH-006 realize REQ-001..REQ-015 and are refined by
 DES-001..DES-010.
 
+The generic headless debug extension is defined separately by
+ARCH-007..ARCH-010 in `EMU-DEBUG-ARCH-002.md`.
+
