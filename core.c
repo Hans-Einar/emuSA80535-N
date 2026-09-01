@@ -431,11 +431,13 @@ static void sab_uart_timer1_overflow(struct em8051 *aCPU)
 
 static void sab_uart_sbuf_write(struct em8051 *aCPU, uint8_t aValue)
 {
+    if (!sab_uart_mode3(aCPU))
+        return;
+
     aCPU->mSABUartTxPendingData = aValue;
     aCPU->mSABUartTxPendingNinth =
         (aCPU->mSFR[REG_SCON] & SCONMASK_TB8) != 0;
-    if (sab_uart_mode3(aCPU))
-        aCPU->mSABUartTxPending = true;
+    aCPU->mSABUartTxPending = true;
 }
 
 bool em8051_sab_uart_inject_rx_frame(struct em8051 *aCPU, uint8_t aData,
@@ -468,7 +470,7 @@ uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
         aAddress == (uint8_t)(REG_SBUF + 0x80u))
     {
         if (aCPU->sfrread[index])
-            (void)aCPU->sfrread[index](aCPU, aAddress);
+            return aCPU->sfrread[index](aCPU, aAddress);
         return aCPU->mSABUartRxData;
     }
     if (aCPU->sfrread[index])
@@ -485,9 +487,14 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
         aAddress == (uint8_t)(REG_SBUF + 0x80u))
     {
+        uint8_t rx_mirror = aCPU->mSFR[index];
         sab_uart_sbuf_write(aCPU, aValue);
+        /* Preserve separate RX storage while presenting the architectural
+         * write value through the established parent SFR callback surface. */
+        aCPU->mSFR[index] = aValue;
         if (aCPU->sfrwrite[index])
             aCPU->sfrwrite[index](aCPU, aAddress);
+        aCPU->mSFR[index] = rx_mirror;
         em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
         return;
     }

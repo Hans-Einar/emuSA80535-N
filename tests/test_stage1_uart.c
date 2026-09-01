@@ -40,6 +40,40 @@ struct timer_capture
     uint64_t count;
 };
 
+struct trace_capture
+{
+    struct em8051_trace_record records[8];
+    size_t count;
+};
+
+static uint8_t gSbufReadOverride;
+static uint8_t gSbufWriteObserved;
+static unsigned gSbufReadCount;
+static unsigned gSbufWriteCount;
+
+static uint8_t sbuf_read_override(struct em8051 *aCPU, uint8_t aRegister)
+{
+    CHECK(aRegister == 0x99u);
+    CHECK(aCPU->mSFR[REG_SBUF] == aCPU->mSABUartRxData);
+    gSbufReadCount++;
+    return gSbufReadOverride;
+}
+
+static void sbuf_write_observer(struct em8051 *aCPU, uint8_t aRegister)
+{
+    CHECK(aRegister == 0x99u);
+    gSbufWriteObserved = aCPU->mSFR[REG_SBUF];
+    gSbufWriteCount++;
+}
+
+static void capture_trace(const struct em8051_trace_record *aRecord,
+                          void *aUser)
+{
+    struct trace_capture *capture = (struct trace_capture *)aUser;
+    if (capture->count < ARRAY_SIZE(capture->records))
+        capture->records[capture->count++] = *aRecord;
+}
+
 static void setup_fixture(struct fixture *aFixture,
                           enum em8051_variant aVariant)
 {
@@ -102,6 +136,115 @@ static const struct em8051_sab_uart_trace_record *find_event(
         }
     }
     return NULL;
+}
+
+static void test_sbuf_callback_and_trace_contract(void)
+{
+    struct fixture fixture;
+    struct trace_capture trace;
+
+    memset(&trace, 0, sizeof(trace));
+    setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
+    configure_uart(&fixture.cpu, true, true);
+    fixture.cpu.mSABUartRxData = 0x11u;
+    fixture.cpu.mSFR[REG_SBUF] = 0x11u;
+    fixture.cpu.sfrread[REG_SBUF] = sbuf_read_override;
+    fixture.cpu.sfrwrite[REG_SBUF] = sbuf_write_observer;
+    gSbufReadOverride = 0xe7u;
+    gSbufWriteObserved = 0;
+    gSbufReadCount = 0;
+    gSbufWriteCount = 0;
+    em8051_set_trace(&fixture.cpu, capture_trace, &trace);
+
+    em8051_sfr_write(&fixture.cpu, 0x99u, 0xa5u);
+    CHECK(gSbufWriteCount == 1u);
+    CHECK(gSbufWriteObserved == 0xa5u);
+    CHECK(fixture.cpu.mSABUartRxData == 0x11u);
+    CHECK(fixture.cpu.mSFR[REG_SBUF] == 0x11u);
+    CHECK(fixture.cpu.mSABUartTxPendingData == 0xa5u);
+    CHECK(fixture.cpu.mSABUartTxPending);
+    CHECK(trace.count == 1u);
+    if (trace.count == 1u)
+    {
+        CHECK(trace.records[0].type == EM8051_TRACE_SFR_WRITE);
+        CHECK(trace.records[0].address == 0x99u);
+        CHECK(trace.records[0].value == 0xa5u);
+    }
+
+    CHECK(em8051_sfr_read(&fixture.cpu, 0x99u) == 0xe7u);
+    CHECK(gSbufReadCount == 1u);
+    CHECK(fixture.cpu.mSABUartRxData == 0x11u);
+    CHECK(fixture.cpu.mSFR[REG_SBUF] == 0x11u);
+    fixture.cpu.sfrread[REG_SBUF] = NULL;
+    CHECK(em8051_sfr_read(&fixture.cpu, 0x99u) == 0x11u);
+}
+
+static void test_unsupported_writes_preserve_mode3_state(void)
+{
+    struct fixture fixture;
+    struct uart_capture uart;
+    struct trace_capture trace;
+    const struct em8051_sab_uart_trace_record *start;
+
+    memset(&uart, 0, sizeof(uart));
+    memset(&trace, 0, sizeof(trace));
+    setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
+    configure_uart(&fixture.cpu, true, true);
+    fixture.cpu.mSFR[REG_SCON] |= SCONMASK_TB8;
+    em8051_sfr_write(&fixture.cpu, 0x99u, 0x51u);
+    CHECK(fixture.cpu.mSABUartTxPending);
+    CHECK(fixture.cpu.mSABUartTxPendingData == 0x51u);
+    CHECK(fixture.cpu.mSABUartTxPendingNinth);
+
+    fixture.cpu.sfrwrite[REG_SBUF] = sbuf_write_observer;
+    em8051_set_trace(&fixture.cpu, capture_trace, &trace);
+    gSbufWriteCount = 0;
+    fixture.cpu.mSFR[REG_SCON] = SCONMASK_SM1 | SCONMASK_REN;
+    em8051_sfr_write(&fixture.cpu, 0x99u, 0xa2u);
+    CHECK(gSbufWriteCount == 1u);
+    CHECK(gSbufWriteObserved == 0xa2u);
+    CHECK(fixture.cpu.mSABUartTxPendingData == 0x51u);
+    CHECK(fixture.cpu.mSABUartTxPendingNinth);
+
+    fixture.cpu.mSFR[REG_SCON] = SCONMASK_SM0 | SCONMASK_SM1 |
+        SCONMASK_REN;
+    fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_ADCON)] |= SAB_ADCONMASK_BD;
+    em8051_sfr_write(&fixture.cpu, 0x99u, 0xb3u);
+    CHECK(gSbufWriteCount == 2u);
+    CHECK(gSbufWriteObserved == 0xb3u);
+    CHECK(fixture.cpu.mSABUartTxPendingData == 0x51u);
+    CHECK(fixture.cpu.mSABUartTxPendingNinth);
+    CHECK(trace.count == 2u);
+    if (trace.count == 2u)
+    {
+        CHECK(trace.records[0].value == 0xa2u);
+        CHECK(trace.records[1].value == 0xb3u);
+    }
+
+    fixture.cpu.mSFR[SFR_INDEX(EM8051_SAB_SFR_ADCON)] &=
+        (uint8_t)~SAB_ADCONMASK_BD;
+    em8051_set_sab_uart_trace(&fixture.cpu, capture_uart, &uart);
+    run_cycles(&fixture.cpu, 48u);
+    start = find_event(&uart, EM8051_SAB_UART_TRACE_TX_START, 0);
+    CHECK(start != NULL);
+    if (start)
+    {
+        CHECK(start->data == 0x51u);
+        CHECK(start->ninth_bit);
+    }
+    CHECK(fixture.cpu.mSABUartTxActive);
+    CHECK(fixture.cpu.mSABUartTxData == 0x51u);
+    CHECK(fixture.cpu.mSABUartTxNinth);
+    CHECK(!fixture.cpu.mSABUartTxPending);
+
+    fixture.cpu.mSFR[REG_SCON] = SCONMASK_SM1 | SCONMASK_REN;
+    em8051_sfr_write(&fixture.cpu, 0x99u, 0xc4u);
+    CHECK(fixture.cpu.mSABUartTxActive);
+    CHECK(fixture.cpu.mSABUartTxData == 0x51u);
+    CHECK(fixture.cpu.mSABUartTxNinth);
+    CHECK(!fixture.cpu.mSABUartTxPending);
+    CHECK(fixture.cpu.mSABUartTxPendingData == 0x51u);
+    CHECK(fixture.cpu.mSABUartTxPendingNinth);
 }
 
 static void test_exact_startup_baud_and_long_phase(void)
@@ -680,6 +823,8 @@ static void test_classic_sbuf_regression(void)
 
 int main(void)
 {
+    test_sbuf_callback_and_trace_contract();
+    test_unsupported_writes_preserve_mode3_state();
     test_exact_startup_baud_and_long_phase();
     test_smod_divide_16_and_32();
     test_sbuf_capture_and_separate_storage();
