@@ -98,6 +98,16 @@ enum em8051_sab80535_sfr
     EM8051_SAB_SFR_P5 = 0xF8
 };
 
+/* Full SFR addresses accepted by the generic SAB virtual-port API. */
+enum em8051_sab_port
+{
+    EM8051_SAB_PORT_P1 = 0x90,
+    EM8051_SAB_PORT_P3 = 0xB0,
+    EM8051_SAB_PORT_P4 = 0xE8,
+    EM8051_SAB_PORT_P5 = 0xF8,
+    EM8051_SAB_PORT_COUNT = 4
+};
+
 /* Stable Siemens interrupt identities. Their numeric order is also the
  * documented equal-priority polling order. */
 enum em8051_sab_irq_source
@@ -211,6 +221,29 @@ struct em8051_sab_uart_trace_record
 typedef void (*em8051sabuarttrace)(
     const struct em8051_sab_uart_trace_record *aRecord, void *aUser);
 
+enum em8051_movx_direction
+{
+    EM8051_MOVX_READ = 0,
+    EM8051_MOVX_WRITE
+};
+
+/* A MOVX record describes the transaction at the executing instruction's
+ * current machine-cycle count. PC and P1 latch are captured before a legacy
+ * xread/xwrite callback; read value is the final returned/backing value. */
+struct em8051_movx_context
+{
+    uint64_t machine_cycle;
+    uint16_t pc;
+    uint16_t address;
+    enum em8051_movx_direction direction;
+    uint8_t value;
+    uint8_t p1_latch;
+};
+
+/* MOVX observers receive only an immutable record and caller-owned context. */
+typedef void (*em8051movxobserver)(
+    const struct em8051_movx_context *aContext, void *aUser);
+
 #define EM8051_SFR_UNAVAILABLE 0xFFFFu
 
 struct em8051_variant_descriptor
@@ -295,6 +328,13 @@ struct em8051
     em8051sfrwrite sfrwrite[128]; // callback array: SFR register written
     em8051xread xread; // callback: external memory being read
     em8051xwrite xwrite; // callback: external memory being written
+
+    /* External drive is distinct from the canonical port latches in mSFR.
+     * Index order is P1, P3, P4, P5. */
+    uint8_t mSABPortExternalMask[EM8051_SAB_PORT_COUNT];
+    uint8_t mSABPortExternalLevels[EM8051_SAB_PORT_COUNT];
+    em8051movxobserver movx_observer;
+    void *movx_observer_user;
 
     enum em8051_variant mVariant;
     uint32_t mOscillatorHz;
@@ -411,6 +451,22 @@ void em8051_set_timer_overflow_callback(struct em8051 *aCPU,
 void em8051_set_sab_uart_trace(struct em8051 *aCPU,
                                em8051sabuarttrace aTrace, void *aUser);
 
+/* Install a record-only observer for generic MOVX transactions. */
+void em8051_set_movx_observer(struct em8051 *aCPU,
+                              em8051movxobserver aObserver, void *aUser);
+
+/* Deterministic virtual SAB port stimulus. aPort is a full SFR address.
+ * Drive updates only selected external bits; release removes their drive.
+ * Query functions leave aValue unchanged on failure. */
+bool em8051_sab_port_drive(struct em8051 *aCPU, uint8_t aPort,
+                           uint8_t aMask, uint8_t aLevels);
+bool em8051_sab_port_release(struct em8051 *aCPU, uint8_t aPort,
+                             uint8_t aMask);
+bool em8051_sab_port_get_latch(const struct em8051 *aCPU, uint8_t aPort,
+                               uint8_t *aValue);
+bool em8051_sab_port_get_pins(const struct em8051 *aCPU, uint8_t aPort,
+                              uint8_t *aValue);
+
 /* Begin one deterministic, valid in-memory mode-3 receive frame. The API
  * models no RxD pin edges or host transport. A false result means the CPU is
  * not in enabled SAB mode 3 or another injected frame is still active. */
@@ -445,6 +501,9 @@ bool push_to_stack(struct em8051 *aCPU, uint8_t aValue);
  * CPU pointers or addresses below the SFR range are rejected: reads return FF
  * and writes have no effect. */
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress);
+/* Internal opcode gateway: modeled SAB ports return their canonical latch;
+ * all other addresses retain ordinary read behavior. */
+uint8_t em8051_sfr_rmw_read(struct em8051 *aCPU, uint8_t aAddress);
 void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue);
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
                        uint16_t aAddress, uint8_t aValue);

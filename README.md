@@ -184,6 +184,29 @@ transport is opened. `em8051_set_sab_uart_trace()` optionally observes
 immutable logical frame records with exact virtual-cycle boundaries. RI and TI
 feed only the existing shared SAB vector `0023` and remain software-clear.
 
+SAB80535 virtual ports and MOVX context
+=======================================
+
+The SAB variant models P1, P3, P4 and P5 with separate CPU output latches and
+virtual external-drive mask/level state. `em8051_sab_port_drive()` and
+`em8051_sab_port_release()` apply deterministic in-memory stimulus; latch and
+resolved-pin queries are available through `em8051_sab_port_get_latch()` and
+`em8051_sab_port_get_pins()`. Resolution is `latch & (~mask | levels)`.
+Reset releases external drives and restores the documented high latches.
+
+Ordinary port byte/bit reads observe resolved pins, while the documented
+ANL/ORL/XRL/JBC/CPL/INC/DEC/DJNZ and MOV-bit/C, CLR-bit and SETB-bit RMW forms
+read the latch before writing through the established SFR callback gateway.
+An installed SFR read callback remains the architectural override for an
+ordinary CPU read. Classic variants retain their earlier callback behavior.
+
+`em8051_set_movx_observer()` installs an optional record-only observer for all
+DPTR and `@Ri` MOVX forms. Its immutable context reports current machine-cycle
+count, executing PC, address, direction, final read/architectural write value,
+and the full P1 output-latch snapshot captured before a legacy XDATA callback.
+Existing `xread`/`xwrite` callbacks and generic XDATA backing remain unchanged.
+The CPU assigns no board or bank meaning to P1 bits and opens no live I/O.
+
 Install
 =======
 
