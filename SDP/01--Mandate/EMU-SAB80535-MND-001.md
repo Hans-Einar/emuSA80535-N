@@ -41,6 +41,6 @@ classic upstream behavior and ancestry.
 
 ## Traceability
 
-MND-001 is informed by STU-001, realized through REQ-001..REQ-015 and
-constrained by ARCH-001..ARCH-006.
+MND-001 is informed by STU-001 and STU-002, realized through REQ-001..REQ-016 and
+constrained by ARCH-001..ARCH-010.
 

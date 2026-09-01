@@ -1,7 +1,7 @@
 # EMU-SAB80535-REQ-001 — SAB80535 emulator requirements baseline
 
 Status: active target baseline  
-Requirement set: REQ-001..REQ-015  
+Requirement set: REQ-001..REQ-016
 Established: 2026-08-31
 
 ## Stage 0 — deterministic core boundary
@@ -49,6 +49,16 @@ Established: 2026-08-31
 - **REQ-015:** provide deterministic in-memory capture/replay comparison and
   promote other peripherals only when evidence demonstrates need.
 
+## Generic debug runtime
+
+- **REQ-016 — Headless debug protocol:** provide a buildable Linux/Windows
+  no-curses child-process runtime implementing the frozen `emu-debug` 1.0
+  commands and required capabilities at DAP PR #4 exact HEAD
+  `36639b48ddb2ffbafa14c00da794fe1734f7483b`. The runtime must use bounded
+  UTF-8 NDJSON stdio, deterministic synchronous execution and atomic public
+  snapshots, preserve all accepted CPU/peripheral behavior, and open no
+  physical or target-specific I/O.
+
 ## Cross-cutting acceptance rules
 
 - No P1000-specific implementation names, addresses or board behavior may
@@ -60,6 +70,7 @@ Established: 2026-08-31
 
 ## Traceability
 
-REQ-001..REQ-015 derive from MND-001 and STU-001. Stage 0 requirements
+REQ-001..REQ-015 derive from MND-001 and STU-001. REQ-016 derives from
+MND-001, STU-002 and Issue #6. Stage 0 requirements
 REQ-001..REQ-008 are assigned to SPR-001.
 
