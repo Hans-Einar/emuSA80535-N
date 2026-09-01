@@ -54,3 +54,44 @@ Reviewer approval.
 Complete. REV-SLC-013 approved the corrected documentation and VER-SLC-013
 passed the available source, test, format and boundary gates. Product
 implementation remains a future Sprint.
+
+## ITR-014 — Multi-trace routing refinement
+
+Status: complete
+Iteration ID: ITR-014
+Active Slice: SLC-014
+
+### Slice contract — SLC-014
+
+**Goal:** refine the accepted tracepoint design so multiple independently
+gated trace sessions can subscribe to one canonical event bus.
+
+**Required behavior:**
+
+1. each trace session has stable ID, bounded tag/comment, destination and
+   enabled state;
+2. matched events carry a bounded, deterministic set of routed trace IDs;
+3. trace-on/trace-off gates target one or more trace IDs with precisely
+   defined before/after-current-event semantics;
+4. each session chooses interrupt policy: include, suppress while any interrupt
+   is active, or interrupt-only, with nested-depth correctness and explicit gap
+   markers when suppression hides events;
+5. watchpoints publish derived watch-match events on the same ordered queue and
+   may stop, print, remain quiet, or route into trace sessions without recursive
+   callback execution;
+6. destinations include file, ring and interactive console; raw stdout is
+   permitted only in a dedicated non-NDJSON CLI mode and never in headless
+   `emu-debug` protocol mode;
+7. configuration, routing lists, fan-out, tags and output remain bounded.
+
+**Non-goals:** product-code implementation, target-specific profiles, DAP
+changes, physical I/O or mutation from observers.
+
+**Required evidence:** updated detailed/numbered design, fresh Worker and
+Reviewer, format/source-boundary checks and Master verification.
+
+### Result
+
+Complete. The refinement added DES-080..DES-089. REV-SLC-014 approved the
+design with corrections and VER-SLC-014 passed the documentation, format and
+generic-emulator boundary checks. No product code was changed.

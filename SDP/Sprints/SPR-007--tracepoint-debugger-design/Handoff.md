@@ -37,3 +37,19 @@ Slice.
 - Branch: `codex/tracepoint-debugger-spec`
 - Design commit: `f279b94`
 - Scope: documentation and SDP records only
+
+## Accepted refinement handoff — SLC-014
+
+The accepted documentation-only refinement adds DES-080..DES-089 and the
+multi-trace sections in `doc/DEBUG_TRACEPOINT_DESIGN.md`. Implementation must preserve:
+
+- canonical-event identity versus per-destination routed views;
+- exact on/off before/after semantics, including conflicting gates;
+- nested interrupt depth and suppression-summary boundaries;
+- ordered non-recursive `watch.match` derivation and source correlation;
+- bounded many-to-many watch/trace routes and deletion lifecycle;
+- file/ring/console destinations and strict NDJSON stdout isolation;
+- facade, CLI, protocol negotiation and golden-test coverage.
+
+REV-SLC-014 and VER-SLC-014 accepted this refinement. No emulator product code
+or DAP code was changed in this Slice.

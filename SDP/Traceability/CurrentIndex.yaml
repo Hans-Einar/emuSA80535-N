@@ -79,7 +79,7 @@ items:
   REV-SLC-010: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-010.md}
   VER-SLC-010: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-010.md}
   DES-050..DES-063: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-DEBUG-DES-006.md}
-  DES-064..DES-079: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-DEBUG-DES-007.md}
+  DES-064..DES-089: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-DEBUG-DES-007.md}
   SPR-006: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/sprint.md}
   ITR-011: {kind: iteration, status: changes-required, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
   SLC-011: {kind: slice, status: changes-required, state: current, source: SDP/Sprints/SPR-006--emu-debug-runtime/ScrumIterations.md}
@@ -96,3 +96,7 @@ items:
   SLC-013: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
   REV-SLC-013: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-013.md}
   VER-SLC-013: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-SLC-013.md}
+  ITR-014: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
+  SLC-014: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
+  REV-SLC-014: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-014.md}
+  VER-SLC-014: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-014.md}

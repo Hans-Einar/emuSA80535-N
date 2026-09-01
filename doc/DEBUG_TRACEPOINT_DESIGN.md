@@ -63,7 +63,8 @@ Stable top-level kinds:
 - `interrupt.request`, `interrupt.enter`, `interrupt.exit`;
 - `timer.overflow`, `uart.frame`, `uart.bit`;
 - `exception`, `halt`, `reset`, `image.load`, `debug.mutation`;
-- `trace.loss`, `trace.sink-status`, `trace.marker`.
+- `watch.match`, `trace.suppression`, `trace.loss`, `trace.sink-status`,
+  `trace.marker`.
 
 Call subtypes are `acall` and `lcall`; return subtypes are `ret` and `reti`.
 Records include call site, target/resulting PC and architectural return PC when
@@ -147,6 +148,8 @@ ignored, but producers use the named fields and types):
 | `reset` | `seed:uint32`, `entry:uint16` |
 | `image.load` | `sha256:64-lower-hex` |
 | `debug.mutation` | `operation:string-enum`, `origin:string-enum` |
+| `watch.match` | `watchId:uint32`, `sourceEventSequence:uint64`, `actions:string-enum-array`, matched address/value summary |
+| `trace.suppression` | `traceId:uint32`, `policy:string-enum`, `firstSuppressedSequence:uint64`, `lastSuppressedSequence:uint64`, `suppressedCount:uint64`, `entryDepth:uint8`, `maxDepth:uint8` |
 | `trace.loss` | `firstLostSequence:uint64`, `lastLostSequence:uint64`, `lostCount:uint64`, `reason:string-enum` |
 | `trace.sink-status` | `sinkId:uint32`, `state:string-enum`, `errorCode:string-enum-or-null`, `segment:uint32` |
 | `trace.marker` | `markerId:uint32`, `label:string-max-128-UTF8` |
@@ -191,6 +194,7 @@ This order is golden-test material and changes require schema/design review.
   "id":17,
   "type":"tracepoint",
   "enabled":true,
+  "traceIds":[7,23],
   "events":["memory.write"],
   "address":{"space":"xdata","from":4096,"to":4351},
   "access":["write"],
@@ -219,6 +223,168 @@ false, while `newValue.known`/`oldValue.known` can be tested explicitly. Limits 
 maximum 64 operations, stack depth 16 and no strings, loops, CPU reads,
 allocation, function calls or division. Validation is atomic and rejects
 unknown fields, stack errors and type mismatch.
+
+## Multi-trace sessions and routing
+
+A trace is an independently gated session, not another CPU observer. The CPU
+still emits one immutable canonical event. A trace has a stable nonzero uint32
+`traceId`, an enabled flag, a UTF-8 tag of at most 64 bytes, a UTF-8 comment of
+at most 256 bytes, one interrupt policy and exactly one destination. IDs are
+not reused before `clear session`. Many traces may share a destination.
+
+```json
+{"traceId":23,"tag":"control","comment":"mainline control flow",
+ "enabled":true,"interruptPolicy":"suppress-during-interrupt",
+ "destinationId":4}
+```
+
+The sequencer creates each architectural or derived event exactly once, then
+computes an ascending, duplicate-free, bounded `traceIds` set. It does not
+clone an event per trace. A destination receives one routed view containing
+the subset eligible for that destination. Traces 7 and 23 sharing a file yield
+one line with `"traceIds":[7,23]`; separate files receive views with the same
+canonical session/generation/sequence and their respective subsets. Empty
+route sets are not written.
+
+Routes are bounded many-to-many relationships. A watch may route to several
+traces and a trace may receive several watches. Duplicate or dangling routes
+are rejected atomically. Implementations advertise fixed maxima for traces,
+destinations, routes, trace IDs per event, pending derived events and metadata.
+
+Ordinary tracepoints carry a bounded sorted `traceIds` route set. Their
+predicate selects canonical events and that set selects the trace sessions
+which may retain them. A session does not implicitly subscribe to every event.
+Watch routes perform the same selection for derived `watch.match` events;
+gates change enabled state but never create an implicit subscription.
+
+Configuration schemas are sized and versioned. The C facade uses fixed arrays
+or caller-owned slices, never unbounded pointers embedded in retained objects:
+
+```c
+struct em8051_trace_session {
+    uint32_t struct_size, trace_id, destination_id;
+    uint16_t version, tag_length, comment_length;
+    uint8_t enabled, interrupt_policy;
+    char tag[64], comment[256];
+};
+struct em8051_watch_route {
+    uint32_t struct_size, watch_id;
+    uint16_t version, trace_id_count;
+    uint32_t trace_ids[EM8051_MAX_ROUTES_PER_WATCH];
+};
+```
+
+The optional protocol mirrors these as bounded arrays, for example
+`{"command":"setTraceEnabled","traceIds":[7,23],"enabled":false}` and
+`{"command":"replaceWatchRoutes","routes":[{"watchId":12,
+"traceIds":[7,23]}]}`. Responses echo accepted IDs and a configuration
+revision. Validation failure returns one error and preserves the prior graph.
+
+Deterministic processing order is: assign sequence; evaluate predicates in
+point-ID order against pre-event state; apply before-gates; route source views
+in destination-ID order; enqueue derived watch matches in watch-ID order;
+drain them after the callback unwinds; then apply after-gates. Within routing,
+trace IDs are ascending. Overflow is a configuration error, never truncation.
+
+### Trace-on and trace-off gates
+
+A gate contains a normal bounded predicate, `operation` (`on` or `off`),
+`timing` (`before` or `after`) and a bounded sorted trace-ID set.
+
+| Gate | State used for current matching event | State after event |
+|---|---|---|
+| `on-before` | enabled | enabled unless changed by an after-gate |
+| `on-after` | state after all before-gates | enabled |
+| `off-before` | disabled | disabled unless changed by an after-gate |
+| `off-after` | state after all before-gates | disabled |
+
+All predicates and the initial enabled state see pre-event configuration.
+Before-gate conflicts apply in ascending gate ID; their final state controls
+the current source event and its derived watch events. After-gate conflicts
+then apply in ascending ID after the source and all derived events; their final
+state controls the next event. Thus `on-after` does not force exclusion when
+already enabled, and `off-after` does not force inclusion when already
+disabled. A no-op gate records its hit/counters but creates no route. Gates
+never alter queued records. Manual `trace on/off` commands run at a stopped
+safe boundary and affect the next event.
+
+### Interrupt inclusion policies
+
+- `include` retains every otherwise eligible event.
+- `suppress-during-interrupt` retains depth-zero activity plus the outermost
+  enter/exit boundary records, suppressing the interval between them.
+- `interrupt-only` retains outermost enter through matching outermost exit,
+  including nested interrupts, and rejects depth-zero activity.
+
+Depth is architectural. `interrupt.enter` is routed at the old depth, then
+increments it; `interrupt.exit` is routed at active depth, then decrements it.
+For suppression, outer enter at depth zero and outer exit at depth one are
+explicit retained boundaries; nested enter/exit events are hidden. For
+interrupt-only, both outer boundaries and everything between them are
+retained. Nested exits therefore do not prematurely reopen a mainline trace.
+
+Suppressed counts only otherwise-route-eligible events: an ordinary tracepoint
+or explicit watch route selected the trace, it was enabled after before-gates,
+and every filter except interrupt policy accepted the event. Unrouted or
+disabled events do not inflate the count. Every continuous hidden interval
+produces one `trace.suppression` summary
+before that trace's next retained event, or on flush/close. It names trace ID,
+policy, first/last suppressed source sequence, count, entry depth and maximum
+depth. Each trace tracks its own interval even when destinations are shared.
+Suppression is intentional filtering, unlike `trace.loss`, and summary
+generation is bounded and non-recursive.
+
+## Watchpoint actions and derived events
+
+A matched watch emits one ordered `watch.match` after source-event fan-out.
+It contains `watchId`, `sourceEventSequence`, matched address/value detail and
+actions. Actions combine independently: `stop` requests the established safe
+boundary; `console` prints a bounded interactive notice; `quiet` suppresses
+only that notice; and `route` sends the match to a bounded trace-ID list. If
+`console` and `quiet` are both set, `quiet` wins without cancelling `stop` or
+`route`.
+
+Thus a watch can print to the interactive debugger while a trace stores its
+structured match, or remain quiet while a trace stores it. The original access
+and derived match remain separate canonical records: every `watch.match` gets
+its own sequence and names the source sequence. Matches enter a fixed-capacity
+pending list in ascending watch ID and dispatch after the callback unwinds.
+They cannot match ordinary tracepoints, watches or gates and cannot recursively
+enqueue another match; only explicit watch routes select traces. They observe
+the state left by source before-gates and interrupt policy. Source after-gates
+run only after the derived queue drains.
+
+## Trace destinations
+
+Destination IDs are stable nonzero uint32 values:
+
+| Type | Behavior |
+|---|---|
+| `ring` | bounded in-memory routed-event ring |
+| `file` | explicit JSONL sink with deterministic rotation |
+| `interactive-console` | bounded/paged output in the legacy debugger |
+| `raw-cli-stdout` | stream in dedicated raw CLI process mode only |
+
+`raw-cli-stdout` emits bounded human-oriented text, not protocol NDJSON, and is
+rejected whenever `emu-debug` NDJSON mode is active.
+Protocol stdout remains protocol-only; clients pull bounded ring pages or use
+an explicit file destination. No watch or trace record is pushed unsolicited.
+Diagnostics remain on stderr.
+
+### Multi-trace golden scenarios
+
+Required tests include: shared versus separate destinations; stable trace ID
+and tag across reset; every on/off timing from initially enabled and disabled
+states; conflicting before gates, conflicting after gates and before/after
+conflicts; nested IRQs
+under all three policies; suppression closure on resume, flush and close;
+simultaneous watch matches ordered by watch ID; stop+console+route, quiet+route
+and console+quiet+stop+route combinations; a routed `watch.match` that cannot
+retrigger; atomic removal of traces referenced by tracepoints, gates or watches
+and destinations referenced by traces; every configured bound; sink failure;
+and rejection of raw stdout while NDJSON mode is active. Each golden record
+asserts canonical sequence, source correlation, route order and explicit loss
+or suppression rather than merely comparing line counts.
 
 ## Storage and backpressure
 
@@ -264,12 +430,12 @@ file: stdout remains protocol NDJSON and diagnostics remain on stderr.
 
 ## Lifecycle
 
-| Operation | Points | Counters/ring | Sink | Generation |
+| Operation | Points/traces/routes | Counters/ring | Sink | Generation |
 |---|---|---|---|---|
-| reset | preserved | reset marker, otherwise preserved | preserved | increment |
-| load image | CODE points disabled; others preserved | load marker | preserved | increment |
+| reset | preserved, including enabled states | reset marker, otherwise preserved | preserved | increment |
+| load image | CODE points disabled; traces/routes preserved | load marker | preserved | increment |
 | clear trace | preserved | cleared with next sequence unchanged | preserved | unchanged |
-| clear session | removed | cleared | flushed/closed | new session |
+| clear session | removed; ID allocation reset | cleared | flushed/closed | new session |
 | snapshot restore | restored definition/counters | restored or explicit continuation marker | closed until reopened | increment |
 | terminate/EOF | irrelevant | bounded final flush | closed | unchanged |
 
@@ -307,6 +473,14 @@ enum em8051_debug_status em8051_debugger_close_trace_file(
     struct em8051_debugger *);
 enum em8051_debug_status em8051_debugger_get_trace_status(
     const struct em8051_debugger *, struct em8051_trace_status *);
+enum em8051_debug_status em8051_debugger_replace_trace_sessions(
+    struct em8051_debugger *, const struct em8051_trace_session *, size_t);
+enum em8051_debug_status em8051_debugger_replace_trace_destinations(
+    struct em8051_debugger *, const struct em8051_trace_destination *, size_t);
+enum em8051_debug_status em8051_debugger_set_traces_enabled(
+    struct em8051_debugger *, const uint32_t *trace_ids, size_t, bool enabled);
+enum em8051_debug_status em8051_debugger_replace_watch_routes(
+    struct em8051_debugger *, const struct em8051_watch_route *, size_t);
 ```
 
 Every public struct begins with `uint32_t struct_size` and `uint16_t version`.
@@ -323,6 +497,13 @@ Examples define grammar, not target-specific aliases:
 break add 0x1234
 watch add write xdata 0x1000-0x10ff change
 trace add sfr write 0x80-0xff pc 0x2000-0x2fff limit 10000
+destination create file 4 /absolute/path/run.jsonl
+trace create 23 tag "control" destination 4 interrupts suppress
+trace on 23
+trace off 23
+gate add 41 off after traces 7,23 pc 0x6a1a
+watch add write xdata 0x7319-0x731a actions stop,route traces 23 quiet
+routes list
 points list
 point disable 17
 point delete 17
@@ -350,7 +531,8 @@ Protocol major remains 1. A later minor version optionally advertises:
 
 - `debugPointsV1`;
 - `traceRingV1`;
-- `traceFileV1` (may be withheld in restricted builds).
+- `traceFileV1` (may be withheld in restricted builds);
+- `multiTraceRoutingV1`.
 
 Commands mirror the facade: `replaceDebugPoints`, `listDebugPoints`,
 `configureTraceRing`, `readTrace`, `clearTrace`, `openTraceFile`,
@@ -365,6 +547,13 @@ meaning and no unsolicited trace event may appear. Unknown optional commands
 fail explicitly. If deployed 1.0 parsers are not proven tolerant of extra
 `hello` fields, advertise extension limits only after request-side minor or
 capability opt-in.
+
+With `multiTraceRoutingV1`, additional bounded commands atomically replace or
+list trace sessions, destinations, gates and watch routes, and enable/disable
+named trace IDs. `hello` reports every route/metadata/derived-queue maximum.
+Routed pages contain canonical events plus sorted `traceIds`; they never push
+events. Invalid IDs, UTF-8, destinations or over-limit graphs fail without
+partial mutation.
 
 DAP can later map instruction breakpoints to existing CODE breakpoints, DAP
 data breakpoints to watchpoints, and custom trace/log points to tracepoints.
@@ -409,11 +598,15 @@ full instruction tracing. No sampling based on wall time is allowed.
 | G | C facade and TUI | atomic replacement, parser bounds, compatibility shortcut, paged display |
 | H | optional protocol | hello negotiation, old-client regression, malformed/oversize requests, paging |
 | I | snapshot/replay/diff | identical replay, first divergence, sink continuation, generation behavior |
+| J | multi-trace routing | gate timing, nested IRQ policy, watch derivation, route/destination bounds |
 
 Every slice runs current Stage-0/1, ports/bus, facade and process suites on
 Linux and Windows, strict warnings and sanitizers. Dedicated audits assert:
 
 - tracing disabled does not change CPU/memory/counters/stop results;
+- shared-destination events are coalesced and trace IDs are sorted/stable;
+- all four gate timings and nested interrupt suppression produce golden traces;
+- watch derivation cannot recurse and preserves source-event correlation;
 - callbacks cannot obtain mutable CPU storage;
 - buffers, input, event rate and file rotation are bounded;
 - reset/load/restore behavior matches the lifecycle table;

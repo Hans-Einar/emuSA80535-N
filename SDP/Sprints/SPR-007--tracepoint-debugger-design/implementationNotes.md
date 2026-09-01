@@ -63,3 +63,32 @@ marker and file-path edge cases, and clarified facade/protocol/TUI feasibility.
 VER-SLC-013 passed the available tests and document/traceability checks. The
 Python process suite remains mandatory for implementation work but was
 unavailable here because this host provides Python 3.6.15.
+
+## ITR-014 worker refinement
+
+SLC-014 extends the accepted design without product-code changes. The design
+now treats a trace as an independently enabled session with stable ID, bounded
+tag/comment, one destination and one of three interrupt policies. One canonical
+event is sequenced once; destination views carry sorted trace-ID subsets rather
+than duplicating the event per trace.
+
+Exact before/after-current-event semantics are specified for trace-on/off
+gates. Nested interrupt depth controls include, suppression and interrupt-only
+policies, with explicit suppression summaries. Watchpoint matches are derived,
+source-correlated ordered events whose stop/console/quiet/route actions compose
+without recursive callbacks. Watch-to-trace routing is bounded many-to-many.
+File, ring and interactive destinations are supported; raw stdout is confined
+to dedicated CLI mode and is forbidden in `emu-debug` NDJSON mode.
+
+Worker checks are documentation/source-boundary audits and `git diff --check`.
+The refinement requires fresh independent review and verification before
+SLC-014 acceptance.
+
+## ITR-014 independent review
+
+`SDP/CodeReview/REV-SLC-014.md` approved the refinement with documentation
+corrections. Review replaced state-independent on/off prose with exact
+pre-state and before/after-phase semantics, made interrupt boundaries and
+otherwise-route-eligible suppression counts explicit, closed watch derivation
+and quiet/console precedence, and completed deletion/lifecycle and stdout
+isolation rules. Product implementation remains future work.

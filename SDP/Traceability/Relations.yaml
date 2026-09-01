@@ -140,3 +140,9 @@ relations:
   - {from: SLC-013, type: specifies, to: DES-064..DES-079}
   - {from: REV-SLC-013, type: reviews, to: SLC-013}
   - {from: VER-SLC-013, type: verifies, to: SLC-013}
+  - {from: SLC-014, type: belongs_to, to: ITR-014}
+  - {from: ITR-014, type: belongs_to, to: SPR-007}
+  - {from: SLC-014, type: refines, to: DES-064..DES-079}
+  - {from: SLC-014, type: specifies, to: DES-080..DES-089}
+  - {from: REV-SLC-014, type: reviews, to: SLC-014}
+  - {from: VER-SLC-014, type: verifies, to: SLC-014}

@@ -42,3 +42,11 @@ SLC-013 produced STU-003, DES-064..DES-079 and the implementation-ready
 `doc/DEBUG_TRACEPOINT_DESIGN.md`. REV-SLC-013 approved the design after scoped
 corrections and VER-SLC-013 passed with one documented Python-toolchain note.
 No product code was changed.
+
+Steering subsequently requested a multi-trace routing refinement. ITR-014 /
+SLC-014 extends only the accepted design documents and returns the Sprint to
+complete after independent review and verification.
+
+SLC-014 added DES-080..DES-089 and was accepted by REV-SLC-014 and
+VER-SLC-014. The accepted design now includes independently gated trace
+sessions, interrupt-aware routing and non-recursive watch-event fan-out.
