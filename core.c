@@ -70,6 +70,68 @@ static const struct em8051_variant_descriptor gVariants[] =
     }
 };
 
+static int sab_port_index(const struct em8051 *aCPU, uint8_t aPort)
+{
+    if (!aCPU || aCPU->mVariant != EM8051_VARIANT_SAB80535)
+        return -1;
+
+    switch (aPort)
+    {
+    case EM8051_SAB_PORT_P1: return 0;
+    case EM8051_SAB_PORT_P3: return 1;
+    case EM8051_SAB_PORT_P4: return 2;
+    case EM8051_SAB_PORT_P5: return 3;
+    default: return -1;
+    }
+}
+
+bool em8051_sab_port_drive(struct em8051 *aCPU, uint8_t aPort,
+                           uint8_t aMask, uint8_t aLevels)
+{
+    int index = sab_port_index(aCPU, aPort);
+    if (index < 0)
+        return false;
+    aCPU->mSABPortExternalLevels[index] =
+        (uint8_t)((aCPU->mSABPortExternalLevels[index] &
+                   (uint8_t)~aMask) | (aLevels & aMask));
+    aCPU->mSABPortExternalMask[index] |= aMask;
+    return true;
+}
+
+bool em8051_sab_port_release(struct em8051 *aCPU, uint8_t aPort,
+                             uint8_t aMask)
+{
+    int index = sab_port_index(aCPU, aPort);
+    if (index < 0)
+        return false;
+    aCPU->mSABPortExternalMask[index] &= (uint8_t)~aMask;
+    aCPU->mSABPortExternalLevels[index] &= (uint8_t)~aMask;
+    return true;
+}
+
+bool em8051_sab_port_get_latch(const struct em8051 *aCPU, uint8_t aPort,
+                               uint8_t *aValue)
+{
+    if (sab_port_index(aCPU, aPort) < 0 || !aValue)
+        return false;
+    *aValue = aCPU->mSFR[aPort - 0x80u];
+    return true;
+}
+
+bool em8051_sab_port_get_pins(const struct em8051 *aCPU, uint8_t aPort,
+                              uint8_t *aValue)
+{
+    int index = sab_port_index(aCPU, aPort);
+    uint8_t latch;
+    if (index < 0 || !aValue)
+        return false;
+    latch = aCPU->mSFR[aPort - 0x80u];
+    *aValue = (uint8_t)(latch &
+        ((uint8_t)~aCPU->mSABPortExternalMask[index] |
+         aCPU->mSABPortExternalLevels[index]));
+    return true;
+}
+
 static uint32_t reset_random(uint32_t *aState)
 {
     /* A local xorshift generator avoids process-global rand() state. */
@@ -149,6 +211,15 @@ void em8051_set_sab_uart_trace(struct em8051 *aCPU,
         return;
     aCPU->sab_uart_trace = aTrace;
     aCPU->sab_uart_trace_user = aUser;
+}
+
+void em8051_set_movx_observer(struct em8051 *aCPU,
+                              em8051movxobserver aObserver, void *aUser)
+{
+    if (!aCPU)
+        return;
+    aCPU->movx_observer = aObserver;
+    aCPU->movx_observer_user = aUser;
 }
 
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
@@ -463,6 +534,7 @@ bool em8051_sab_uart_inject_rx_frame(struct em8051 *aCPU, uint8_t aData,
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
 {
     uint8_t index;
+    uint8_t pins;
     if (!aCPU || aAddress < 0x80u)
         return 0xffu;
     index = (uint8_t)(aAddress - 0x80u);
@@ -475,7 +547,19 @@ uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
     }
     if (aCPU->sfrread[index])
         return aCPU->sfrread[index](aCPU, aAddress);
+    if (em8051_sab_port_get_pins(aCPU, aAddress, &pins))
+        return pins;
     return aCPU->mSFR[index];
+}
+
+uint8_t em8051_sfr_rmw_read(struct em8051 *aCPU, uint8_t aAddress)
+{
+    uint8_t latch;
+    if (!aCPU || aAddress < 0x80u)
+        return 0xffu;
+    if (em8051_sab_port_get_latch(aCPU, aAddress, &latch))
+        return latch;
+    return em8051_sfr_read(aCPU, aAddress);
 }
 
 void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
@@ -1454,6 +1538,10 @@ void reset(struct em8051 *aCPU, bool aWipe)
     }
 
     memset(aCPU->mSFR, 0, 128);
+    memset(aCPU->mSABPortExternalMask, 0,
+           sizeof(aCPU->mSABPortExternalMask));
+    memset(aCPU->mSABPortExternalLevels, 0,
+           sizeof(aCPU->mSABPortExternalLevels));
 
     aCPU->mPC = 0;
     aCPU->mTickDelay = 0;

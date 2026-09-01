@@ -59,6 +59,39 @@ static uint8_t read_mem(struct em8051 *aCPU, uint8_t aAddress)
     }
 }
 
+/* Siemens table 7-2 RMW instructions must observe a modeled SAB port latch,
+ * not its resolved pins or ordinary read callback override. Other direct
+ * locations retain their established read behavior. */
+static uint8_t read_mem_rmw(struct em8051 *aCPU, uint8_t aAddress)
+{
+    if (aAddress > 0x7f)
+        return em8051_sfr_rmw_read(aCPU, aAddress);
+    return aCPU->mLowerData[aAddress];
+}
+
+static struct em8051_movx_context movx_context_capture(
+    const struct em8051 *aCPU, uint16_t aAddress,
+    enum em8051_movx_direction aDirection, uint8_t aValue)
+{
+    struct em8051_movx_context context;
+    context.machine_cycle = aCPU->mMachineCycleCount;
+    context.pc = aCPU->mPC;
+    context.address = aAddress;
+    context.direction = aDirection;
+    context.value = aValue;
+    context.p1_latch = aCPU->mSFR[REG_P1];
+    return context;
+}
+
+static void movx_context_emit(struct em8051 *aCPU,
+                              struct em8051_movx_context *aContext,
+                              uint8_t aValue)
+{
+    aContext->value = aValue;
+    if (aCPU->movx_observer)
+        aCPU->movx_observer(aContext, aCPU->movx_observer_user);
+}
+
 static uint8_t read_mem_indir(struct em8051 *aCPU, uint8_t aAddress)
 {
     if (aAddress > 0x7f)
@@ -207,7 +240,7 @@ static uint8_t inc_a(struct em8051 *aCPU)
 static uint8_t inc_mem(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = read_mem(aCPU, address);
+    uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value + 1);
     PC += 2;
     return 0;
@@ -307,7 +340,7 @@ static uint8_t dec_a(struct em8051 *aCPU)
 static uint8_t dec_mem(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = read_mem(aCPU, address);
+    uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value - 1);
     PC += 2;
     return 0;
@@ -542,7 +575,7 @@ static uint8_t jc_offset(struct em8051 *aCPU)
 static uint8_t orl_mem_a(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = read_mem(aCPU, address);
+    uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value | ACC);
     PC += 2;
     return 0;
@@ -551,7 +584,7 @@ static uint8_t orl_mem_a(struct em8051 *aCPU)
 static uint8_t orl_mem_imm(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = read_mem(aCPU, address);
+    uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value | OPERAND2);
     PC += 3;
     return 1;
@@ -615,7 +648,7 @@ static uint8_t anl_mem_a(struct em8051 *aCPU)
 static uint8_t anl_mem_imm(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = read_mem(aCPU, address);
+    uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value & OPERAND2);
     PC += 3;
     return 1;
@@ -678,7 +711,7 @@ static uint8_t xrl_mem_a(struct em8051 *aCPU)
 static uint8_t xrl_mem_imm(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = read_mem(aCPU, address);
+    uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value ^ OPERAND2);
     PC += 3;
     return 1;
@@ -1327,7 +1360,7 @@ static uint8_t da_a(struct em8051 *aCPU)
 static uint8_t djnz_mem_offset(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
-    uint8_t value = read_mem(aCPU, address);
+    uint8_t value = read_mem_rmw(aCPU, address);
     value --;
     write_mem(aCPU, address, value);
 
@@ -1356,6 +1389,8 @@ static uint8_t xchd_a_indir_rx(struct em8051 *aCPU)
 static uint8_t movx_a_indir_dptr(struct em8051 *aCPU)
 {
     uint16_t dptr = DPTR;
+    struct em8051_movx_context context = movx_context_capture(
+        aCPU, dptr, EM8051_MOVX_READ, ACC);
     bool supported = false;
     if (aCPU->xread)
     {
@@ -1370,6 +1405,7 @@ static uint8_t movx_a_indir_dptr(struct em8051 *aCPU)
             supported = true;
         }
     }
+    movx_context_emit(aCPU, &context, ACC);
     em8051_trace_emit(aCPU,
                       supported ? EM8051_TRACE_MOVX_READ :
                                   EM8051_TRACE_UNSUPPORTED_MOVX_READ,
@@ -1381,6 +1417,8 @@ static uint8_t movx_a_indir_dptr(struct em8051 *aCPU)
 static uint8_t movx_a_indir_rx(struct em8051 *aCPU)
 {
     uint16_t address = INDIR_RX_ADDRESS;
+    struct em8051_movx_context context = movx_context_capture(
+        aCPU, address, EM8051_MOVX_READ, ACC);
     bool supported = false;
     if (aCPU->xread)
     {
@@ -1395,6 +1433,7 @@ static uint8_t movx_a_indir_rx(struct em8051 *aCPU)
             supported = true;
         }
     }
+    movx_context_emit(aCPU, &context, ACC);
     em8051_trace_emit(aCPU,
                       supported ? EM8051_TRACE_MOVX_READ :
                                   EM8051_TRACE_UNSUPPORTED_MOVX_READ,
@@ -1436,6 +1475,8 @@ static uint8_t mov_a_indir_rx(struct em8051 *aCPU)
 static uint8_t movx_indir_dptr_a(struct em8051 *aCPU)
 {
     uint16_t dptr = DPTR;
+    struct em8051_movx_context context = movx_context_capture(
+        aCPU, dptr, EM8051_MOVX_WRITE, ACC);
     bool supported = false;
     if (aCPU->xwrite)
     {
@@ -1450,6 +1491,7 @@ static uint8_t movx_indir_dptr_a(struct em8051 *aCPU)
             supported = true;
         }
     }
+    movx_context_emit(aCPU, &context, context.value);
     em8051_trace_emit(aCPU,
                       supported ? EM8051_TRACE_MOVX_WRITE :
                                   EM8051_TRACE_UNSUPPORTED_MOVX_WRITE,
@@ -1462,6 +1504,8 @@ static uint8_t movx_indir_dptr_a(struct em8051 *aCPU)
 static uint8_t movx_indir_rx_a(struct em8051 *aCPU)
 {
     uint16_t address = INDIR_RX_ADDRESS;
+    struct em8051_movx_context context = movx_context_capture(
+        aCPU, address, EM8051_MOVX_WRITE, ACC);
     bool supported = false;
 
     if (aCPU->xwrite)
@@ -1477,6 +1521,7 @@ static uint8_t movx_indir_rx_a(struct em8051 *aCPU)
             supported = true;
         }
     }
+    movx_context_emit(aCPU, &context, context.value);
     em8051_trace_emit(aCPU,
                       supported ? EM8051_TRACE_MOVX_WRITE :
                                   EM8051_TRACE_UNSUPPORTED_MOVX_WRITE,
