@@ -110,10 +110,11 @@ items:
   REV-SLC-016: {kind: review, status: approved-with-review-correction, state: current, source: SDP/CodeReview/REV-SLC-016.md}
   VER-SLC-016: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-016.md}
   ITR-017: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
-  SLC-017: {kind: slice, status: rework, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  SLC-017: {kind: slice, status: in-review, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   REV-SLC-017: {kind: review, status: provisional-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-017.md}
   REV-SLC-017-F001..F005: {kind: finding-range, status: corrected, state: current, source: SDP/CodeReview/REV-SLC-017.md}
   REV-SLC-017-HOLISTIC: {kind: review, status: corrections-required, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
-  REV-SLC-017-HOLISTIC-F001..F005: {kind: finding-range, status: open, severity: medium, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
-  REV-SLC-017-HOLISTIC-F006: {kind: finding, status: open, severity: low, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
+  REV-SLC-017-HOLISTIC-F001..F005: {kind: finding-range, status: in-progress, severity: medium, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
+  REV-SLC-017-HOLISTIC-F006: {kind: finding, status: in-progress, severity: low, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
+  REV-SLC-017-CORRECTIONS: {kind: review, status: in-review, state: current, source: SDP/CodeReview/REV-SLC-017-CORRECTIONS.md}
   VER-SLC-017: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-017.md}

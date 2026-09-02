@@ -183,3 +183,17 @@ Non-goals remain unchanged: no CPU producer/safe-boundary integration, CLI,
 wire protocol, DAP, file/console sink, source map or product/physical I/O.
 After correction, a separate fresh Reviewer must inspect the correction diff
 before VER-SLC-017.
+
+### Corrective Worker result
+
+Status: review pending  
+Product commit: `d956177add44dda9efbd6d9e372a9c0a6d40f777`
+
+The fresh Worker implemented F001..F006 in `emu_debug_trace.h/.c`,
+`emu_debug_runtime.c`, `tests/test_debug_trace.c` and
+`tests/test_debug_runtime.c` only. Focused strict GCC/Clang, Clang ASan/UBSan
+and the complete core regression suite passed in the Worker environment.
+MinGW sanitizer libraries were unavailable; Clang supplied sanitizer coverage.
+
+The iteration remains open for `REV-SLC-017-CORRECTIONS`, VER-SLC-017 and the
+documentation-only stable facade/versioning/paging freeze.

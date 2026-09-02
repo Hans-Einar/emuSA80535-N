@@ -18,14 +18,16 @@ work remain deferred.
 
 ## Exact next step
 
-Assign `REV-SLC-017-HOLISTIC-F001..F006` to a fresh Worker under the corrective
-contract in `ScrumIterations.md`. A separate fresh Reviewer must inspect the
-correction diff before Master verification and acceptance.
+Run `REV-SLC-017-CORRECTIONS` as a separate fresh review of exact corrective
+product commit `d956177add44dda9efbd6d9e372a9c0a6d40f777` against parent
+`c080273f8e1d7394c92d4425a6614c40ad7fc7c1`. Only after approval may Master
+run VER-SLC-017 and integrate the design freeze.
 
 ## Traceability IDs
 
 - `SPR-008`, `ITR-017`, `SLC-015`, `SLC-016`, `SLC-017`
 - historical/provisional `REV-SLC-017`
 - completed, corrections-required `REV-SLC-017-HOLISTIC`
-- open `REV-SLC-017-HOLISTIC-F001..F006`
+- implemented, review-pending `REV-SLC-017-HOLISTIC-F001..F006`
+- active `REV-SLC-017-CORRECTIONS`
 - planned `VER-SLC-017`

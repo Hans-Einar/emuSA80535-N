@@ -167,3 +167,34 @@ new validation paths received direct focused coverage.
 The separate mandated holistic audit should decide the final externally stable
 sized/versioned request wrappers and after-sequence page metadata before this
 internal facade is exposed through the existing debugger or wire protocol.
+
+## Issue #14 holistic-review corrections
+
+Corrective Worker product commit:
+`d956177add44dda9efbd6d9e372a9c0a6d40f777`.
+
+The Worker resolved the six blocking findings opened by
+REV-SLC-017-HOLISTIC:
+
+- ordinary public ingest rejects reset/load; a private lifecycle path retains
+  the required generation/depth behavior;
+- lifecycle records route from the enabled-state snapshot captured at entry,
+  while same-marker gates determine subsequent state without hiding the
+  marker from an initially enabled trace;
+- address-only selectors are conservatively CODE-capable during load
+  invalidation while explicit non-CODE address selectors remain enabled;
+- deletion or destination/policy changes for an actively suppressed trace are
+  rejected until explicit flush closes the interval;
+- a bounded 64-ID session registry permits live-ID updates but rejects retired
+  ID reuse until init/clear-session and rejects registry exhaustion atomically;
+- tags/comments receive bounded locale-independent strict UTF-8 validation.
+
+Direct tests cover every correction, including lifecycle gate timings,
+neutral forged lifecycle rejection, CODE invalidation distinctions,
+suppression replacement/flush paths, trace-ID live update/reuse/exhaustion/
+clear behavior and valid/malformed UTF-8 boundaries.
+
+Worker evidence passed strict GCC 12.2 and Clang 18.1.8 C99 focused builds,
+the focused suites, Clang ASan/UBSan and `make core-test`. MinGW sanitizer
+runtime libraries were unavailable; this is an environment note rather than a
+skipped sanitizer gate because the Clang sanitizer build/run passed.

@@ -166,6 +166,8 @@ relations:
   - {from: REV-SLC-017-HOLISTIC, type: reviews, to: SLC-015..SLC-017}
   - {from: REV-SLC-017-HOLISTIC, type: opens, to: REV-SLC-017-HOLISTIC-F001..F006}
   - {from: SLC-017, type: addresses, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: REV-SLC-017-CORRECTIONS, type: reviews, to: SLC-017}
+  - {from: REV-SLC-017-CORRECTIONS, type: verifies_corrections, to: REV-SLC-017-HOLISTIC-F001..F006}
   - {from: VER-SLC-017, type: verifies, to: SLC-017}
   - {from: REV-SLC-016, type: reviews, to: SLC-016}
   - {from: REV-SLC-016, type: opens, to: REV-SLC-016-F001}
