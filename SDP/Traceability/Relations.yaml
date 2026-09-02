@@ -1,5 +1,5 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-09-01
+updated: 2026-09-02
 
 relations:
   - {from: STU-001, type: informs, to: MND-001}
@@ -132,3 +132,17 @@ relations:
   - {from: VER-SLC-012, type: verifies, to: SLC-012}
   - {from: SLC-012, type: resolves, to: REV-SLC-011-F001}
   - {from: SLC-012, type: resolves, to: REV-SLC-011-F002}
+  - {from: STU-003, type: informs, to: DES-064..DES-079}
+  - {from: DES-064..DES-079, type: refines, to: ARCH-007..ARCH-010}
+  - {from: SLC-013, type: belongs_to, to: ITR-013}
+  - {from: ITR-013, type: belongs_to, to: SPR-007}
+  - {from: SLC-013, type: studies, to: STU-003}
+  - {from: SLC-013, type: specifies, to: DES-064..DES-079}
+  - {from: REV-SLC-013, type: reviews, to: SLC-013}
+  - {from: VER-SLC-013, type: verifies, to: SLC-013}
+  - {from: SLC-014, type: belongs_to, to: ITR-014}
+  - {from: ITR-014, type: belongs_to, to: SPR-007}
+  - {from: SLC-014, type: refines, to: DES-064..DES-079}
+  - {from: SLC-014, type: specifies, to: DES-080..DES-089}
+  - {from: REV-SLC-014, type: reviews, to: SLC-014}
+  - {from: VER-SLC-014, type: verifies, to: SLC-014}
