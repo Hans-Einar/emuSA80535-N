@@ -75,6 +75,7 @@ static void sab_external_sample_port(struct em8051 *aCPU, uint8_t aPort);
 static void sab_external_apply_scheduled(struct em8051 *aCPU);
 static void sab_external_maintain_level_requests(struct em8051 *aCPU);
 static void sab_adc_tick(struct em8051 *aCPU);
+static void sab_timer2_tick(struct em8051 *aCPU);
 
 static bool sab_external_pin(enum em8051_sab_external_source aSource,
                              uint8_t *aPort, uint8_t *aMask)
@@ -1314,10 +1315,15 @@ static void timer_overflow_emit(struct em8051 *aCPU,
         record.tl = aCPU->mSFR[REG_TL0];
         record.th = aCPU->mSFR[REG_TH0];
     }
-    else
+    else if (aTimer == EM8051_TIMER1)
     {
         record.tl = aCPU->mSFR[REG_TL1];
         record.th = aCPU->mSFR[REG_TH1];
+    }
+    else
+    {
+        record.tl = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_TL2)];
+        record.th = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_TH2)];
     }
     aCPU->timer_overflow(&record, aCPU->timer_overflow_user);
 }
@@ -1580,7 +1586,52 @@ static void timer_tick(struct em8051 *aCPU)
         }
     }
 
-    // TODO: serial port, timer2, other stuff
+    // TODO: serial port, other stuff
+}
+
+static void sab_timer2_tick(struct em8051 *aCPU)
+{
+    uint8_t t2con;
+    uint16_t value;
+    uint64_t completed_cycle;
+
+    if (!aCPU || aCPU->mVariant != EM8051_VARIANT_SAB80535)
+        return;
+
+    t2con = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_T2CON)];
+    if ((t2con & (SAB_T2CONMASK_T2I1 | SAB_T2CONMASK_T2I0)) !=
+        SAB_T2CONMASK_T2I0)
+    {
+        return;
+    }
+
+    /* SLC-015 deliberately leaves hardware reload modes producer-inert. */
+    if (t2con & SAB_T2CONMASK_T2R1)
+        return;
+
+    completed_cycle = aCPU->mMachineCycleCount + 1u;
+    if ((t2con & SAB_T2CONMASK_T2PS) &&
+        ((completed_cycle & 1u) != 0u))
+    {
+        return;
+    }
+
+    value = (uint16_t)(
+        ((uint16_t)aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_TH2)] << 8) |
+        aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_TL2)]);
+    value = (uint16_t)(value + 1u);
+    aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_TL2)] =
+        (uint8_t)(value & 0xffu);
+    aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_TH2)] =
+        (uint8_t)(value >> 8);
+
+    if (value == 0u)
+    {
+        aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)] |=
+            SAB_IRCONMASK_TF2;
+        timer_overflow_emit(aCPU, EM8051_TIMER2);
+        sab_irq_sync(aCPU);
+    }
 }
 
 static bool sab_irq_timer2_is_enabled(const struct em8051 *aCPU)
@@ -1899,6 +1950,7 @@ static bool handle_interrupts(struct em8051 *aCPU)
 static void advance_machine_cycle(struct em8051 *aCPU)
 {
     timer_tick(aCPU);
+    sab_timer2_tick(aCPU);
     sab_adc_tick(aCPU);
     aCPU->mMachineCycleCount++;
     sab_external_apply_scheduled(aCPU);
