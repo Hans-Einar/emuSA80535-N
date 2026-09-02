@@ -151,3 +151,35 @@ Expected completion signal: REV-SLC-017-HOLISTIC contains no unresolved
 blocking finding, VER-SLC-017 is reproducible and passed or honestly records a
 blocking environment gap, the design seam is frozen, and SDP/traceability can
 support a READY/NOT_READY decision without relying on chat memory.
+
+### Holistic review result and corrective Worker contract
+
+REV-SLC-017-HOLISTIC disposition: **corrections required**.
+
+The fresh review opened six in-scope findings:
+
+- `REV-SLC-017-HOLISTIC-F001`: ordinary ingest can counterfeit reset/load;
+- `REV-SLC-017-HOLISTIC-F002`: same-marker before-gates can hide required
+  lifecycle markers;
+- `REV-SLC-017-HOLISTIC-F003`: load misses CODE-capable address-only
+  selectors;
+- `REV-SLC-017-HOLISTIC-F004`: replacement can silently discard active
+  suppression intervals;
+- `REV-SLC-017-HOLISTIC-F005`: trace IDs can be reused before clear-session;
+- `REV-SLC-017-HOLISTIC-F006`: tag/comment accepts malformed UTF-8.
+
+The next pass is corrective, not a new feature Slice. A fresh Worker must
+resolve F001..F006 inside `emu_debug_event.*`, `emu_debug_trace.*`,
+`emu_debug_runtime.*` and their focused tests only. Lifecycle markers shall be
+routed to the traces enabled at entry to the lifecycle boundary; same-marker
+gates may determine subsequent enabled state but may not erase that marker.
+Address-only selectors are CODE-capable and must be invalidated on load.
+Configuration replacement must reject an active suppression interval whose
+trace would be deleted or change destination/policy until explicit flush.
+Trace IDs may update while live but may not disappear and later be reused
+before clear-session. UTF-8 validation must be bounded and locale-independent.
+
+Non-goals remain unchanged: no CPU producer/safe-boundary integration, CLI,
+wire protocol, DAP, file/console sink, source map or product/physical I/O.
+After correction, a separate fresh Reviewer must inspect the correction diff
+before VER-SLC-017.

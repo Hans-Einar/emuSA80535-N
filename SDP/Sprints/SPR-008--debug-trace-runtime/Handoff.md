@@ -18,13 +18,14 @@ work remain deferred.
 
 ## Exact next step
 
-Complete REV-SLC-017-HOLISTIC independently, then assign any blocking
-standalone-runtime corrections to a fresh Worker. A separate fresh Reviewer
-must inspect corrections before Master verification and acceptance.
+Assign `REV-SLC-017-HOLISTIC-F001..F006` to a fresh Worker under the corrective
+contract in `ScrumIterations.md`. A separate fresh Reviewer must inspect the
+correction diff before Master verification and acceptance.
 
 ## Traceability IDs
 
 - `SPR-008`, `ITR-017`, `SLC-015`, `SLC-016`, `SLC-017`
 - historical/provisional `REV-SLC-017`
-- active `REV-SLC-017-HOLISTIC`
+- completed, corrections-required `REV-SLC-017-HOLISTIC`
+- open `REV-SLC-017-HOLISTIC-F001..F006`
 - planned `VER-SLC-017`
