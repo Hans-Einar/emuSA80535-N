@@ -1,0 +1,48 @@
+name: SLC-015 final checkpoint ledger
+
+on:
+  push:
+    branches:
+      - codex/sab80535-timer2
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/sab80535-timer2
+          fetch-depth: 0
+      - name: Record final Issue checkpoint
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          product='e388a007635acb4f964326f817a3d6eb049ccf6d'
+          issue_url='https://github.com/Hans-Einar/emuSA80535-N/issues/17#issuecomment-5517933325'
+          p=Path('SDP/Sprints/SPR-009--sab80535-timer2/Handoff.md')
+          t=p.read_text()
+          if '## Final Stage-4 checkpoint' not in t:
+              t += f'''\n## Final Stage-4 checkpoint\n\nIssue #17 READY/Steering checkpoint: {issue_url}\n\nThe accepted product remains `{product}`. Any later branch commit is\ntraceability/evidence only and requires a final product-blob identity audit.\n'''
+          p.write_text(t)
+
+          p=Path('SDP/Traceability/Ledger.ndjson')
+          t=p.read_text().rstrip()+"\n"
+          if '"EVT-2026-09-03-182"' not in t:
+              t += '{"event_id":"EVT-2026-09-03-182","timestamp":"2026-09-03T01:32:00+02:00","type":"issue_checkpoint_reported","subject_id":"SPR-009","status":"ready","issue":17,"pull_request":18,"url":"'+issue_url+'","product_head":"'+product+'","source":"SDP/Sprints/SPR-009--sab80535-timer2/Handoff.md"}\n'
+          p.write_text(t)
+          PY
+          git diff --check
+          test "$(git rev-parse e388a007635acb4f964326f817a3d6eb049ccf6d:core.c)" = "$(git hash-object core.c)"
+          test "$(git rev-parse e388a007635acb4f964326f817a3d6eb049ccf6d:emu8051.h)" = "$(git hash-object emu8051.h)"
+          test "$(git rev-parse e388a007635acb4f964326f817a3d6eb049ccf6d:tests/Makefile)" = "$(git hash-object tests/Makefile)"
+          test "$(git rev-parse e388a007635acb4f964326f817a3d6eb049ccf6d:tests/test_stage4_timer2.c)" = "$(git hash-object tests/test_stage4_timer2.c)"
+          git rm .github/workflows/slc015-final-checkpoint-ledger.yml
+          git config user.name 'SLC-015 Master'
+          git config user.email '36501395+Hans-Einar@users.noreply.github.com'
+          git add SDP
+          git commit -m 'SDP: record final SLC-015 Steering checkpoint'
+          git push origin HEAD:codex/sab80535-timer2
