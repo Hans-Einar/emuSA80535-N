@@ -1,0 +1,93 @@
+name: SLC-015 Master verify
+
+on:
+  push:
+    branches:
+      - codex/sab80535-timer2
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e388a007635acb4f964326f817a3d6eb049ccf6d
+          fetch-depth: 0
+      - name: Identity
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "e388a007635acb4f964326f817a3d6eb049ccf6d"
+          test "$(git rev-parse HEAD^{tree})" = "8eb677ad298a3a743adb9d51f464b90ba755b0cf"
+          git diff --check bc86d2633b6057529e6fd1e666896c24d72822aa..HEAD
+      - name: GCC full core matrix
+        shell: bash
+        run: |
+          make -C tests clean
+          make -C tests test CC=gcc CFLAGS='-O2 -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow -Werror -pedantic'
+      - name: Frozen debug runtime
+        shell: bash
+        run: |
+          make emu-debug CC=gcc
+          make -C tests debug-test CC=gcc DEBUG_BIN=../emu-debug
+      - name: Strict Clang full core matrix
+        shell: bash
+        run: |
+          make -C tests clean
+          make -C tests test CC=clang CFLAGS='-O2 -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow -Werror -pedantic'
+      - name: ASan and UBSan full core matrix
+        shell: bash
+        run: |
+          make -C tests clean
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \
+          make -C tests test CC=clang CFLAGS='-O1 -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow -Werror -pedantic -fno-omit-frame-pointer -fsanitize=address,undefined'
+      - name: Frozen DAP exact-head integration
+        shell: bash
+        run: |
+          git clone -q https://github.com/Hans-Einar/emuSA80535-DAP.git /tmp/emuSA80535-DAP
+          git -C /tmp/emuSA80535-DAP checkout -q 36639b48ddb2ffbafa14c00da794fe1734f7483b
+          npm --prefix /tmp/emuSA80535-DAP ci
+          npm --prefix /tmp/emuSA80535-DAP run build
+          npm --prefix /tmp/emuSA80535-DAP run test:contract
+          npm --prefix /tmp/emuSA80535-DAP run fixture:check
+          make emu-debug CC=gcc
+          node tests/test_dap_real.mjs /tmp/emuSA80535-DAP ./emu-debug
+      - name: Scope and frozen-protocol audit
+        shell: bash
+        run: |
+          git diff --name-only bc86d2633b6057529e6fd1e666896c24d72822aa..HEAD
+          git diff bc86d2633b6057529e6fd1e666896c24d72822aa..HEAD -- core.c emu8051.h tests/Makefile tests/test_stage4_timer2.c > /tmp/slc015.diff
+          ! grep -Ei 'P1000|Ponsse|D71055|PCB3|valve|CAN|USB|socket|thread' /tmp/slc015.diff
+          test "$(git rev-parse bc86d2633b6057529e6fd1e666896c24d72822aa:emu_debug.c)" = "$(git rev-parse HEAD:emu_debug.c)"
+          test "$(git rev-parse bc86d2633b6057529e6fd1e666896c24d72822aa:emu_debug.h)" = "$(git rev-parse HEAD:emu_debug.h)"
+          test "$(git rev-parse bc86d2633b6057529e6fd1e666896c24d72822aa:emu_debug_server.c)" = "$(git rev-parse HEAD:emu_debug_server.c)"
+          test "$(git rev-parse bc86d2633b6057529e6fd1e666896c24d72822aa:opcodes.c)" = "$(git rev-parse HEAD:opcodes.c)"
+
+  windows:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e388a007635acb4f964326f817a3d6eb049ccf6d
+          fetch-depth: 0
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            make
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-clang
+      - name: Windows GCC core matrix
+        shell: msys2 {0}
+        run: |
+          test "$(git rev-parse HEAD)" = "e388a007635acb4f964326f817a3d6eb049ccf6d"
+          make -C tests clean
+          make -C tests test CC=gcc CFLAGS='-O2 -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow -Werror -pedantic'
+      - name: Windows strict Clang core matrix
+        shell: msys2 {0}
+        run: |
+          make -C tests clean
+          make -C tests test CC=clang CFLAGS='-O2 -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow -Werror -pedantic'
