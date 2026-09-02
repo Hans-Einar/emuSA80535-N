@@ -40,14 +40,15 @@ modes retain register state but produce no guessed counts in this Slice.
 For timer function:
 
 - T2PS=0 increments once per CPU machine cycle (`fosc/12`);
-- T2PS=1 increments once per two CPU machine cycles (`fosc/24`).
+- T2PS=1 increments on every second CPU machine cycle (`fosc/24`).
 
-A bounded CPU-owned divider phase is used for /24. Any transition of the
-clock-selection tuple `{T2PS,T2I1,T2I0}` resets that divider phase before the
-new mode consumes machine cycles. Thus a newly selected /24 mode requires two
-full machine cycles before its first increment; /12 increments on the first
-machine cycle in the selected mode. This deterministic transition convention
-makes no claim about undocumented sub-cycle prescaler phase.
+The Siemens block diagram places the selectable divide-by-two stage on the
+oscillator timer-input path before the Timer2 input selector. SLC-015 therefore
+models the /24 phase as a deterministic **free-running oscillator divider**,
+not as state reset by T2CON writes. With machine-cycle count reset to zero,
+completed cycles 2,4,6,... are the /24 increment boundaries. Starting,
+stopping or changing T2PS gates/selects this free-running phase without
+inventing a prescaler reset side effect that the manual does not document.
 
 ## DES-088 — Reload-disabled live counter
 
@@ -103,26 +104,23 @@ threads and operating-system timers are forbidden.
 
 `T2I1:T2I0=00` stops Timer2 without changing TL2, TH2 or TF2. Selecting timer
 function resumes from the current live counter value; there is no implicit
-reload/reset. Clock-selection changes reset only the bounded /24 divider phase
-per DES-087.
+reload/reset. The /24 phase remains the free-running oscillator-derived phase
+from DES-087 across start/stop and T2PS changes.
 
-I2FR/I3FR or unrelated T2CON bit writes do not reset Timer2 clock phase because
-they do not change the clock-selection tuple. SLC-013 external-edge semantics
-must therefore remain unchanged while sharing T2CON.
+I2FR/I3FR or unrelated T2CON bit writes have no Timer2 clock-phase side effect.
+SLC-013 external-edge semantics therefore remain unchanged while sharing
+T2CON.
 
 ## DES-093 — Immutable diagnostics
 
-Expose a SAB Timer2-specific record-only observer and a monotonic 64-bit
-overflow-event count. Each overflow record contains at least:
-
-- completed machine cycle;
-- post-wrap TL2 and TH2;
-- T2CON snapshot;
-- TF2 state;
-- cumulative overflow count.
+Reuse the accepted generic timer-overflow observer/count surface by adding a
+stable `EM8051_TIMER2` identity. For SAB80535 each Timer2 wrap increments the
+corresponding 64-bit overflow count and emits an immutable record containing
+completed machine cycle plus post-wrap TL2/TH2. The canonical T2CON/TF2 state
+remains directly inspectable in the CPU SFR model.
 
 Observer presence is behavior-neutral and exposes no mutable CPU storage.
-Classic variants report no Siemens Timer2 events.
+Classic variants never emit the Siemens Timer2 identity.
 
 ## DES-094 — P5.4 and consumer boundary
 
@@ -139,8 +137,8 @@ generic tests must contain no connector/valve semantics.
 
 Focused tests cover T2CON masks, stopped state, /12 and /24 timing, exact 5555
 count-to-overflow, FFFF wrap, repeated sticky-TF2 overflows, masking and
-interrupt service, live byte writes, software stop/restart/reload, deterministic
-clock-mode phase, unsupported-mode non-production, SLC-013 I2FR/I3FR
+interrupt service, live byte writes, software stop/restart/reload, free-running
+prescaler phase, unsupported-mode non-production, SLC-013 I2FR/I3FR
 regression, replay/observer neutrality, classic isolation and generic ISR
 behavior.
 
