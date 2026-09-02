@@ -141,3 +141,12 @@ relations:
   - {from: SLC-013, type: implements_design, to: DES-064..DES-073}
   - {from: REV-SLC-013, type: reviews, to: SLC-013}
   - {from: VER-SLC-013, type: verifies, to: SLC-013}
+  - {from: DES-074..DES-085, type: refines, to: ARCH-002..ARCH-006}
+  - {from: SPR-008, type: schedules, to: REQ-013}
+  - {from: SLC-014, type: belongs_to, to: ITR-014}
+  - {from: ITR-014, type: belongs_to, to: SPR-008}
+  - {from: SLC-014, type: satisfies, to: REQ-013}
+  - {from: SLC-014, type: depends_on, to: SLC-013}
+  - {from: SLC-014, type: implements_design, to: DES-074..DES-085}
+  - {from: REV-SLC-014, type: reviews, to: SLC-014}
+  - {from: VER-SLC-014, type: verifies, to: SLC-014}
