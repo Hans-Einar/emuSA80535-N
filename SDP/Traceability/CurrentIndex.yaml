@@ -2,9 +2,9 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-09-02
 
 active:
-  sprint: SPR-008
-  iteration: ITR-014
-  slice: SLC-014
+  sprint: null
+  iteration: null
+  slice: null
 
 items:
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
@@ -15,7 +15,7 @@ items:
   REQ-010: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   REQ-011: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   REQ-012: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
-  REQ-013: {kind: requirement, status: active, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
+  REQ-013: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   REQ-014..REQ-015: {kind: requirement-range, status: planned, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   REQ-016: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   ARCH-001..ARCH-006: {kind: architecture-range, status: active, state: target, source: SDP/04--Architecture/EMU-SAB80535-ARCH-001.md}
@@ -96,9 +96,9 @@ items:
   SLC-013: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--sab80535-external-edges/ScrumIterations.md}
   REV-SLC-013: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-013.md}
   VER-SLC-013: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-013.md}
-  DES-074..DES-085: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-008.md}
-  SPR-008: {kind: sprint, status: active, state: target, source: SDP/Sprints/SPR-008--sab80535-adc/sprint.md}
-  ITR-014: {kind: iteration, status: active, state: target, source: SDP/Sprints/SPR-008--sab80535-adc/ScrumIterations.md}
-  SLC-014: {kind: slice, status: verification-pending, state: target, source: SDP/Sprints/SPR-008--sab80535-adc/ScrumIterations.md}
+  DES-074..DES-085: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-SAB80535-DES-008.md}
+  SPR-008: {kind: sprint, status: ready-for-pr, state: current, source: SDP/Sprints/SPR-008--sab80535-adc/sprint.md}
+  ITR-014: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--sab80535-adc/ScrumIterations.md}
+  SLC-014: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--sab80535-adc/ScrumIterations.md}
   REV-SLC-014: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-014.md}
-  VER-SLC-014: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-014.md}
+  VER-SLC-014: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-014.md}

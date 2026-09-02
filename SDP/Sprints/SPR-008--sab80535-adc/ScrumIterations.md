@@ -2,7 +2,7 @@
 
 ## ITR-014 — Deterministic MYMOS single-conversion ADC
 
-Status: active
+Status: complete
 Iteration ID: ITR-014
 Active Slice: SLC-014
 
@@ -102,3 +102,10 @@ independently approved DES-078 timing, exhaustively checked arithmetic and DAPR
 encodings, passed adversarial restart/callback/BSY/controller probes, repeated
 the complete cross-platform/debug/DAP matrix and confirmed the scope/identity
 boundary. Master VER-SLC-014 remains before acceptance.
+
+### Final result
+
+Accepted. VER-SLC-014 passed the independent Master matrix against exact
+product/test HEAD `0bd39132b2eaffbfc5190e223b54743f17fc68fa`, including
+the exact frozen-DAP real-integration gate. SLC-014 satisfies REQ-013 with no
+review findings and no unauthorized scope.

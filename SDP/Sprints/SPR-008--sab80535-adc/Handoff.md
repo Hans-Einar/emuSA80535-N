@@ -2,7 +2,7 @@
 
 ## Current Objective
 
-Execute only SPR-008 / ITR-014 / SLC-014 and leave its implementation PR
+SLC-014 is accepted. Open the focused SPR-008 implementation PR and leave it
 unmerged for Steering.
 
 ## Authoritative Source Documents
@@ -30,24 +30,27 @@ unmerged for Steering.
 - Fresh REV-SLC-014 approved the exact product/test HEAD with no findings and
   independently passed Siemens, exhaustive arithmetic, adversarial callback,
   cross-platform, DAP and scope/identity audits.
+- VER-SLC-014 passed the complete Master matrix, including exact frozen-DAP
+  real integration. SLC-014 and REQ-013 are accepted.
 
 ## Not Done
 
-- Master verification, acceptance, implementation PR and Issue #13/Ponsse
-  handoffs.
+- Implementation PR and Issue #13/Ponsse handoffs.
 
 ## Exact Next Step
 
-Publish the REV-SLC-014 checkpoint, then run independent Master VER-SLC-014
-against exact product HEAD `0bd3913...`.
+Open the focused implementation PR against `master`, leave it unmerged, then
+publish final Issue #13 and Ponsse Issue #26/#47 checkpoints.
 
 ## Verification Completed
 
 - Worker: all 28 focused classes, complete Windows/strict/WSL/sanitizer
-  core+debug matrix and exact-DAP integration reported passing. Master
-  verification has not started.
+  core+debug matrix and exact-DAP integration reported passing.
 - Reviewer: the complete matrix plus exhaustive arithmetic and adversarial
   callback/restart probes passed; no findings.
+- Master: repeated Windows GCC/strict Clang, WSL GCC/ASan+UBSan core+debug and
+  exact DAP contract/fixture/real-equivalence/F5 gates; all passed. Identity,
+  scope, traceability and cleanup gates passed.
 
 ## Traceability IDs In Play
 
@@ -56,17 +59,17 @@ DES-074..DES-085, SPR-008, ITR-014, SLC-014, REV-SLC-014 and VER-SLC-014.
 
 ## Traceability Update State
 
-- CurrentIndex updated: yes; SPR-008 / ITR-014 / SLC-014 active.
+- CurrentIndex updated: yes; no active item after SLC-014 acceptance.
 - Relations updated: yes; requirement/design/review/verification chain added.
-- Ledger updated: yes; baseline, Sprint, Iteration and Slice start recorded.
+- Ledger updated: yes; baseline through review, verification and acceptance
+  recorded.
 
 ## Open Risks Or Ambiguities
 
-- Reviewer must independently adjudicate the cycle-15 atomic observation
-  against Siemens figure 7-32's unnumbered generic early IADC/BSY phases.
-- Reentrant DAPR callbacks require one final start/restart without ghost work.
-- Manual-invalid reference pairs must be diagnostic without inventing analog
-  accuracy or suppressing the documented DAPR start lifecycle.
+- No technical blocker remains. Atomic cycle-15 architectural exposure is the
+  accepted conservative abstraction for the manual's unnumbered MYMOS phases.
+- Full ADM=1 continuous auto-chaining remains explicitly unsupported and needs
+  separate authority if later required.
 
 ## Worktree Notes
 

@@ -1,6 +1,6 @@
 # EMU-SAB80535-DES-008 — Deterministic MYMOS ADC design
 
-Status: active target design
+Status: active current design
 Design items: DES-074..DES-085
 Established: 2026-09-02
 Steering authority: Issue #13 SLC-014

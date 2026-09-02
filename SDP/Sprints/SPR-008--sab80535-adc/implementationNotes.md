@@ -1,6 +1,6 @@
 # Implementation notes
 
-Status: review pending; Worker implementation recorded but not accepted.
+Status: verified; SLC-014 accepted.
 
 ## Frozen baseline
 
@@ -11,7 +11,7 @@ Status: review pending; Worker implementation recorded but not accepted.
 - Consumer evidence: Ponsse PR #25 exact HEAD
   `19ef6ff45efa719612b70e70b8c31b9cb2ebb7e9` plus current `doc/P1000/`.
 
-## Worker result awaiting review
+## Worker result
 
 - Exact product/test HEAD:
   `0bd39132b2eaffbfc5190e223b54743f17fc68fa`.
@@ -26,14 +26,20 @@ Status: review pending; Worker implementation recorded but not accepted.
 - Frozen debug modules, `opcodes.c`, SDP and all unauthorized scope are
   unchanged by the product commit.
 
-REV-SLC-014 must independently audit exact product HEAD before acceptance.
-
 ## Accepted review
 
 REV-SLC-014 approved exact product/test HEAD `0bd3913...` with no findings.
 Its independent Siemens, 5.96-million-state arithmetic, adversarial callback/
 restart, cross-platform sanitizer, exact-DAP, scope and product-identity audits
-pass. VER-SLC-014 is still required before acceptance.
+pass.
+
+## Verified acceptance
+
+- VER-SLC-014 passed Windows GCC/strict Clang, WSL GCC/ASan+UBSan, all seven
+  core suites, frozen debug facade/process and exact-DAP real integration.
+- Product/test HEAD `0bd3913...` is accepted; later commits are SDP-only.
+- REQ-013 is satisfied/current.
+- The frozen debug protocol and every stop-boundary exclusion remain intact.
 
 ## Stop boundary
 
