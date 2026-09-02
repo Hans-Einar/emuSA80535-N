@@ -62,3 +62,8 @@ DES-074..DES-085, SPR-008, ITR-014, SLC-014, REV-SLC-014 and VER-SLC-014.
 
 - Branch starts exactly at authorized master `a4d2478...`.
 - Separate Ponsse worktree content is not modified by this CPU Slice.
+
+## Issue Checkpoint
+
+Baseline/activation checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/13#issuecomment-5506927287
