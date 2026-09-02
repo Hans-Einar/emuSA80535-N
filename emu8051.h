@@ -282,6 +282,36 @@ struct em8051_sab_external_trace_record
 typedef void (*em8051sabexternaltrace)(
     const struct em8051_sab_external_trace_record *aRecord, void *aUser);
 
+/* Generic deterministic SAB80535 ADC input and diagnostic surface. Inputs
+ * are normalized over the external VAGND..VAREF span: 0 is VAGND and 65535
+ * is VAREF. */
+#define EM8051_SAB_ADC_CHANNEL_COUNT 8u
+
+enum em8051_sab_adc_trace_event
+{
+    EM8051_SAB_ADC_TRACE_START = 0,
+    EM8051_SAB_ADC_TRACE_RESTART,
+    EM8051_SAB_ADC_TRACE_COMPLETE
+};
+
+struct em8051_sab_adc_trace_record
+{
+    enum em8051_sab_adc_trace_event event;
+    uint64_t machine_cycle;
+    uint8_t channel;
+    uint8_t dapr;
+    uint16_t normalized_input;
+    uint8_t addat;
+    bool busy;
+    bool iadc;
+    bool references_valid;
+    bool continuous_requested;
+};
+
+/* ADC observers receive only immutable value data and caller-owned context. */
+typedef void (*em8051sabadctrace)(
+    const struct em8051_sab_adc_trace_record *aRecord, void *aUser);
+
 enum em8051_sab_external_schedule_action
 {
     EM8051_SAB_EXTERNAL_SCHEDULE_DRIVE = 0,
@@ -399,6 +429,25 @@ struct em8051
     uint8_t mSABExternalScheduleCount;
     em8051sabexternaltrace sab_external_trace;
     void *sab_external_trace_user;
+
+    /* SAB80535 deterministic single-conversion ADC state. A DAPR write is
+     * coalesced through the outermost SFR gateway and becomes cycle 1 on the
+     * next machine-cycle progression. */
+    uint16_t mSABADCInputs[EM8051_SAB_ADC_CHANNEL_COUNT];
+    uint16_t mSABADCLatchedInput;
+    uint16_t mSABSfrWriteDepth;
+    uint8_t mSABADCLatchedChannel;
+    uint8_t mSABADCLatchedDAPR;
+    uint8_t mSABADCCycles;
+    bool mSABADCStartPending;
+    bool mSABADCArmRestart;
+    bool mSABADCArmed;
+    bool mSABADCActive;
+    bool mSABADCBusy;
+    bool mSABADCReferenceValid;
+    bool mSABADCContinuousRequested;
+    em8051sabadctrace sab_adc_trace;
+    void *sab_adc_trace_user;
 
     enum em8051_variant mVariant;
     uint32_t mOscillatorHz;
@@ -550,6 +599,13 @@ uint8_t em8051_sab_external_scheduled_count(const struct em8051 *aCPU);
 void em8051_set_sab_external_trace(struct em8051 *aCPU,
                                    em8051sabexternaltrace aTrace,
                                    void *aUser);
+
+/* Store one deterministic normalized AN0..AN7 sample. Invalid CPU, variant
+ * or channel input fails without changing ADC state. */
+bool em8051_sab_adc_set_input(struct em8051 *aCPU, uint8_t aChannel,
+                              uint16_t aNormalizedInput);
+void em8051_set_sab_adc_trace(struct em8051 *aCPU,
+                              em8051sabadctrace aTrace, void *aUser);
 
 /* Begin one deterministic, valid in-memory mode-3 receive frame. The API
  * models no RxD pin edges or host transport. A false result means the CPU is
@@ -778,6 +834,11 @@ enum SAB_T2CON_MASKS
 
 enum SAB_ADCON_MASKS
 {
+    SAB_ADCONMASK_MX = 0x07,
+    SAB_ADCONMASK_ADM = 0x08,
+    SAB_ADCONMASK_BSY = 0x10,
+    SAB_ADCONMASK_RESERVED = 0x20,
+    SAB_ADCONMASK_CLK = 0x40,
     SAB_ADCONMASK_BD = 0x80
 };
 
