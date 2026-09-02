@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-Execute SPR-009 / ITR-015 / SLC-015 only: the reached Siemens Timer2
-timer-function/software-reload path authorized by Issue #17.
+Fresh independent review of the completed SPR-009 / ITR-015 / SLC-015 Worker
+result. No additional product scope is authorized while review is pending.
 
 ## Authoritative Source Documents
 
@@ -19,14 +19,38 @@ timer-function/software-reload path authorized by Issue #17.
 
 - Master baseline: `bc86d2633b6057529e6fd1e666896c24d72822aa`.
 - Branch: `codex/sab80535-timer2`.
-- Active work: SPR-009 / ITR-015 / SLC-015.
-- Product implementation has not yet been committed at this opening handoff.
+- Active work: SPR-009 / ITR-015 / SLC-015, review pending.
+- Exact tested Worker product/test HEAD:
+  `e388a007635acb4f964326f817a3d6eb049ccf6d`.
+- Test fixture entered before Worker product commit:
+  `tests/test_stage4_timer2.c` at commit
+  `ee4acd84127f6ba6867b79b7821015d5bfa0c3d7`.
+- Subsequent branch commits remove temporary Worker CI files and update SDP only;
+  they do not change product/test blobs relative to `e388a007...`.
+
+## Worker Evidence
+
+GitHub Actions run `33688691147` / job `100442147454` passed:
+
+- GCC full eight-suite core matrix;
+- frozen debug facade/process tests;
+- strict Clang full eight-suite core matrix;
+- ASan+UBSan full eight-suite matrix, no report;
+- frozen DAP exact HEAD `36639b48...` contract + fixture/hash + real
+  contract/equivalence/F5 smoke;
+- diff/scope audit.
+
+The focused Timer2 suite verifies the exact 43691-cycle `0x5555` case,
+T2PS /12 and free-running /24 phase, sticky/repeated TF2, normal vector 002B,
+live TL2/TH2, software stop/reload/restart, unsupported-mode non-production,
+no CRCL/CRCH reload, no automatic P5.4 action, IDLE progression and classic
+variant isolation.
 
 ## Exact Next Step
 
-Fresh Worker implements the bounded product/test Slice, runs focused and
-accepted regressions, commits exact product/test HEAD and reports it for fresh
-independent review.
+A fresh Reviewer who did not implement SLC-015 must independently inspect the
+exact Worker product/test tree, reconcile Siemens Timer2 semantics and issue
+`REV-SLC-015` with APPROVED or stable findings. Master must not self-approve.
 
 ## Stop Boundary
 
