@@ -316,11 +316,6 @@ enum em8051_debug_event_status em8051_debug_watch_table_match(
         *aRequired = 0u;
         return EM8051_DEBUG_EVENT_OK;
     }
-    if (aEvent->kind == EM8051_DEBUG_EVENT_WATCH_MATCH)
-    {
-        *aRequired = 0u;
-        return EM8051_DEBUG_EVENT_OK;
-    }
     for (i = 0u; i < aTable->watch_count; ++i)
     {
         const struct em8051_debug_watch *watch = &aTable->watches[i];

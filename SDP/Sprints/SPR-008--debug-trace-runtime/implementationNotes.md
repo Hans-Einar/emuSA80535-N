@@ -101,3 +101,69 @@ directly. Strict focused GCC/Clang, Clang ASan/UBSan, Valgrind, normal-profile
 full GCC/Clang regressions and the existing debugger facade passed. The
 unconnected legacy TUI/process executable could not be produced because this
 host lacks `libcurses`; this does not affect the standalone router result.
+
+## Worker implementation — SLC-017
+
+Added `emu_debug_runtime.h/.c`, an opaque debugger-owned in-memory facade that
+subscribes one dispatcher to the SLC-015 event bus and composes the accepted
+watch matcher with the SLC-016 router. Source events are observed once. The
+dispatcher first computes the complete bounded watch-result set, rejects an
+overflow before applying any gate, route or stop action, routes the source,
+then emits newly sequenced `watch.match` events only after the source callback
+has unwound. Derived events drain in ascending watch-ID order before source
+after-gates run.
+
+The router received additive `source_begin` / `source_end` entry points for
+that bracketing; the existing one-call `router_event` API composes them and
+retains its behavior. A selector can now explicitly identify an address space,
+which allows image load to disable CODE-addressed points and gates alongside
+CODE watches. No CPU producer is connected in this Slice.
+
+The facade provides bounded atomic replacement/listing for watches, trace
+sessions, destinations, points and gates; atomic trace enable/disable; source
+ingest; status; deferred stop consumption; non-destructive offset-paged ring
+reads;
+reset/load generation transitions; and clear-session. Trace/watch references
+are cross-validated before mutation. Reset and load reestablish interrupt depth
+zero while preserving trace configuration, counters, rings, pending stops and
+suppression state; load disables stale CODE selectors; clear-session resets
+configuration, records, stops, counters, generation and sequencing.
+
+`tests/test_debug_runtime.c` covers source/derived sequence correlation,
+ascending watch order, before/source/derived/after bracketing, quiet/console
+accounting, multi-watch stop aggregation and primary priority, paged reads,
+atomic replacement and referential rejection, trace enable neutrality,
+pending-queue overflow without partial routing/gates/stops, every facade count
+limit, invalid ingest, reset/load invalidation and clear-session lifecycle.
+
+Worker verification on 2026-09-02:
+
+- strict C99 focused builds/tests with GCC 7 and Clang 17, including pedantic,
+  conversion and sign-conversion diagnostics as errors: passed;
+- Clang AddressSanitizer plus UndefinedBehaviorSanitizer: passed;
+- Valgrind full leak/error check of a non-sanitized focused binary: passed;
+- complete Stage-0, IRQ, timer, UART, port/MOVX, event/watch, router and runtime
+  regressions with normal GCC and Clang profiles: passed;
+- existing debugger C facade and `emu-debug` NDJSON process suite with
+  Python 3.11: passed;
+- Clang static analyzer and `git diff --check`: passed;
+- `core.c`, `opcodes.c`, SAB80535 peripherals, existing `emu_debug.c/.h`,
+  server/wire protocol and DAP source were not modified.
+
+File/console sinks, CLI/protocol commands, CPU producer hooks and safe-boundary
+application of the returned stop request remain later integration work.
+
+## Reviewer corrections — SLC-017
+
+REV-SLC-017 corrected five boundary issues before approval: ring reads are now
+non-destructive offset pages; reset/load are guaranteed lifecycle records for
+enabled traces even after CODE selector invalidation; an open source enforces
+derived source-sequence/generation correlation; facade ingest rejects invalid
+event schema flags before sequencing; and router overwrite/suppression
+counters saturate. Source transaction guards, stop priority across pending
+sources, atomic replacement for every collection, lifecycle records and the
+new validation paths received direct focused coverage.
+
+The separate mandated holistic audit should decide the final externally stable
+sized/versioned request wrappers and after-sequence page metadata before this
+internal facade is exposed through the existing debugger or wire protocol.

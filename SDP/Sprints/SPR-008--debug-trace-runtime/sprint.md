@@ -1,6 +1,6 @@
 # SPR-008 — Generic debugger trace runtime
 
-Status: complete
+Status: active — dispatcher/facade extension
 Sprint ID: SPR-008
 Started: 2026-09-02
 
@@ -41,3 +41,7 @@ peripheral integration.
 
 SLC-016 delivered and verified the bounded multi-trace router, gate/interrupt
 policies and ring storage. The Sprint is complete.
+
+Steering authorized ITR-017 / SLC-017 for the remaining conflict-free
+composition layer and a subsequent holistic high-reasoning audit of the full
+standalone debugger runtime.

@@ -46,6 +46,8 @@ struct em8051_debug_trace_selector {
     uint8_t match_kind;
     uint8_t match_pc;
     uint8_t match_address;
+    uint8_t address_space;
+    uint8_t match_address_space;
 };
 
 struct em8051_debug_trace_session {
@@ -130,6 +132,8 @@ struct em8051_debug_trace_router {
         suppression[EM8051_DEBUG_TRACE_MAX_TRACES];
     uint64_t last_sequence;
     uint32_t interrupt_depth;
+    struct em8051_debug_event open_source_event;
+    uint8_t source_open;
 };
 
 void em8051_debug_trace_router_init(struct em8051_debug_trace_router *aRouter);
@@ -139,6 +143,14 @@ enum em8051_debug_event_status em8051_debug_trace_router_replace(
 enum em8051_debug_event_status em8051_debug_trace_router_event(
     struct em8051_debug_trace_router *aRouter,
     const struct em8051_debug_event *aEvent);
+/* source_begin routes the source and leaves after-gates pending. Zero or more
+ * correlated watch events may then be routed before source_end applies those
+ * after-gates. Configuration replacement and flush are busy while open. */
+enum em8051_debug_event_status em8051_debug_trace_router_source_begin(
+    struct em8051_debug_trace_router *aRouter,
+    const struct em8051_debug_event *aEvent);
+enum em8051_debug_event_status em8051_debug_trace_router_source_end(
+    struct em8051_debug_trace_router *aRouter);
 enum em8051_debug_event_status em8051_debug_trace_router_watch(
     struct em8051_debug_trace_router *aRouter,
     const struct em8051_debug_event *aWatchEvent,

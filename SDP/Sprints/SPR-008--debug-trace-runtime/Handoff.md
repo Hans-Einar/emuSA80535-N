@@ -1,8 +1,8 @@
 # Handoff
 
-SLC-015 and SLC-016 are accepted. The next conflict-free Slice can implement
-the derived-event dispatcher and in-memory facade APIs. Core producer hooks
-remain deferred until coordination with the SAB80535 branch.
+SLC-015 and SLC-016 are accepted. SLC-017 is active for the derived-event
+dispatcher and in-memory facade. Core producer hooks remain deferred until
+coordination with the SAB80535 branch.
 
 ## Pull request
 

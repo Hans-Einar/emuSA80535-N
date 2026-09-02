@@ -81,3 +81,43 @@ Worker and Reviewer, Master verification.
 Complete. REV-SLC-016 approved after direct coverage for all four gate timings.
 VER-SLC-016 passed strict compilers, sanitizers, full regressions and the
 existing debugger process suite.
+
+## ITR-017 — Derived-event dispatcher and in-memory facade
+
+Status: active
+Iteration ID: ITR-017
+Active Slice: SLC-017
+
+### Slice contract — SLC-017
+
+**Goal:** compose SLC-015 and SLC-016 into one bounded debugger-owned runtime
+that accepts synthetic canonical events and exposes an additive in-memory C
+facade, still without touching CPU execution or peripherals.
+
+**Required implementation:**
+
+1. dispatcher subscribes to the event bus and processes each source exactly
+   once without recursive callback execution;
+2. evaluate watches in ascending ID order, route the source event, then create
+   newly sequenced `watch.match` events in deterministic order, and apply
+   source after-gates only after all derived events drain;
+3. fixed-capacity pending derived-event queue with explicit overflow status and
+   no silent partial fan-out;
+4. aggregate stop requests and preserve primary lowest watch ID/source sequence
+   for the caller to apply only at a future CPU safe boundary;
+5. additive opaque in-memory facade for atomic replacement of watches, traces,
+   destinations, points and gates, trace enable/disable, event ingest, status,
+   stop consumption and paged ring reads;
+6. reset/load/clear lifecycle semantics and deterministic counter behavior;
+7. focused end-to-end tests for source/derived sequence identity, before/after
+   bracketing, multiple watches, overflow neutrality, stop priority, ring pages,
+   replacement atomicity, lifecycle and all advertised bounds.
+
+**Compatibility:** no changes to `core.c`, `opcodes.c`, SAB peripherals,
+existing `emu_debug.c/.h`, `emu_debug_server.c`, wire protocol or DAP. No file,
+console or raw stdout sink. The facade consumes synthetic events only.
+
+**Required evidence:** fresh Worker, fresh Reviewer, strict GCC and Clang,
+ASan/UBSan, Valgrind, complete regressions and Master verification. After Slice
+review, a separate fresh holistic Reviewer audits SLC-015..017 together for
+correctness and improvement opportunities before acceptance.

@@ -2,9 +2,9 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-09-02
 
 active:
-  sprint: null
-  iteration: null
-  slice: null
+  sprint: SPR-008
+  iteration: ITR-017
+  slice: SLC-017
 
 items:
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
@@ -100,7 +100,7 @@ items:
   SLC-014: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
   REV-SLC-014: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-014.md}
   VER-SLC-014: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-014.md}
-  SPR-008: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/sprint.md}
+  SPR-008: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/sprint.md}
   ITR-015: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   SLC-015: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   REV-SLC-015: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-015.md}
@@ -109,3 +109,7 @@ items:
   SLC-016: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   REV-SLC-016: {kind: review, status: approved-with-review-correction, state: current, source: SDP/CodeReview/REV-SLC-016.md}
   VER-SLC-016: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-016.md}
+  ITR-017: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  SLC-017: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  REV-SLC-017: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-017.md}
+  REV-SLC-017-F001..F005: {kind: finding-range, status: corrected, state: current, source: SDP/CodeReview/REV-SLC-017.md}

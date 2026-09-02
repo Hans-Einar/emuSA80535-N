@@ -11,11 +11,20 @@ static bool terminated(const char *s, size_t n)
     return memchr(s, '\0', n) != NULL;
 }
 
+static void saturated_increment(uint64_t *value)
+{
+    if (*value != UINT64_MAX)
+        ++*value;
+}
+
 static bool selector_valid(const struct em8051_debug_trace_selector *s)
 {
     return s->match_kind <= 1u && s->match_pc <= 1u &&
-           s->match_address <= 1u &&
+           s->match_address <= 1u && s->match_address_space <= 1u &&
            (!s->match_kind || s->kind <= EM8051_DEBUG_EVENT_WATCH_MATCH) &&
+           (!s->match_address_space ||
+            (s->address_space >= EM8051_DEBUG_SPACE_CODE &&
+             s->address_space <= EM8051_DEBUG_SPACE_XDATA)) &&
            (!s->match_pc || s->pc_first <= s->pc_last) &&
            (!s->match_address || s->address_first <= s->address_last);
 }
@@ -24,6 +33,8 @@ static bool selector_match(const struct em8051_debug_trace_selector *s,
                            const struct em8051_debug_event *e)
 {
     return (!s->match_kind || s->kind == e->kind) &&
+           (!s->match_address_space ||
+            s->address_space == e->address_space) &&
            (!s->match_pc || (e->pc >= s->pc_first && e->pc <= s->pc_last)) &&
            (!s->match_address || (e->address >= s->address_first &&
                                   e->address <= s->address_last));
@@ -108,7 +119,7 @@ static void ring_push(struct em8051_debug_trace_ring *r,
         r->head = (uint16_t)(((uint32_t)r->head + 1u) %
                              EM8051_DEBUG_TRACE_RING_CAPACITY);
         --r->count;
-        ++r->overwritten;
+        saturated_increment(&r->overwritten);
     }
     at = (uint16_t)(((uint32_t)r->head + (uint32_t)r->count) %
                     EM8051_DEBUG_TRACE_RING_CAPACITY);
@@ -136,6 +147,8 @@ static bool policy_accepts(uint8_t policy, uint8_t kind, uint32_t depth)
 {
     bool outer_enter = kind == EM8051_DEBUG_EVENT_INTERRUPT_ENTER && depth == 0u;
     bool outer_exit = kind == EM8051_DEBUG_EVENT_INTERRUPT_EXIT && depth == 1u;
+    if (kind == EM8051_DEBUG_EVENT_RESET || kind == EM8051_DEBUG_EVENT_LOAD)
+        return true;
     if (policy == EM8051_DEBUG_TRACE_INCLUDE)
         return true;
     if (policy == EM8051_DEBUG_TRACE_SUPPRESS_DURING_INTERRUPT)
@@ -156,7 +169,7 @@ static void suppression_add(struct em8051_debug_trace_router *r, size_t ti,
         s->value.interrupt_policy = r->config.traces[ti].interrupt_policy;
     }
     s->value.last_sequence = e->sequence;
-    ++s->value.count;
+    saturated_increment(&s->value.count);
     if (r->interrupt_depth > s->value.maximum_depth)
         s->value.maximum_depth = r->interrupt_depth;
 }
@@ -236,6 +249,8 @@ enum em8051_debug_event_status em8051_debug_trace_router_replace(
     size_t i;
     if (!r || !config_valid(c))
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (r->source_open)
+        return EM8051_DEBUG_EVENT_BUSY;
     memset(rings, 0, sizeof(rings));
     memset(suppression, 0, sizeof(suppression));
     for (i = 0u; i < c->destination_count; ++i) {
@@ -261,10 +276,22 @@ enum em8051_debug_event_status em8051_debug_trace_router_replace(
 enum em8051_debug_event_status em8051_debug_trace_router_event(
     struct em8051_debug_trace_router *r, const struct em8051_debug_event *e)
 {
+    enum em8051_debug_event_status status;
+
+    status = em8051_debug_trace_router_source_begin(r, e);
+    if (status != EM8051_DEBUG_EVENT_OK)
+        return status;
+    return em8051_debug_trace_router_source_end(r);
+}
+
+enum em8051_debug_event_status em8051_debug_trace_router_source_begin(
+    struct em8051_debug_trace_router *r, const struct em8051_debug_event *e)
+{
     uint32_t ids[EM8051_DEBUG_TRACE_MAX_TRACES];
     size_t count = 0u, i, j;
     enum em8051_debug_event_status status;
-    if (!r || !e || !e->sequence || e->sequence <= r->last_sequence ||
+    if (!r || !e || r->source_open || !e->sequence ||
+        e->sequence <= r->last_sequence ||
         e->kind == EM8051_DEBUG_EVENT_WATCH_MATCH ||
         (e->kind == EM8051_DEBUG_EVENT_INTERRUPT_EXIT &&
          r->interrupt_depth == 0u) ||
@@ -272,26 +299,47 @@ enum em8051_debug_event_status em8051_debug_trace_router_event(
          r->interrupt_depth == UINT32_MAX))
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
     apply_gates(r, e, EM8051_DEBUG_TRACE_GATE_BEFORE);
-    for (i = 0u; i < r->config.point_count; ++i) {
-        const struct em8051_debug_trace_point *p = &r->config.points[i];
-        if (!p->enabled || !selector_match(&p->selector, e)) continue;
-        for (j = 0u; j < p->trace_id_count; ++j) {
-            size_t at = 0u, move;
-            while (at < count && ids[at] < p->trace_ids[j]) ++at;
-            if (at < count && ids[at] == p->trace_ids[j]) continue;
-            for (move = count; move > at; --move) ids[move] = ids[move - 1u];
-            ids[at] = p->trace_ids[j]; ++count;
+    if (e->kind == EM8051_DEBUG_EVENT_RESET ||
+        e->kind == EM8051_DEBUG_EVENT_LOAD) {
+        for (i = 0u; i < r->config.trace_count; ++i)
+            ids[count++] = r->config.traces[i].trace_id;
+    } else {
+        for (i = 0u; i < r->config.point_count; ++i) {
+            const struct em8051_debug_trace_point *p = &r->config.points[i];
+            if (!p->enabled || !selector_match(&p->selector, e)) continue;
+            for (j = 0u; j < p->trace_id_count; ++j) {
+                size_t at = 0u, move;
+                while (at < count && ids[at] < p->trace_ids[j]) ++at;
+                if (at < count && ids[at] == p->trace_ids[j]) continue;
+                for (move = count; move > at; --move)
+                    ids[move] = ids[move - 1u];
+                ids[at] = p->trace_ids[j]; ++count;
+            }
         }
     }
     status = route_ids(r, e, ids, count, NULL);
     if (status != EM8051_DEBUG_EVENT_OK) return status;
-    apply_gates(r, e, EM8051_DEBUG_TRACE_GATE_AFTER);
     if (e->kind == EM8051_DEBUG_EVENT_INTERRUPT_ENTER) {
         ++r->interrupt_depth;
     } else if (e->kind == EM8051_DEBUG_EVENT_INTERRUPT_EXIT) {
         --r->interrupt_depth;
     }
     r->last_sequence = e->sequence;
+    r->open_source_event = *e;
+    r->source_open = 1u;
+    return EM8051_DEBUG_EVENT_OK;
+}
+
+enum em8051_debug_event_status em8051_debug_trace_router_source_end(
+    struct em8051_debug_trace_router *r)
+{
+    if (!r)
+        return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (!r->source_open)
+        return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    apply_gates(r, &r->open_source_event, EM8051_DEBUG_TRACE_GATE_AFTER);
+    memset(&r->open_source_event, 0, sizeof(r->open_source_event));
+    r->source_open = 0u;
     return EM8051_DEBUG_EVENT_OK;
 }
 
@@ -303,7 +351,10 @@ enum em8051_debug_event_status em8051_debug_trace_router_watch(
     enum em8051_debug_event_status status;
     if (!r || !e || !result || e->kind != EM8051_DEBUG_EVENT_WATCH_MATCH ||
         !e->sequence || e->sequence <= r->last_sequence ||
-        result->trace_id_count > EM8051_DEBUG_WATCH_MAX_ROUTES)
+        result->trace_id_count > EM8051_DEBUG_WATCH_MAX_ROUTES ||
+        (r->source_open &&
+         (result->source_event_sequence != r->open_source_event.sequence ||
+          e->generation != r->open_source_event.generation)))
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
     status = route_ids(r, e, result->trace_ids, result->trace_id_count, result);
     if (status == EM8051_DEBUG_EVENT_OK) r->last_sequence = e->sequence;
@@ -315,6 +366,7 @@ enum em8051_debug_event_status em8051_debug_trace_router_flush(
 {
     size_t i;
     if (!r) return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (r->source_open) return EM8051_DEBUG_EVENT_BUSY;
     for (i = 0u; i < r->config.trace_count; ++i) suppression_emit(r, i);
     return EM8051_DEBUG_EVENT_OK;
 }
