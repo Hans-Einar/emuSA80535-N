@@ -80,3 +80,6 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/13#issuecomment-5506927287
 
 Worker completion checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/13#issuecomment-5507418615
+
+REV-SLC-014 checkpoint:
+https://github.com/Hans-Einar/emuSA80535-N/issues/13#issuecomment-5507712598
