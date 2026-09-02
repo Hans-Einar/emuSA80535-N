@@ -56,3 +56,10 @@ ITR-015, SLC-015, REV-SLC-015 and VER-SLC-015 are current/accepted.
 
 Both consumers are instructed to pin exact accepted CPU product HEAD
 `e388a007635acb4f964326f817a3d6eb049ccf6d` rather than the moving PR/SDP head.
+
+## Final Stage-4 checkpoint
+
+Issue #17 READY/Steering checkpoint: https://github.com/Hans-Einar/emuSA80535-N/issues/17#issuecomment-5517933325
+
+The accepted product remains `e388a007635acb4f964326f817a3d6eb049ccf6d`. Any later branch commit is
+traceability/evidence only and requires a final product-blob identity audit.
