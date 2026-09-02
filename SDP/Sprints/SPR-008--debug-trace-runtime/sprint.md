@@ -1,6 +1,6 @@
 # SPR-008 — Generic debugger trace runtime
 
-Status: active — dispatcher/facade extension
+Status: active — Issue #14 takeover review and acceptance
 Sprint ID: SPR-008
 Started: 2026-09-02
 
@@ -45,3 +45,10 @@ policies and ring storage. The Sprint is complete.
 Steering authorized ITR-017 / SLC-017 for the remaining conflict-free
 composition layer and a subsequent holistic high-reasoning audit of the full
 standalone debugger runtime.
+
+Issue #14 is the Steering/Master authority for the takeover from exact
+preserved WIP HEAD `356836637d5ff432d91fc508fd55b2f17b45cdb3` on
+`codex/debug-trace-runtime-takeover`. The preservation checkpoint and its
+embedded REV-SLC-017 language are not acceptance authority. SLC-017 remains
+active until REV-SLC-017-HOLISTIC, VER-SLC-017, the stable facade/versioning/
+paging design freeze and final traceability integration are complete.

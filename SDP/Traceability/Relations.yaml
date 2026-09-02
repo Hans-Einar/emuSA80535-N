@@ -163,6 +163,8 @@ relations:
   - {from: REV-SLC-017, type: reviews, to: SLC-017}
   - {from: REV-SLC-017, type: opens, to: REV-SLC-017-F001..F005}
   - {from: REV-SLC-017-F001..F005, type: corrected_by, to: SLC-017}
+  - {from: REV-SLC-017-HOLISTIC, type: reviews, to: SLC-015..SLC-017}
+  - {from: VER-SLC-017, type: verifies, to: SLC-017}
   - {from: REV-SLC-016, type: reviews, to: SLC-016}
   - {from: REV-SLC-016, type: opens, to: REV-SLC-016-F001}
   - {from: REV-SLC-016-F001, type: corrected_by, to: SLC-016}

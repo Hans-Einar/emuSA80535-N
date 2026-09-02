@@ -1,12 +1,30 @@
 # Handoff
 
-SLC-015 and SLC-016 are accepted. SLC-017 is active for the derived-event
-dispatcher and in-memory facade. Core producer hooks remain deferred until
-coordination with the SAB80535 branch.
+SLC-015 and SLC-016 are accepted. SLC-017 is under the Issue #14 takeover
+acceptance pass. The active work is a fresh holistic review, any authorized
+standalone-runtime corrections, full verification and a documentation-only
+facade/versioning/paging freeze. Core producer hooks and all frontend/protocol
+work remain deferred.
 
 ## Pull request
 
-- PR: https://github.com/Hans-Einar/emuSA80535-N/pull/12
-- Branch: `codex/debug-trace-runtime`
-- Stacked base: `codex/tracepoint-debugger-spec` (PR #11)
-- Implementation commit: `e785a18`
+- Source WIP branch: `codex/debug-trace-runtime-slc017-wip`
+- Source WIP HEAD: `356836637d5ff432d91fc508fd55b2f17b45cdb3`
+- Active takeover branch: `codex/debug-trace-runtime-takeover`
+- Related PR #11: design PR, open against `master`; do not merge here
+- Related PR #12: runtime PR, open against PR #11 branch; do not merge here
+- Takeover PR: not opened until review, corrections, verification and SDP
+  integration are complete
+
+## Exact next step
+
+Complete REV-SLC-017-HOLISTIC independently, then assign any blocking
+standalone-runtime corrections to a fresh Worker. A separate fresh Reviewer
+must inspect corrections before Master verification and acceptance.
+
+## Traceability IDs
+
+- `SPR-008`, `ITR-017`, `SLC-015`, `SLC-016`, `SLC-017`
+- historical/provisional `REV-SLC-017`
+- active `REV-SLC-017-HOLISTIC`
+- planned `VER-SLC-017`

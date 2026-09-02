@@ -121,3 +121,33 @@ console or raw stdout sink. The facade consumes synthetic events only.
 ASan/UBSan, Valgrind, complete regressions and Master verification. After Slice
 review, a separate fresh holistic Reviewer audits SLC-015..017 together for
 correctness and improvement opportunities before acceptance.
+
+### Issue #14 takeover acceptance pass
+
+Status: active
+
+Steering/Master authority is Issue #14. Work starts from exact preserved WIP
+HEAD `356836637d5ff432d91fc508fd55b2f17b45cdb3` on the fresh branch
+`codex/debug-trace-runtime-takeover`; the preservation branch is immutable.
+
+The acceptance pass must:
+
+1. perform REV-SLC-017-HOLISTIC as a fresh independent review of SLC-015,
+   SLC-016 and SLC-017, including every review dimension named in Issue #14;
+2. treat the existing REV-SLC-017 only as non-authoritative historical
+   evidence and reproduce or reject every claimed correction independently;
+3. correct blocking findings only within the existing standalone debugger-
+   owned event/watch/router/runtime composition scope;
+4. run and record VER-SLC-017 with exact tool versions and explicit
+   environment limitations;
+5. freeze the future stable sized/versioned request/response facade and final
+   after-sequence page metadata in design documentation only;
+6. leave CPU producers, CPU safe-boundary application, CLI, wire protocol,
+   DAP, file/console sinks, source maps and product/physical I/O out of scope;
+7. preserve one emulator-owned breakpoint/watchpoint/tracepoint semantic model
+   for later CLI and DAP frontends.
+
+Expected completion signal: REV-SLC-017-HOLISTIC contains no unresolved
+blocking finding, VER-SLC-017 is reproducible and passed or honestly records a
+blocking environment gap, the design seam is frozen, and SDP/traceability can
+support a READY/NOT_READY decision without relying on chat memory.
