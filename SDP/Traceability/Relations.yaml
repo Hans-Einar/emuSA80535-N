@@ -134,6 +134,8 @@ relations:
   - {from: SLC-012, type: resolves, to: REV-SLC-011-F002}
   - {from: STU-003, type: informs, to: DES-064..DES-079}
   - {from: DES-064..DES-079, type: refines, to: ARCH-007..ARCH-010}
+  - {from: DES-090..DES-097, type: refines, to: ARCH-007..ARCH-010}
+  - {from: DES-090..DES-097, type: freezes_integration_seam_for, to: DES-064..DES-089}
   - {from: SLC-013, type: belongs_to, to: ITR-013}
   - {from: ITR-013, type: belongs_to, to: SPR-007}
   - {from: SLC-013, type: studies, to: STU-003}
@@ -146,3 +148,31 @@ relations:
   - {from: SLC-014, type: specifies, to: DES-080..DES-089}
   - {from: REV-SLC-014, type: reviews, to: SLC-014}
   - {from: VER-SLC-014, type: verifies, to: SLC-014}
+  - {from: SLC-015, type: belongs_to, to: ITR-015}
+  - {from: ITR-015, type: belongs_to, to: SPR-008}
+  - {from: SLC-015, type: implements_design, to: DES-064..DES-089}
+  - {from: REV-SLC-015, type: reviews, to: SLC-015}
+  - {from: VER-SLC-015, type: verifies, to: SLC-015}
+  - {from: SLC-016, type: belongs_to, to: ITR-016}
+  - {from: ITR-016, type: belongs_to, to: SPR-008}
+  - {from: SLC-016, type: implements_design, to: DES-080..DES-089}
+  - {from: REV-SLC-016, type: reviews, to: SLC-016}
+  - {from: VER-SLC-016, type: verifies, to: SLC-016}
+  - {from: SLC-017, type: belongs_to, to: ITR-017}
+  - {from: ITR-017, type: belongs_to, to: SPR-008}
+  - {from: SLC-017, type: composes, to: SLC-015}
+  - {from: SLC-017, type: composes, to: SLC-016}
+  - {from: REV-SLC-017, type: reviews, to: SLC-017}
+  - {from: REV-SLC-017, type: opens, to: REV-SLC-017-F001..F005}
+  - {from: REV-SLC-017-F001..F005, type: corrected_by, to: SLC-017}
+  - {from: REV-SLC-017-HOLISTIC, type: reviews, to: SLC-015..SLC-017}
+  - {from: REV-SLC-017-HOLISTIC, type: opens, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: SLC-017, type: addresses, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: REV-SLC-017-CORRECTIONS, type: reviews, to: SLC-017}
+  - {from: REV-SLC-017-CORRECTIONS, type: verifies_corrections, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: SLC-017, type: resolves, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: VER-SLC-017, type: verifies, to: SLC-017}
+  - {from: SLC-017, type: freezes_design, to: DES-090..DES-097}
+  - {from: REV-SLC-016, type: reviews, to: SLC-016}
+  - {from: REV-SLC-016, type: opens, to: REV-SLC-016-F001}
+  - {from: REV-SLC-016-F001, type: corrected_by, to: SLC-016}

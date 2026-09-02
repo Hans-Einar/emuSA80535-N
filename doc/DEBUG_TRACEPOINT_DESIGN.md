@@ -262,14 +262,18 @@ or caller-owned slices, never unbounded pointers embedded in retained objects:
 
 ```c
 struct em8051_trace_session {
-    uint32_t struct_size, trace_id, destination_id;
-    uint16_t version, tag_length, comment_length;
+    uint32_t struct_size;
+    uint16_t api_version, flags;
+    uint32_t trace_id, destination_id;
+    uint16_t tag_length, comment_length;
     uint8_t enabled, interrupt_policy;
     char tag[64], comment[256];
 };
 struct em8051_watch_route {
-    uint32_t struct_size, watch_id;
-    uint16_t version, trace_id_count;
+    uint32_t struct_size;
+    uint16_t api_version, flags;
+    uint32_t watch_id;
+    uint16_t trace_id_count, reserved;
     uint32_t trace_ids[EM8051_MAX_ROUTES_PER_WATCH];
 };
 ```
@@ -434,9 +438,12 @@ ordinary record, the sequencer emits a loss marker. A marker-caused eviction is
 folded into that marker in one bounded operation and cannot recurse.
 Alternative `stop-on-full` requests a stop at the next safe execution boundary.
 
-`readTrace(afterSequence, maxRecords)` returns a bounded ordered page plus
-`oldestSequence`, `newestSequence`, `nextAfterSequence`, `more` and cumulative
-loss counters. Reading never removes records. Clear is explicit.
+The Issue #14 freeze supersedes an offset or ambiguous canonical-event cursor.
+`readTrace(afterRecordSequence, maxRecords)` uses an exclusive per-destination
+ring-record sequence and returns the page metadata frozen in DES-093/DES-094.
+Each stored event, suppression summary and future loss/status record receives a
+unique storage sequence while retaining its canonical event sequence or source
+range. Reading never removes records. Clear is explicit and changes ring epoch.
 
 ### JSONL sink
 
@@ -518,11 +525,28 @@ enum em8051_debug_status em8051_debugger_replace_watch_routes(
     struct em8051_debugger *, const struct em8051_watch_route *, size_t);
 ```
 
-Every public struct begins with `uint32_t struct_size` and `uint16_t version`.
+Every public struct begins with `uint32_t struct_size`, `uint16_t api_version`
+and `uint16_t flags`.
 Caller owns input/output arrays. List/read report required count without
 overflow. Replacement/configuration validates and allocates before committing;
 failure leaves old state intact. The core remains unaware of files, JSON and
 protocol.
+
+### Issue #14 stable-facade freeze
+
+The current `emu_debug_runtime.h` functions remain internal same-build APIs;
+their raw structs and offset page are not the stable facade. The future public
+wrapper contract is authoritative in `SDP/05--Design/EMU-DEBUG-DES-008.md`:
+each request, response and element starts with fixed-width `struct_size`,
+`api_version` and `flags`; the runtime never retains caller buffers; mutations
+are atomic; and page cursors use exclusive `after_record_sequence` with
+session/ring epoch, stale-cursor and loss metadata. C enum size, `bool`,
+padding and `size_t` do not cross stable record fields.
+
+The same document freezes frontend classification. Configuration/status/pull-
+page operations may be exposed later after producer/safe-boundary integration.
+Raw ingest, bus/router calls and ring pop remain internal. CLI, optional
+protocol commands and DAP must project one emulator-owned semantic model.
 
 ## Legacy interactive commands
 
