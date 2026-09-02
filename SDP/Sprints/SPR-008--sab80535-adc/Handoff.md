@@ -24,20 +24,25 @@ unmerged for Steering.
 - Siemens ADCON/channel/reference/timing pages extracted and visually audited.
 - SPR-008 / ITR-014 / SLC-014 and DES-074..DES-085 defined.
 - Active traceability established before product-code work.
+- Fresh Worker product/test commit
+  `0bd39132b2eaffbfc5190e223b54743f17fc68fa` completed with all focused,
+  cross-platform, sanitizer, frozen-debug and exact-DAP gates green.
 
 ## Not Done
 
-- Worker implementation, independent review, Master verification, acceptance,
-  implementation PR and Issue #13/Ponsse handoffs.
+- Independent REV-SLC-014, Master verification, acceptance, implementation PR
+  and Issue #13/Ponsse handoffs.
 
 ## Exact Next Step
 
-Commit/publish the activation surface and dispatch one fresh Worker against
-SLC-014.
+Publish the Worker completion checkpoint and dispatch a separate fresh
+Reviewer against exact product HEAD `0bd3913...`.
 
 ## Verification Completed
 
-- Authority, baseline identity, primary-manual and traceability readiness only.
+- Worker: all 28 focused classes, complete Windows/strict/WSL/sanitizer
+  core+debug matrix and exact-DAP integration reported passing. Master
+  verification has not started.
 
 ## Traceability IDs In Play
 

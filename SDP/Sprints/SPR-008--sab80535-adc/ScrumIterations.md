@@ -77,3 +77,19 @@ no-target/no-Timer2/no-live/no-protocol-change, NDJSON and ancestry audits.
 and exact evidence. A separate fresh Reviewer audits the exact product HEAD and
 either approves it or opens stable findings. Master accepts only after
 independent exact-HEAD verification.
+
+### Worker result
+
+Fresh Worker commit `0bd39132b2eaffbfc5190e223b54743f17fc68fa`
+implements the bounded ADC product/test Slice from parent
+`8906274ff1a5096d1403b3021569bbae37920e97`.
+
+The Worker reports all 28 Issue classes passing: normalized eight-channel
+input, exhaustive DAPR programming, exact cycle-1/15 state, restart and
+reentrant callback coalescing, integer conversion oracle, ADDAT/BSY/IADC,
+controller/vector behavior, replay/observer/reset/classic isolation and the
+generic ISR fixture. Windows GCC, clean strict Clang, WSL GCC, WSL ASan+UBSan,
+frozen debug and exact-DAP gates all pass.
+
+The exact product HEAD is not accepted until fresh REV-SLC-014 independently
+adjudicates Siemens timing/reference semantics and Master verification passes.

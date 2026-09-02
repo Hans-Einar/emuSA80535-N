@@ -1,6 +1,6 @@
 # Implementation notes
 
-Status: active; no SLC-014 product implementation recorded.
+Status: review pending; Worker implementation recorded but not accepted.
 
 ## Frozen baseline
 
@@ -11,10 +11,22 @@ Status: active; no SLC-014 product implementation recorded.
 - Consumer evidence: Ponsse PR #25 exact HEAD
   `19ef6ff45efa719612b70e70b8c31b9cb2ebb7e9` plus current `doc/P1000/`.
 
-## Authorized work
+## Worker result awaiting review
 
-Only ITR-014 / SLC-014 deterministic ADM=0 single-conversion ADC work is
-active. Product implementation and Worker evidence have not started.
+- Exact product/test HEAD:
+  `0bd39132b2eaffbfc5190e223b54743f17fc68fa`.
+- Adds generic normalized AN0..AN7 input, callback-safe DAPR start/restart,
+  exact cycle-15 conversion, DAPR reference arithmetic, ADDAT/BSY/IADC,
+  controller integration and immutable ADC diagnostics.
+- Adds exhaustive focused ADC tests and complete test-build integration.
+- Worker reports Windows GCC/strict Clang and WSL GCC/ASan+UBSan seven-suite
+  core plus frozen debug gates passing.
+- Frozen DAP exact HEAD `36639b4...` build, 45/45 contract, fixture and real
+  contract/equivalence/F5 smoke pass from a removed detached worktree.
+- Frozen debug modules, `opcodes.c`, SDP and all unauthorized scope are
+  unchanged by the product commit.
+
+REV-SLC-014 must independently audit exact product HEAD before acceptance.
 
 ## Stop boundary
 

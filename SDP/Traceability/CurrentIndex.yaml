@@ -99,6 +99,6 @@ items:
   DES-074..DES-085: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-SAB80535-DES-008.md}
   SPR-008: {kind: sprint, status: active, state: target, source: SDP/Sprints/SPR-008--sab80535-adc/sprint.md}
   ITR-014: {kind: iteration, status: active, state: target, source: SDP/Sprints/SPR-008--sab80535-adc/ScrumIterations.md}
-  SLC-014: {kind: slice, status: active, state: target, source: SDP/Sprints/SPR-008--sab80535-adc/ScrumIterations.md}
+  SLC-014: {kind: slice, status: review-pending, state: target, source: SDP/Sprints/SPR-008--sab80535-adc/ScrumIterations.md}
   REV-SLC-014: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-014.md}
   VER-SLC-014: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-014.md}
