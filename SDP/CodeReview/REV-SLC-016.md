@@ -1,7 +1,7 @@
 # REV-SLC-016 — Synthetic multi-trace router and bounded ring
 
-Date: 2026-09-02  
-Reviewer role: fresh independent SDP Reviewer  
+Date: 2026-09-02
+Reviewer role: fresh independent SDP Reviewer
 Disposition: **approved with review correction**
 
 ## Scope reviewed

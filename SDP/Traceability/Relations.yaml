@@ -134,6 +134,8 @@ relations:
   - {from: SLC-012, type: resolves, to: REV-SLC-011-F002}
   - {from: STU-003, type: informs, to: DES-064..DES-079}
   - {from: DES-064..DES-079, type: refines, to: ARCH-007..ARCH-010}
+  - {from: DES-090..DES-097, type: refines, to: ARCH-007..ARCH-010}
+  - {from: DES-090..DES-097, type: freezes_integration_seam_for, to: DES-064..DES-089}
   - {from: SLC-013, type: belongs_to, to: ITR-013}
   - {from: ITR-013, type: belongs_to, to: SPR-007}
   - {from: SLC-013, type: studies, to: STU-003}
@@ -170,6 +172,7 @@ relations:
   - {from: REV-SLC-017-CORRECTIONS, type: verifies_corrections, to: REV-SLC-017-HOLISTIC-F001..F006}
   - {from: SLC-017, type: resolves, to: REV-SLC-017-HOLISTIC-F001..F006}
   - {from: VER-SLC-017, type: verifies, to: SLC-017}
+  - {from: SLC-017, type: freezes_design, to: DES-090..DES-097}
   - {from: REV-SLC-016, type: reviews, to: SLC-016}
   - {from: REV-SLC-016, type: opens, to: REV-SLC-016-F001}
   - {from: REV-SLC-016-F001, type: corrected_by, to: SLC-016}

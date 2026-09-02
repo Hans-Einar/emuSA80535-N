@@ -208,3 +208,21 @@ the diff remained inside the standalone debugger-runtime boundary.
 SLC-017 now proceeds to VER-SLC-017. It is not accepted until the full
 verification matrix and documentation-only facade/versioning/paging freeze
 are complete and recorded.
+
+### Master verification, design freeze and acceptance
+
+VER-SLC-017 passed all available Windows and WSL/Linux gates. Strict GCC and
+Clang, ASan/UBSan, full Stage-0/IRQ/timer/UART/port-MOVX regressions, focused
+event/trace/runtime suites, existing debugger facade/process tests, static
+analysis, diff, traceability and forbidden-scope gates passed. Valgrind was not
+installed in either WSL distribution and is recorded honestly as an
+environment note under the “where available” rule.
+
+DES-090..DES-097 freezes the future external integration seam. The current C
+surface remains internal; future external operations use fixed-width sized/
+versioned wrappers and an exclusive per-ring `after_record_sequence` cursor
+with session/ring epoch and loss metadata. CLI, protocol and DAP remain later
+frontends over one emulator-owned breakpoint/watchpoint/tracepoint model.
+
+Status: complete. SLC-017 is accepted. No blocking finding, verification gap
+or Steering escalation remains. Takeover-PR merge is not authorized here.

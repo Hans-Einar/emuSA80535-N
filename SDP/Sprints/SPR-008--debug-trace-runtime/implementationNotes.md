@@ -198,3 +198,24 @@ Worker evidence passed strict GCC 12.2 and Clang 18.1.8 C99 focused builds,
 the focused suites, Clang ASan/UBSan and `make core-test`. MinGW sanitizer
 runtime libraries were unavailable; this is an environment note rather than a
 skipped sanitizer gate because the Clang sanitizer build/run passed.
+
+## Master verification and stable-seam freeze
+
+REV-SLC-017-CORRECTIONS independently approved the corrective product commit
+without a new finding. VER-SLC-017 then passed strict focused suites, Clang
+ASan/UBSan, Clang static analysis, complete GCC/Clang regressions on Windows
+and WSL, the existing debugger facade and modern-Python process suites, plus
+diff, traceability and forbidden-scope audits. Valgrind was not installed and
+is the only environment note.
+
+`SDP/05--Design/EMU-DEBUG-DES-008.md` freezes DES-090..DES-097. The current raw
+runtime facade and offset ring read remain internal. A later stable facade uses
+fixed-width sized/versioned request/response/element wrappers, deep-copy and
+caller-owned output rules, and per-ring exclusive record-sequence cursors with
+session/epoch/stale/loss metadata. This Slice does not implement those wrappers
+or any frontend.
+
+SLC-017 is accepted at corrected product HEAD
+`d956177add44dda9efbd6d9e372a9c0a6d40f777` under the final SDP-only takeover
+HEAD. PR review remains external to Slice acceptance and merge remains
+Steering-controlled.

@@ -1,7 +1,7 @@
 # REV-SLC-017 — Derived-event dispatcher and in-memory facade
 
-Date: 2026-09-02  
-Reviewer role: fresh independent SDP Reviewer  
+Date: 2026-09-02
+Reviewer role: fresh independent SDP Reviewer
 Disposition: **approved with review corrections**
 
 ## Scope reviewed

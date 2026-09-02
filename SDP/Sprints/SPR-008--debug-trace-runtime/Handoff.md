@@ -18,10 +18,10 @@ work remain deferred.
 
 ## Exact next step
 
-Run the complete Issue #14 VER-SLC-017 matrix against corrective product
-commit `d956177add44dda9efbd6d9e372a9c0a6d40f777`, recording exact tool versions
-and every environment limitation. Then integrate the documentation-only
-stable facade/versioning/paging freeze before deciding acceptance.
+Open the takeover PR from `codex/debug-trace-runtime-takeover` against the
+stacked design branch `codex/tracepoint-debugger-spec`. State explicitly that
+it supersedes runtime PR #12 without merging or rewriting PR #11/#12. Do not
+merge the takeover PR without separate Steering authorization.
 
 ## Traceability IDs
 
@@ -30,4 +30,21 @@ stable facade/versioning/paging freeze before deciding acceptance.
 - completed, corrections-required `REV-SLC-017-HOLISTIC`
 - resolved `REV-SLC-017-HOLISTIC-F001..F006`
 - approved `REV-SLC-017-CORRECTIONS`
-- active `VER-SLC-017`
+- passed-with-environment-note `VER-SLC-017`
+- active target design `DES-090..DES-097`
+
+## Verification completed
+
+- strict GCC/Clang focused suites on Windows and WSL: passed;
+- Clang ASan/UBSan on Windows and WSL: passed;
+- full Stage-0/IRQ/timer/UART/port-MOVX/event/trace/runtime regressions under
+  GCC and Clang on Windows and WSL: passed;
+- existing debugger facade and modern-Python process suites: passed;
+- Clang static analyzer, diff, traceability and forbidden-scope gates: passed;
+- Valgrind: not installed, recorded in VER-SLC-017 under “where available”.
+
+## Design freeze
+
+DES-090..DES-097 is authoritative for the future stable wrapper and page
+cursor. The current runtime C header remains internal. No frontend/protocol/
+DAP/CPU implementation is present in this takeover.

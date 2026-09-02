@@ -1,7 +1,7 @@
 # REV-SLC-015 — Standalone debug event/watch runtime
 
-Date: 2026-09-02  
-Reviewer role: fresh independent SDP Reviewer  
+Date: 2026-09-02
+Reviewer role: fresh independent SDP Reviewer
 Disposition: **approved with review corrections**
 
 ## Scope reviewed
