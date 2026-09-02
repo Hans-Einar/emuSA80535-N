@@ -2,8 +2,7 @@
 
 ## Current Objective
 
-SLC-014 is accepted. Open the focused SPR-008 implementation PR and leave it
-unmerged for Steering.
+SPR-008 is complete. Review PR #15 and leave merge authority to Steering.
 
 ## Authoritative Source Documents
 
@@ -32,15 +31,18 @@ unmerged for Steering.
   cross-platform, DAP and scope/identity audits.
 - VER-SLC-014 passed the complete Master matrix, including exact frozen-DAP
   real integration. SLC-014 and REQ-013 are accepted.
+- Focused implementation PR #15 opened against unchanged authorized `master`;
+  it is clean/mergeable, has no configured checks and remains unmerged.
 
 ## Not Done
 
-- Implementation PR and Issue #13/Ponsse handoffs.
+- Issue #13/Ponsse checkpoints. PR #15 merge is not authorized by this
+  execution.
 
 ## Exact Next Step
 
-Open the focused implementation PR against `master`, leave it unmerged, then
-publish final Issue #13 and Ponsse Issue #26/#47 checkpoints.
+Publish final Issue #13 and Ponsse Issue #26/#47 checkpoints, confirm exact PR
+HEAD/state, and stop.
 
 ## Verification Completed
 
@@ -89,3 +91,11 @@ https://github.com/Hans-Einar/emuSA80535-N/issues/13#issuecomment-5507712598
 
 Master verification/acceptance checkpoint:
 https://github.com/Hans-Einar/emuSA80535-N/issues/13#issuecomment-5507801302
+
+## Pull Request
+
+- PR: https://github.com/Hans-Einar/emuSA80535-N/pull/15
+- Base: `master` at `a4d24786eb86a55479adc4ef14d0f27424fb5705`
+- Branch: `codex/sab80535-adc`
+- Exact product/test HEAD: `0bd39132b2eaffbfc5190e223b54743f17fc68fa`
+- State: open, mergeable, no configured checks, intentionally unmerged.

@@ -1,6 +1,6 @@
 # SPR-008 — SAB80535 deterministic ADC
 
-Status: ready-for-pr
+Status: complete
 Sprint ID: SPR-008
 Started: 2026-09-02
 Steering authority: Issue #13 SLC-014
@@ -56,4 +56,7 @@ REV-SLC-014 approved exact product/test HEAD
 `0bd39132b2eaffbfc5190e223b54743f17fc68fa` with no findings.
 VER-SLC-014 passed the complete Windows/strict Clang/WSL/sanitizer/core/debug
 and exact frozen-DAP matrix. SLC-014 is accepted and satisfies REQ-013.
-SPR-008 is ready for its focused unmerged PR.
+The focused implementation is published as PR #15:
+https://github.com/Hans-Einar/emuSA80535-N/pull/15
+
+SPR-008 is complete. PR #15 remains open and unmerged for Steering review.

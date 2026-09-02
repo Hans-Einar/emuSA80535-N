@@ -40,6 +40,8 @@ pass.
 - Product/test HEAD `0bd3913...` is accepted; later commits are SDP-only.
 - REQ-013 is satisfied/current.
 - The frozen debug protocol and every stop-boundary exclusion remain intact.
+- Focused implementation PR #15 is open and intentionally unmerged:
+  https://github.com/Hans-Einar/emuSA80535-N/pull/15
 
 ## Stop boundary
 
