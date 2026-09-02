@@ -83,7 +83,6 @@ jobs:
       - name: Windows GCC core matrix
         shell: msys2 {0}
         run: |
-          test "$(git rev-parse HEAD)" = "e388a007635acb4f964326f817a3d6eb049ccf6d"
           make -C tests clean
           make -C tests test CC=gcc CFLAGS='-O2 -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow -Werror -pedantic'
       - name: Windows strict Clang core matrix
