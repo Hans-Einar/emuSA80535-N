@@ -40,3 +40,44 @@ and traceability updates.
 Complete. The standalone runtime and focused tests were implemented without
 changes to CPU, opcode, peripheral, existing debugger protocol or DAP code.
 REV-SLC-015 approved with corrections and VER-SLC-015 passed.
+
+## ITR-016 — Multi-trace router and bounded ring
+
+Status: complete
+Iteration ID: ITR-016
+Active Slice: SLC-016
+
+### Slice contract — SLC-016
+
+**Goal:** implement the next debugger-owned layer over synthetic canonical
+events, without changing CPU, opcode or peripheral sources.
+
+**Required implementation:**
+
+1. atomically replaceable bounded trace sessions with stable ID, enabled
+   state, bounded tag/comment, destination ID and include/suppress/interrupt-
+   only policy;
+2. bounded point routes and deterministic before/after trace on/off gates;
+3. nested interrupt-depth tracking with precisely retained outer enter/exit
+   boundaries and per-trace bounded suppression accounting;
+4. canonical event routing with ascending duplicate-free trace IDs and no
+   per-trace cloning;
+5. fixed-capacity routed-event ring with explicit overwrite/loss accounting;
+6. watch results from SLC-015 accepted as explicit trace routes without
+   recursive watch evaluation;
+7. focused tests for replacement atomicity, route ordering, gate conflicts,
+   nested interrupts, policies, shared destinations, ring wrap/loss and all
+   advertised limits.
+
+**Compatibility:** additive C99 only. No edits to `core.c`, `opcodes.c`, SAB
+peripherals, existing `emu_debug` protocol/server or DAP. File/console sinks,
+CLI/protocol exposure and core event producers remain later work.
+
+**Required evidence:** strict GCC and Clang, sanitizers, regressions, fresh
+Worker and Reviewer, Master verification.
+
+### Result
+
+Complete. REV-SLC-016 approved after direct coverage for all four gate timings.
+VER-SLC-016 passed strict compilers, sanitizers, full regressions and the
+existing debugger process suite.

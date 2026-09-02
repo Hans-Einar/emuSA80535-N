@@ -151,3 +151,11 @@ relations:
   - {from: SLC-015, type: implements_design, to: DES-064..DES-089}
   - {from: REV-SLC-015, type: reviews, to: SLC-015}
   - {from: VER-SLC-015, type: verifies, to: SLC-015}
+  - {from: SLC-016, type: belongs_to, to: ITR-016}
+  - {from: ITR-016, type: belongs_to, to: SPR-008}
+  - {from: SLC-016, type: implements_design, to: DES-080..DES-089}
+  - {from: REV-SLC-016, type: reviews, to: SLC-016}
+  - {from: VER-SLC-016, type: verifies, to: SLC-016}
+  - {from: REV-SLC-016, type: reviews, to: SLC-016}
+  - {from: REV-SLC-016, type: opens, to: REV-SLC-016-F001}
+  - {from: REV-SLC-016-F001, type: corrected_by, to: SLC-016}

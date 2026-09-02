@@ -1,8 +1,8 @@
 # Handoff
 
-SLC-015 is accepted. The next Slice may integrate narrow generic event producer
-hooks after coordinating with the SAB80535 branch, or implement debugger-owned
-trace sessions/routing against synthetic events without touching the core.
+SLC-015 and SLC-016 are accepted. The next conflict-free Slice can implement
+the derived-event dispatcher and in-memory facade APIs. Core producer hooks
+remain deferred until coordination with the SAB80535 branch.
 
 ## Pull request
 

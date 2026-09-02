@@ -23,8 +23,8 @@ Evidence:
 - no diff exists in `core.c`, `opcodes.c`, peripheral implementations,
   `emu_debug.c`, `emu_debug_server.c` or DAP.
 
-Clang is unavailable on this host and must be exercised by CI or a later host.
-This does not block the GCC-tested additive Slice.
+Clang 17 was subsequently installed and the focused suite passes with
+`-Wpedantic -Wconversion -Wsign-conversion -Werror`.
 
 ## Disposition
 

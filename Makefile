@@ -67,8 +67,11 @@ debug-test: $(DEBUG_BIN)
 debug-event-test:
 	$(MAKE) -C tests debug-event-test
 
+debug-trace-test:
+	$(MAKE) -C tests debug-trace-test
+
 dap-integration-test: $(DEBUG_BIN)
 	$(MAKE) -C tests dap-integration-test DEBUG_BIN=../$(DEBUG_BIN) \
 		DAP_ROOT=$(abspath $(DAP_ROOT))
 
-.PHONY: core-test debug-test debug-event-test dap-integration-test
+.PHONY: core-test debug-test debug-event-test debug-trace-test dap-integration-test

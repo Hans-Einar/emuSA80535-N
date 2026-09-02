@@ -105,3 +105,7 @@ items:
   SLC-015: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   REV-SLC-015: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-015.md}
   VER-SLC-015: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-SLC-015.md}
+  ITR-016: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  SLC-016: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  REV-SLC-016: {kind: review, status: approved-with-review-correction, state: current, source: SDP/CodeReview/REV-SLC-016.md}
+  VER-SLC-016: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-016.md}

@@ -34,3 +34,10 @@ Master verification and a separate pull request.
 
 SLC-015 delivered the standalone event bus, sequencer and conditional watch
 matcher. Core producer integration and trace storage remain later Slices.
+
+Steering authorized the next conflict-free debugger-only step. ITR-016 /
+SLC-016 adds synthetic-event trace routing and bounded storage without core or
+peripheral integration.
+
+SLC-016 delivered and verified the bounded multi-trace router, gate/interrupt
+policies and ring storage. The Sprint is complete.

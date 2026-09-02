@@ -58,3 +58,46 @@ The independent review corrected three boundary issues before acceptance:
 Focused, complete regression, strict C99/pedantic/conversion and Valgrind
 checks pass. Clang is unavailable on this host and remains a CI/environment
 verification item. See `SDP/CodeReview/REV-SLC-015.md`.
+
+## Worker implementation — SLC-016
+
+Added the standalone `emu_debug_trace.h/.c` layer over already sequenced
+synthetic events. It provides atomically replaceable, fixed-capacity trace,
+destination, point and gate tables; stable sorted route IDs; deterministic
+before/after gates; nested interrupt-depth policies; per-trace suppression
+summaries; destination-coalesced canonical event views; explicit watch-result
+routing; and fixed-capacity rings with overwrite accounting.
+
+The router is deliberately not connected to the CPU or existing debugger
+server. `core.c`, `opcodes.c`, SAB80535 peripherals, `emu_debug.c`, the NDJSON
+server and DAP remain untouched. File/console destinations and command/protocol
+exposure remain later slices.
+
+`tests/test_debug_trace.c` exercises invalid replacement neutrality, shared
+and separate destinations, sorted coalesced routes, conflicting before/after
+gates, nested include/suppress/interrupt-only behavior, suppression resume and
+flush records, explicit non-recursive watch routing with source metadata, ring
+wrap/loss accounting, metadata/referential bounds and rejection neutrality.
+
+Worker verification on 2026-09-02:
+
+- GCC and Clang 17 strict C99 builds with warnings, conversion warnings,
+  pedantic mode and warnings-as-errors: passed;
+- Clang AddressSanitizer plus UndefinedBehaviorSanitizer: passed;
+- complete Stage-0, IRQ, timer, UART, port/MOVX, event/watch and new trace
+  router regression suites under Clang: passed;
+- `git diff --check`: passed.
+
+One integration boundary is intentional: this slice consumes a fully formed
+`watch.match` event and its SLC-015 result. Creating that derived event in the
+global debugger event queue, and bracketing source after-gates around the
+whole derived queue, belongs to the future dispatcher integration slice.
+
+## Reviewer result — SLC-016
+
+REV-SLC-016 approved the implementation with one low-severity correction to
+test evidence: all four on/off and before/after gate cases are now asserted
+directly. Strict focused GCC/Clang, Clang ASan/UBSan, Valgrind, normal-profile
+full GCC/Clang regressions and the existing debugger facade passed. The
+unconnected legacy TUI/process executable could not be produced because this
+host lacks `libcurses`; this does not affect the standalone router result.
