@@ -244,6 +244,62 @@ struct em8051_movx_context
 typedef void (*em8051movxobserver)(
     const struct em8051_movx_context *aContext, void *aUser);
 
+/* Canonical SAB80535 external-interrupt inputs. Numeric order is INT0..INT6,
+ * independent of the controller's interleaved source polling order. */
+enum em8051_sab_external_source
+{
+    EM8051_SAB_EXTERNAL_INT0 = 0,
+    EM8051_SAB_EXTERNAL_INT1,
+    EM8051_SAB_EXTERNAL_INT2,
+    EM8051_SAB_EXTERNAL_INT3,
+    EM8051_SAB_EXTERNAL_INT4,
+    EM8051_SAB_EXTERNAL_INT5,
+    EM8051_SAB_EXTERNAL_INT6,
+    EM8051_SAB_EXTERNAL_SOURCE_COUNT
+};
+
+enum em8051_sab_external_trace_trigger
+{
+    EM8051_SAB_EXTERNAL_TRACE_NON_QUALIFYING = 0,
+    EM8051_SAB_EXTERNAL_TRACE_FALLING_EDGE,
+    EM8051_SAB_EXTERNAL_TRACE_RISING_EDGE,
+    EM8051_SAB_EXTERNAL_TRACE_LOW_LEVEL_ASSERT,
+    EM8051_SAB_EXTERNAL_TRACE_LEVEL_RELEASE
+};
+
+struct em8051_sab_external_trace_record
+{
+    uint64_t machine_cycle;
+    enum em8051_sab_external_source source;
+    bool old_level;
+    bool new_level;
+    enum em8051_sab_external_trace_trigger trigger;
+    bool request_pending;
+};
+
+/* External-edge observers receive only an immutable record and caller-owned
+ * context. They cannot reach CPU-owned mutable storage through the signature. */
+typedef void (*em8051sabexternaltrace)(
+    const struct em8051_sab_external_trace_record *aRecord, void *aUser);
+
+enum em8051_sab_external_schedule_action
+{
+    EM8051_SAB_EXTERNAL_SCHEDULE_DRIVE = 0,
+    EM8051_SAB_EXTERNAL_SCHEDULE_RELEASE
+};
+
+struct em8051_sab_external_schedule_event
+{
+    uint64_t machine_cycle;
+    enum em8051_sab_external_source source;
+    enum em8051_sab_external_schedule_action action;
+    bool level;
+};
+
+/* The schedule is CPU-owned and bounded so virtual stimulus never allocates
+ * or depends on host timing while the emulator is running. */
+#define EM8051_SAB_EXTERNAL_SCHEDULE_CAPACITY 64u
+
 #define EM8051_SFR_UNAVAILABLE 0xFFFFu
 
 struct em8051_variant_descriptor
@@ -335,6 +391,14 @@ struct em8051
     uint8_t mSABPortExternalLevels[EM8051_SAB_PORT_COUNT];
     em8051movxobserver movx_observer;
     void *movx_observer_user;
+    uint8_t mSABExternalSampledLevels;
+    uint8_t mSABExternalLevelAsserted;
+    struct em8051_sab_external_schedule_event
+        mSABExternalSchedule[EM8051_SAB_EXTERNAL_SCHEDULE_CAPACITY];
+    uint8_t mSABExternalScheduleHead;
+    uint8_t mSABExternalScheduleCount;
+    em8051sabexternaltrace sab_external_trace;
+    void *sab_external_trace_user;
 
     enum em8051_variant mVariant;
     uint32_t mOscillatorHz;
@@ -466,6 +530,26 @@ bool em8051_sab_port_get_latch(const struct em8051 *aCPU, uint8_t aPort,
                                uint8_t *aValue);
 bool em8051_sab_port_get_pins(const struct em8051 *aCPU, uint8_t aPort,
                               uint8_t *aValue);
+
+/* Deterministic virtual external-interrupt lines. Drive/release acts at the
+ * current completed-machine-cycle boundary through the canonical resolved
+ * port pin and never changes the CPU latch. Scheduled timestamps earlier than
+ * the current cycle are rejected. A current-cycle event is applied
+ * synchronously. Future events must be appended in nondecreasing timestamp
+ * order; equal timestamps execute FIFO. The fixed queue rejects overflow. */
+bool em8051_sab_external_drive(
+    struct em8051 *aCPU, enum em8051_sab_external_source aSource,
+    bool aLevel);
+bool em8051_sab_external_release(
+    struct em8051 *aCPU, enum em8051_sab_external_source aSource);
+bool em8051_sab_external_schedule(
+    struct em8051 *aCPU,
+    const struct em8051_sab_external_schedule_event *aEvent);
+void em8051_sab_external_clear_schedule(struct em8051 *aCPU);
+uint8_t em8051_sab_external_scheduled_count(const struct em8051 *aCPU);
+void em8051_set_sab_external_trace(struct em8051 *aCPU,
+                                   em8051sabexternaltrace aTrace,
+                                   void *aUser);
 
 /* Begin one deterministic, valid in-memory mode-3 receive frame. The API
  * models no RxD pin edges or host transport. A false result means the CPU is
@@ -684,6 +768,12 @@ enum SAB_IRCON_MASKS
     SAB_IRCONMASK_IEX6 = 0x20,
     SAB_IRCONMASK_TF2 = 0x40,
     SAB_IRCONMASK_EXF2 = 0x80
+};
+
+enum SAB_T2CON_MASKS
+{
+    SAB_T2CONMASK_I2FR = 0x20,
+    SAB_T2CONMASK_I3FR = 0x40
 };
 
 enum SAB_ADCON_MASKS

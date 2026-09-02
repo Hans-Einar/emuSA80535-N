@@ -132,3 +132,12 @@ relations:
   - {from: VER-SLC-012, type: verifies, to: SLC-012}
   - {from: SLC-012, type: resolves, to: REV-SLC-011-F001}
   - {from: SLC-012, type: resolves, to: REV-SLC-011-F002}
+  - {from: DES-064..DES-073, type: refines, to: ARCH-002..ARCH-006}
+  - {from: SPR-007, type: schedules, to: REQ-012}
+  - {from: SLC-013, type: belongs_to, to: ITR-013}
+  - {from: ITR-013, type: belongs_to, to: SPR-007}
+  - {from: SLC-013, type: completes, to: REQ-012}
+  - {from: SLC-013, type: depends_on, to: SLC-010}
+  - {from: SLC-013, type: implements_design, to: DES-064..DES-073}
+  - {from: REV-SLC-013, type: reviews, to: SLC-013}
+  - {from: VER-SLC-013, type: verifies, to: SLC-013}
