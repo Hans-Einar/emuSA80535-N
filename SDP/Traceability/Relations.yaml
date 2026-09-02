@@ -1,5 +1,5 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-09-01
+updated: 2026-09-03
 
 relations:
   - {from: STU-001, type: informs, to: MND-001}
@@ -150,3 +150,13 @@ relations:
   - {from: SLC-014, type: implements_design, to: DES-074..DES-085}
   - {from: REV-SLC-014, type: reviews, to: SLC-014}
   - {from: VER-SLC-014, type: verifies, to: SLC-014}
+
+  - {from: DES-086..DES-095, type: refines, to: ARCH-002..ARCH-006}
+  - {from: SPR-009, type: schedules, to: REQ-014}
+  - {from: SLC-015, type: belongs_to, to: ITR-015}
+  - {from: ITR-015, type: belongs_to, to: SPR-009}
+  - {from: SLC-015, type: satisfies, to: REQ-014}
+  - {from: SLC-015, type: depends_on, to: SLC-014}
+  - {from: SLC-015, type: implements_design, to: DES-086..DES-095}
+  - {from: REV-SLC-015, type: reviews, to: SLC-015}
+  - {from: VER-SLC-015, type: verifies, to: SLC-015}

@@ -1,6 +1,6 @@
 # EMU-SAB80535-DES-009 — Deterministic Siemens Timer2 design
 
-Status: active target design
+Status: active current design
 Design items: DES-086..DES-095
 Established: 2026-09-02
 Steering authority: Issue #17 SLC-015

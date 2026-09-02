@@ -1,6 +1,6 @@
 # SPR-009 — SAB80535 deterministic Timer2
 
-Status: active
+Status: complete
 Sprint ID: SPR-009
 Started: 2026-09-02
 Steering authority: Issue #17 SLC-015
@@ -52,3 +52,14 @@ reload-disabled overflow, sticky TF2 and accepted interrupt-controller service.
 - traceability, handoff and Ponsse #26/#47 checkpoints are complete;
 - focused implementation PR is opened and left unmerged;
 - no unauthorized reload/capture/target/live/protocol scope enters the diff.
+
+## Verified result
+
+REV-SLC-015 independently approved exact product/test HEAD
+`e388a007635acb4f964326f817a3d6eb049ccf6d` / tree `8eb677ad298a3a743adb9d51f464b90ba755b0cf` with no findings.
+VER-SLC-015 passed exact-head Linux GCC/strict-Clang/ASan+UBSan/debug/DAP and
+Windows GCC/strict-Clang verification. SLC-015 is accepted and satisfies
+REQ-014 within the explicitly reached Timer2 mode boundary.
+
+PR #18 remains open and intentionally unmerged pending Steering authorization.
+SPR-009 is complete; no Stage-5 work is authorized by this closure.

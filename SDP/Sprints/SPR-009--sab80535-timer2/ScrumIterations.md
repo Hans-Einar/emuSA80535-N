@@ -2,7 +2,7 @@
 
 ## ITR-015 — Reached Siemens Timer2 timer-function path
 
-Status: active
+Status: complete
 Iteration ID: ITR-015
 Active Slice: SLC-015
 
@@ -89,3 +89,29 @@ traceability and ancestry audits.
 **Expected completion signal:** a bounded Worker product/test commit with exact
 evidence. A separate fresh Reviewer audits that exact product HEAD and either
 approves it or opens stable findings. Master accepts only after verification.
+
+### Worker result
+
+The bounded Worker product/test result is exact HEAD `e388a007635acb4f964326f817a3d6eb049ccf6d` / tree
+`8eb677ad298a3a743adb9d51f464b90ba755b0cf`. Worker Actions run `33688691147`, job `100442147454`, passed the
+full GCC/strict-Clang/ASan+UBSan core matrix, frozen debug runtime, frozen DAP
+exact-head integration and scope audit before publishing that product commit.
+
+### Review result
+
+Fresh independent REV-SLC-015 approved exact HEAD `e388a007635acb4f964326f817a3d6eb049ccf6d` with no findings.
+The Reviewer independently reconciled Siemens T2CON/input/prescaler/reload/TF2
+semantics, challenged the free-running `/24` phase, ran separate phase/interrupt
+probes and repeated core/debug/DAP regressions.
+
+### Final result
+
+Accepted. VER-SLC-015 passed Master verification against the same exact product
+identity. Corrected Master Actions run `33694685888` passed Linux exact-head
+identity/GCC/Clang/ASan+UBSan/debug/DAP/scope gates and Windows GCC + strict
+Clang core gates. The first Windows attempt in run `33694518622` failed only
+because MSYS2 minimal PATH could not find a redundant `git` command before any
+compile; the harness was corrected without changing product/test HEAD.
+
+SLC-015 satisfies REQ-014. No corrective Slice is required and no later CPU
+scope is activated.

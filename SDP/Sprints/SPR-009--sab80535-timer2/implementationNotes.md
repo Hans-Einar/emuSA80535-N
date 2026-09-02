@@ -1,6 +1,6 @@
 # Implementation notes
 
-Status: Worker complete; fresh independent review required.
+Status: verified; SLC-015 accepted.
 
 ## Frozen baseline
 
@@ -77,3 +77,21 @@ tested Worker commit. Their deletion changes no product/test blob.
 A fresh independent Reviewer must inspect that exact product/test tree (or the
 current cleanup HEAD after proving product/test blobs identical) before Master
 can create VER-SLC-015 or accept REQ-014.
+
+## Accepted review
+
+REV-SLC-015 independently approved exact `e388a007635acb4f964326f817a3d6eb049ccf6d` / `8eb677ad298a3a743adb9d51f464b90ba755b0cf` with no
+findings. The independent issue checkpoint is
+https://github.com/Hans-Einar/emuSA80535-N/issues/17#issuecomment-5517618869.
+
+## Master verification
+
+VER-SLC-015 passed against exact `e388a007635acb4f964326f817a3d6eb049ccf6d`. Master run `33694685888` passed
+Linux GCC/strict Clang/ASan+UBSan/frozen debug/frozen DAP/scope gates and
+Windows GCC + strict Clang core matrices. The earlier Windows harness-only
+failure in run `33694518622` attempted no compilation and was corrected without
+changing product/test state.
+
+REQ-014 is satisfied/current. No external/gated input, hardware reload, EXF2,
+capture/compare, automatic P5.4, target/live I/O or debug-protocol scope was
+added.
