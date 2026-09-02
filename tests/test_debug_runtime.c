@@ -319,8 +319,8 @@ static int test_lifecycle_and_code_invalidation(void)
 {
     struct em8051_debug_runtime *runtime = NULL;
     struct em8051_debug_watch watch, listed_watch;
-    struct em8051_debug_trace_point point, listed_point;
-    struct em8051_debug_trace_gate gate, listed_gate;
+    struct em8051_debug_trace_point points[3], listed_points[3];
+    struct em8051_debug_trace_gate gates[3], listed_gates[3];
     struct em8051_debug_runtime_status status;
     struct em8051_debug_runtime_stop stop;
     struct em8051_debug_trace_record lifecycle_records[3];
@@ -330,28 +330,46 @@ static int test_lifecycle_and_code_invalidation(void)
 
     CHECK(em8051_debug_runtime_create(&runtime) == EM8051_DEBUG_EVENT_OK);
     CHECK(configure_routed_runtime(runtime, false) == 0);
-    memset(&point, 0, sizeof(point));
-    point.point_id = 11u;
-    point.enabled = 1u;
-    point.selector.match_pc = 1u;
-    point.selector.pc_first = 0u;
-    point.selector.pc_last = UINT16_MAX;
-    point.trace_ids[0] = 7u;
-    point.trace_id_count = 1u;
-    CHECK(em8051_debug_runtime_replace_points(runtime, &point, 1u) ==
+    memset(points, 0, sizeof(points));
+    points[0].point_id = 11u;
+    points[0].enabled = 1u;
+    points[0].selector.match_pc = 1u;
+    points[0].selector.pc_first = 0u;
+    points[0].selector.pc_last = UINT16_MAX;
+    points[0].trace_ids[0] = 7u;
+    points[0].trace_id_count = 1u;
+    points[1] = points[0];
+    points[1].point_id = 12u;
+    memset(&points[1].selector, 0, sizeof(points[1].selector));
+    points[1].selector.match_address = 1u;
+    points[1].selector.address_last = UINT16_MAX;
+    points[2] = points[1];
+    points[2].point_id = 13u;
+    points[2].selector.match_address_space = 1u;
+    points[2].selector.address_space = EM8051_DEBUG_SPACE_XDATA;
+    CHECK(em8051_debug_runtime_replace_points(runtime, points, 3u) ==
           EM8051_DEBUG_EVENT_OK);
-    memset(&gate, 0, sizeof(gate));
-    gate.gate_id = 12u;
-    gate.enabled = 1u;
-    gate.selector.match_address_space = 1u;
-    gate.selector.address_space = EM8051_DEBUG_SPACE_CODE;
-    gate.trace_ids[0] = 7u;
-    gate.trace_id_count = 1u;
-    gate.action = EM8051_DEBUG_TRACE_GATE_ON;
-    gate.timing = EM8051_DEBUG_TRACE_GATE_BEFORE;
-    CHECK(em8051_debug_runtime_replace_gates(runtime, &gate, 1u) ==
+    memset(gates, 0, sizeof(gates));
+    gates[0].gate_id = 14u;
+    gates[0].enabled = 1u;
+    gates[0].selector.match_address_space = 1u;
+    gates[0].selector.address_space = EM8051_DEBUG_SPACE_CODE;
+    gates[0].trace_ids[0] = 7u;
+    gates[0].trace_id_count = 1u;
+    gates[0].action = EM8051_DEBUG_TRACE_GATE_ON;
+    gates[0].timing = EM8051_DEBUG_TRACE_GATE_BEFORE;
+    gates[1] = gates[0];
+    gates[1].gate_id = 15u;
+    memset(&gates[1].selector, 0, sizeof(gates[1].selector));
+    gates[1].selector.match_address = 1u;
+    gates[1].selector.address_last = UINT16_MAX;
+    gates[2] = gates[1];
+    gates[2].gate_id = 16u;
+    gates[2].selector.match_address_space = 1u;
+    gates[2].selector.address_space = EM8051_DEBUG_SPACE_XDATA;
+    CHECK(em8051_debug_runtime_replace_gates(runtime, gates, 3u) ==
           EM8051_DEBUG_EVENT_OK);
-    watch = make_watch(13u, 1u, false);
+    watch = make_watch(17u, 1u, false);
     watch.address_space = EM8051_DEBUG_SPACE_CODE;
     watch.access_mask = EM8051_DEBUG_ACCESS_FETCH;
     CHECK(em8051_debug_runtime_replace_watches(runtime, &watch, 1u) ==
@@ -373,12 +391,18 @@ static int test_lifecycle_and_code_invalidation(void)
     CHECK(em8051_debug_runtime_load(runtime, 11u, 21u, 0x101u, &sequence) ==
           EM8051_DEBUG_EVENT_OK);
     CHECK(sequence == 3u);
-    CHECK(em8051_debug_runtime_list_points(runtime, 0u, &listed_point, 1u,
+    CHECK(em8051_debug_runtime_list_points(runtime, 0u, listed_points, 3u,
                                            &written, &total) ==
-          EM8051_DEBUG_EVENT_OK && listed_point.enabled == 0u);
-    CHECK(em8051_debug_runtime_list_gates(runtime, 0u, &listed_gate, 1u,
+          EM8051_DEBUG_EVENT_OK && written == 3u && total == 3u &&
+          listed_points[0].enabled == 0u &&
+          listed_points[1].enabled == 0u &&
+          listed_points[2].enabled == 1u);
+    CHECK(em8051_debug_runtime_list_gates(runtime, 0u, listed_gates, 3u,
                                           &written, &total) ==
-          EM8051_DEBUG_EVENT_OK && listed_gate.enabled == 0u);
+          EM8051_DEBUG_EVENT_OK && written == 3u && total == 3u &&
+          listed_gates[0].enabled == 0u &&
+          listed_gates[1].enabled == 0u &&
+          listed_gates[2].enabled == 1u);
     CHECK(em8051_debug_runtime_list_watches(runtime, 0u, &listed_watch, 1u,
                                             &written, &total) ==
           EM8051_DEBUG_EVENT_OK && listed_watch.enabled == 0u);
@@ -426,6 +450,7 @@ static int test_bounds_and_invalid_ingest(void)
     struct em8051_debug_event event = write_event();
     struct em8051_debug_runtime_status before, after;
     uint32_t trace_ids[EM8051_DEBUG_TRACE_MAX_ROUTES + 1u];
+    uint64_t assigned = UINT64_MAX;
     size_t written, total;
 
     memset(watches, 0, sizeof(watches));
@@ -459,6 +484,13 @@ static int test_bounds_and_invalid_ingest(void)
           EM8051_DEBUG_EVENT_OK && written == 0u && total == 0u);
     CHECK(em8051_debug_runtime_get_status(runtime, &before) ==
           EM8051_DEBUG_EVENT_OK);
+    event.kind = EM8051_DEBUG_EVENT_RESET;
+    CHECK(em8051_debug_runtime_ingest(runtime, &event, &assigned) ==
+          EM8051_DEBUG_EVENT_INVALID_ARGUMENT && assigned == UINT64_MAX);
+    event.kind = EM8051_DEBUG_EVENT_LOAD;
+    CHECK(em8051_debug_runtime_ingest(runtime, &event, &assigned) ==
+          EM8051_DEBUG_EVENT_INVALID_ARGUMENT && assigned == UINT64_MAX);
+    event.kind = EM8051_DEBUG_EVENT_MEMORY_WRITE;
     event.sequence = 9u;
     CHECK(em8051_debug_runtime_ingest(runtime, &event, NULL) ==
           EM8051_DEBUG_EVENT_INVALID_ARGUMENT);
@@ -481,6 +513,46 @@ static int test_bounds_and_invalid_ingest(void)
           EM8051_DEBUG_EVENT_OK);
     CHECK(before.next_sequence == after.next_sequence &&
           after.rejected_source_events == 0u);
+    em8051_debug_runtime_destroy(runtime);
+    return 0;
+}
+
+static int test_trace_id_reuse_resets_only_on_clear(void)
+{
+    struct em8051_debug_runtime *runtime = NULL;
+    struct em8051_debug_trace_destination destination;
+    struct em8051_debug_trace_session trace;
+    size_t written, total;
+
+    memset(&destination, 0, sizeof(destination));
+    destination.destination_id = 4u;
+    memset(&trace, 0, sizeof(trace));
+    trace.trace_id = 7u;
+    trace.destination_id = 4u;
+    trace.enabled = 1u;
+    CHECK(em8051_debug_runtime_create(&runtime) == EM8051_DEBUG_EVENT_OK);
+    CHECK(em8051_debug_runtime_replace_destinations(runtime, &destination,
+                                                     1u) ==
+          EM8051_DEBUG_EVENT_OK);
+    CHECK(em8051_debug_runtime_replace_traces(runtime, &trace, 1u) ==
+          EM8051_DEBUG_EVENT_OK);
+    trace.enabled = 0u;
+    CHECK(em8051_debug_runtime_replace_traces(runtime, &trace, 1u) ==
+          EM8051_DEBUG_EVENT_OK); /* live update */
+    CHECK(em8051_debug_runtime_replace_traces(runtime, NULL, 0u) ==
+          EM8051_DEBUG_EVENT_OK);
+    CHECK(em8051_debug_runtime_replace_traces(runtime, &trace, 1u) ==
+          EM8051_DEBUG_EVENT_DUPLICATE_ID);
+    CHECK(em8051_debug_runtime_list_traces(runtime, 0u, NULL, 0u, &written,
+                                           &total) ==
+          EM8051_DEBUG_EVENT_OK && written == 0u && total == 0u);
+    CHECK(em8051_debug_runtime_clear_session(runtime) ==
+          EM8051_DEBUG_EVENT_OK);
+    CHECK(em8051_debug_runtime_replace_destinations(runtime, &destination,
+                                                     1u) ==
+          EM8051_DEBUG_EVENT_OK);
+    CHECK(em8051_debug_runtime_replace_traces(runtime, &trace, 1u) ==
+          EM8051_DEBUG_EVENT_OK);
     em8051_debug_runtime_destroy(runtime);
     return 0;
 }
@@ -521,6 +593,7 @@ int main(void)
     CHECK(test_lifecycle_and_code_invalidation() == 0);
     CHECK(test_bounds_and_invalid_ingest() == 0);
     CHECK(test_stop_priority_across_pending_sources() == 0);
+    CHECK(test_trace_id_reuse_resets_only_on_clear() == 0);
     puts("debug dispatcher/runtime tests passed");
     return 0;
 }

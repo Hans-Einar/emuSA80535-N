@@ -374,10 +374,10 @@ static void merge_stops_and_counts(struct em8051_debug_runtime *aRuntime)
                   (uint64_t)aRuntime->pending_count);
 }
 
-enum em8051_debug_event_status em8051_debug_runtime_ingest(
+static enum em8051_debug_event_status runtime_ingest(
     struct em8051_debug_runtime *aRuntime,
     const struct em8051_debug_event *aSourceEvent,
-    uint64_t *aAssignedSequence)
+    uint64_t *aAssignedSequence, bool aAllowLifecycle)
 {
     struct em8051_debug_event source;
     enum em8051_debug_event_status status;
@@ -385,6 +385,9 @@ enum em8051_debug_event_status em8051_debug_runtime_ingest(
 
     if (aRuntime == NULL || aSourceEvent == NULL ||
         aSourceEvent->sequence != 0u ||
+        (!aAllowLifecycle &&
+         (aSourceEvent->kind == EM8051_DEBUG_EVENT_RESET ||
+          aSourceEvent->kind == EM8051_DEBUG_EVENT_LOAD)) ||
         !source_event_valid(aSourceEvent))
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
     if (aRuntime->busy)
@@ -438,6 +441,14 @@ enum em8051_debug_event_status em8051_debug_runtime_ingest(
     return status;
 }
 
+enum em8051_debug_event_status em8051_debug_runtime_ingest(
+    struct em8051_debug_runtime *aRuntime,
+    const struct em8051_debug_event *aSourceEvent,
+    uint64_t *aAssignedSequence)
+{
+    return runtime_ingest(aRuntime, aSourceEvent, aAssignedSequence, false);
+}
+
 static enum em8051_debug_event_status lifecycle_event(
     struct em8051_debug_runtime *aRuntime, uint8_t aKind,
     uint64_t aInstructionCount, uint64_t aMachineCycleCount, uint16_t aPc,
@@ -464,7 +475,7 @@ static enum em8051_debug_event_status lifecycle_event(
     old_interrupt_depth = aRuntime->router.interrupt_depth;
     ++aRuntime->generation;
     aRuntime->router.interrupt_depth = 0u;
-    status = em8051_debug_runtime_ingest(aRuntime, &event, aAssignedSequence);
+    status = runtime_ingest(aRuntime, &event, aAssignedSequence, true);
     if (status != EM8051_DEBUG_EVENT_OK) {
         aRuntime->generation = old_generation;
         aRuntime->router.interrupt_depth = old_interrupt_depth;
@@ -485,6 +496,9 @@ enum em8051_debug_event_status em8051_debug_runtime_reset(
 static bool code_selector(const struct em8051_debug_trace_selector *aSelector)
 {
     return aSelector->match_pc ||
+           (aSelector->match_address &&
+            (!aSelector->match_address_space ||
+             aSelector->address_space == EM8051_DEBUG_SPACE_CODE)) ||
            (aSelector->match_address_space &&
             aSelector->address_space == EM8051_DEBUG_SPACE_CODE);
 }

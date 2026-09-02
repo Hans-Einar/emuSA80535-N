@@ -12,6 +12,7 @@
 #define EM8051_DEBUG_TRACE_MAX_POINTS 32u
 #define EM8051_DEBUG_TRACE_MAX_GATES 32u
 #define EM8051_DEBUG_TRACE_MAX_ROUTES 16u
+#define EM8051_DEBUG_TRACE_MAX_SEEN_IDS 64u
 #define EM8051_DEBUG_TRACE_RING_CAPACITY 128u
 #define EM8051_DEBUG_TRACE_TAG_BYTES 65u
 #define EM8051_DEBUG_TRACE_COMMENT_BYTES 257u
@@ -130,9 +131,11 @@ struct em8051_debug_trace_router {
     struct em8051_debug_trace_ring rings[EM8051_DEBUG_TRACE_MAX_DESTINATIONS];
     struct em8051_debug_trace_suppression_state
         suppression[EM8051_DEBUG_TRACE_MAX_TRACES];
+    uint32_t seen_trace_ids[EM8051_DEBUG_TRACE_MAX_SEEN_IDS];
     uint64_t last_sequence;
     uint32_t interrupt_depth;
     struct em8051_debug_event open_source_event;
+    uint8_t seen_trace_id_count;
     uint8_t source_open;
 };
 

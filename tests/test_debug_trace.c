@@ -380,6 +380,255 @@ static int test_lifecycle_marker_bypasses_points_and_interrupt_filter(void)
     return 0;
 }
 
+static int test_lifecycle_gate_entry_snapshot(void)
+{
+    struct em8051_debug_trace_router r;
+    struct em8051_debug_trace_config c;
+    struct em8051_debug_event e;
+    const struct em8051_debug_trace_ring *ring;
+    uint8_t kind;
+    size_t i;
+
+    for (kind = EM8051_DEBUG_EVENT_RESET;
+         kind <= EM8051_DEBUG_EVENT_LOAD; ++kind) {
+        memset(&c, 0, sizeof(c));
+        c.destination_count = 1u;
+        c.destinations[0].destination_id = 4u;
+        c.trace_count = 4u;
+        c.traces[0].trace_id = 7u;
+        c.traces[0].destination_id = 4u;
+        c.traces[0].enabled = 1u;
+        c.traces[1].trace_id = 23u;
+        c.traces[1].destination_id = 4u;
+        c.traces[2].trace_id = 42u;
+        c.traces[2].destination_id = 4u;
+        c.traces[2].enabled = 1u;
+        c.traces[3].trace_id = 50u;
+        c.traces[3].destination_id = 4u;
+        c.gate_count = 4u;
+        for (i = 0u; i < c.gate_count; ++i) {
+            c.gates[i].gate_id = (uint32_t)i + 1u;
+            c.gates[i].enabled = 1u;
+            c.gates[i].selector = kind_selector(kind);
+            c.gates[i].trace_ids[0] = c.traces[i].trace_id;
+            c.gates[i].trace_id_count = 1u;
+        }
+        c.gates[0].action = EM8051_DEBUG_TRACE_GATE_OFF;
+        c.gates[0].timing = EM8051_DEBUG_TRACE_GATE_BEFORE;
+        c.gates[1].action = EM8051_DEBUG_TRACE_GATE_ON;
+        c.gates[1].timing = EM8051_DEBUG_TRACE_GATE_BEFORE;
+        c.gates[2].action = EM8051_DEBUG_TRACE_GATE_OFF;
+        c.gates[2].timing = EM8051_DEBUG_TRACE_GATE_AFTER;
+        c.gates[3].action = EM8051_DEBUG_TRACE_GATE_ON;
+        c.gates[3].timing = EM8051_DEBUG_TRACE_GATE_AFTER;
+
+        em8051_debug_trace_router_init(&r);
+        CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+              EM8051_DEBUG_EVENT_OK);
+        e = event(1u, kind);
+        CHECK(em8051_debug_trace_router_event(&r, &e) ==
+              EM8051_DEBUG_EVENT_OK);
+        ring = em8051_debug_trace_router_ring(&r, 4u);
+        CHECK(ring != NULL && ring->count == 1u);
+        CHECK(ring->records[0].event.kind == kind &&
+              ring->records[0].trace_id_count == 2u &&
+              ring->records[0].trace_ids[0] == 7u &&
+              ring->records[0].trace_ids[1] == 42u);
+        CHECK(r.config.traces[0].enabled == 0u &&
+              r.config.traces[1].enabled == 1u &&
+              r.config.traces[2].enabled == 0u &&
+              r.config.traces[3].enabled == 1u);
+    }
+    return 0;
+}
+
+static int test_suppression_replacement_requires_flush(void)
+{
+    struct em8051_debug_trace_router r;
+    struct em8051_debug_trace_config c = base_config(), candidate;
+    struct em8051_debug_event e;
+    const struct em8051_debug_trace_ring *ring;
+
+    c.traces[0] = c.traces[1];
+    c.trace_count = 1u;
+    c.points[0].trace_ids[0] = 23u;
+    c.points[0].trace_id_count = 1u;
+    c.gate_count = 0u;
+    em8051_debug_trace_router_init(&r);
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_OK);
+    e = event(1u, EM8051_DEBUG_EVENT_INTERRUPT_ENTER);
+    CHECK(em8051_debug_trace_router_event(&r, &e) == EM8051_DEBUG_EVENT_OK);
+    e = event(2u, EM8051_DEBUG_EVENT_INSTRUCTION_END);
+    CHECK(em8051_debug_trace_router_event(&r, &e) == EM8051_DEBUG_EVENT_OK);
+    CHECK(r.suppression[0].active == 1u &&
+          r.suppression[0].value.count == 1u);
+
+    candidate = c;
+    candidate.trace_count = 0u;
+    candidate.point_count = 0u;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_BUSY);
+    candidate = c;
+    candidate.traces[0].destination_id = 9u;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_BUSY);
+    candidate = c;
+    candidate.traces[0].interrupt_policy = EM8051_DEBUG_TRACE_INCLUDE;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_BUSY);
+    CHECK(r.config.trace_count == 1u &&
+          r.config.traces[0].destination_id == 4u &&
+          r.config.traces[0].interrupt_policy ==
+              EM8051_DEBUG_TRACE_SUPPRESS_DURING_INTERRUPT &&
+          r.suppression[0].active == 1u);
+
+    CHECK(em8051_debug_trace_router_flush(&r) == EM8051_DEBUG_EVENT_OK);
+    ring = em8051_debug_trace_router_ring(&r, 4u);
+    CHECK(ring != NULL && ring->count == 2u &&
+          ring->records[1].kind == EM8051_DEBUG_TRACE_RECORD_SUPPRESSION);
+    candidate = r.config;
+    candidate.traces[0].interrupt_policy = EM8051_DEBUG_TRACE_INCLUDE;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_OK);
+    candidate = r.config;
+    candidate.traces[0].destination_id = 9u;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_OK);
+    candidate = r.config;
+    candidate.trace_count = 0u;
+    candidate.point_count = 0u;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_OK);
+    return 0;
+}
+
+static int test_trace_id_lifetime_and_registry_bound(void)
+{
+    struct em8051_debug_trace_router r;
+    struct em8051_debug_trace_config c, candidate;
+    size_t i;
+
+    memset(&c, 0, sizeof(c));
+    c.destination_count = 1u;
+    c.destinations[0].destination_id = 1u;
+    c.trace_count = 1u;
+    c.traces[0].trace_id = 7u;
+    c.traces[0].destination_id = 1u;
+    c.traces[0].enabled = 1u;
+    em8051_debug_trace_router_init(&r);
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_OK);
+    c.traces[0].enabled = 0u;
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_OK); /* a live ID may be updated */
+    candidate = c;
+    candidate.trace_count = 2u;
+    candidate.traces[1] = candidate.traces[0];
+    candidate.traces[1].trace_id = 8u;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_OK); /* a new ID is admitted */
+    c = r.config;
+    c.traces[0] = c.traces[1];
+    memset(&c.traces[1], 0, sizeof(c.traces[1]));
+    c.trace_count = 1u;
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_OK);
+    candidate = c;
+    candidate.trace_count = 2u;
+    candidate.traces[1] = candidate.traces[0];
+    candidate.traces[0].trace_id = 7u;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_DUPLICATE_ID);
+    CHECK(r.config.trace_count == 1u && r.config.traces[0].trace_id == 8u);
+    em8051_debug_trace_router_init(&r);
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_OK); /* initialization starts a new session */
+
+    memset(&c, 0, sizeof(c));
+    c.destination_count = 1u;
+    c.destinations[0].destination_id = 1u;
+    c.trace_count = 1u;
+    c.traces[0].destination_id = 1u;
+    c.traces[0].enabled = 1u;
+    em8051_debug_trace_router_init(&r);
+    for (i = 0u; i < EM8051_DEBUG_TRACE_MAX_SEEN_IDS; ++i) {
+        c.trace_count = 1u;
+        c.traces[0].trace_id = (uint32_t)i + 1u;
+        CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+              EM8051_DEBUG_EVENT_OK);
+        c.trace_count = 0u;
+        CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+              EM8051_DEBUG_EVENT_OK);
+    }
+    c.trace_count = 1u;
+    c.traces[0].trace_id = (uint32_t)EM8051_DEBUG_TRACE_MAX_SEEN_IDS + 1u;
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_LIMIT);
+    CHECK(r.config.trace_count == 0u &&
+          r.seen_trace_id_count == EM8051_DEBUG_TRACE_MAX_SEEN_IDS);
+    em8051_debug_trace_router_init(&r);
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_OK);
+    return 0;
+}
+
+static int test_utf8_metadata_validation(void)
+{
+    static const unsigned char malformed[][4] = {
+        { 0x80u, 0u, 0u, 0u },
+        { 0xc0u, 0x80u, 0u, 0u },
+        { 0xe2u, 0x82u, 0u, 0u },
+        { 0xe0u, 0x80u, 0x80u, 0u },
+        { 0xedu, 0xa0u, 0x80u, 0u },
+        { 0xf4u, 0x90u, 0x80u, 0x80u }
+    };
+    static const size_t malformed_length[] = { 1u, 2u, 2u, 3u, 3u, 4u };
+    static const unsigned char valid_four_byte[] = {
+        0xf0u, 0x9fu, 0x98u, 0x80u
+    };
+    struct em8051_debug_trace_router r;
+    struct em8051_debug_trace_config c = base_config(), candidate;
+    size_t i;
+
+    em8051_debug_trace_router_init(&r);
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_OK);
+    candidate = c;
+    memset(candidate.traces[0].tag, 0, sizeof(candidate.traces[0].tag));
+    memcpy(candidate.traces[0].tag, valid_four_byte,
+           sizeof(valid_four_byte));
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_OK);
+
+    c = r.config;
+    memset(c.traces[0].tag, 'a', sizeof(c.traces[0].tag));
+    c.traces[0].tag[sizeof(c.traces[0].tag) - 1u] = '\0';
+    memset(c.traces[0].comment, 'b', sizeof(c.traces[0].comment));
+    c.traces[0].comment[sizeof(c.traces[0].comment) - 1u] = '\0';
+    CHECK(em8051_debug_trace_router_replace(&r, &c) ==
+          EM8051_DEBUG_EVENT_OK); /* valid 64-byte tag and 256-byte comment */
+    for (i = 0u; i < sizeof(malformed) / sizeof(malformed[0]); ++i) {
+        candidate = c;
+        memset(candidate.traces[0].tag, 0,
+               sizeof(candidate.traces[0].tag));
+        memcpy(candidate.traces[0].tag, malformed[i], malformed_length[i]);
+        CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+              EM8051_DEBUG_EVENT_INVALID_ARGUMENT);
+        CHECK(r.config.traces[0].tag[0] == 'a' &&
+              r.config.traces[0].comment[0] == 'b');
+    }
+    candidate = c;
+    memset(candidate.traces[0].comment, 0,
+           sizeof(candidate.traces[0].comment));
+    candidate.traces[0].comment[0] = (char)0xf5;
+    CHECK(em8051_debug_trace_router_replace(&r, &candidate) ==
+          EM8051_DEBUG_EVENT_INVALID_ARGUMENT);
+    CHECK(r.config.traces[0].tag[0] == 'a' &&
+          r.config.traces[0].comment[0] == 'b');
+    return 0;
+}
+
 int main(void)
 {
     CHECK(test_atomic_and_coalesced() == 0);
@@ -391,6 +640,10 @@ int main(void)
     CHECK(test_all_configuration_bounds_and_rejection_neutrality() == 0);
     CHECK(test_source_transaction_guards_and_saturating_counters() == 0);
     CHECK(test_lifecycle_marker_bypasses_points_and_interrupt_filter() == 0);
+    CHECK(test_lifecycle_gate_entry_snapshot() == 0);
+    CHECK(test_suppression_replacement_requires_flush() == 0);
+    CHECK(test_trace_id_lifetime_and_registry_bound() == 0);
+    CHECK(test_utf8_metadata_validation() == 0);
     puts("debug multi-trace router tests passed");
     return 0;
 }
