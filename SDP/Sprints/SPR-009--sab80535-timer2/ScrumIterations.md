@@ -16,12 +16,14 @@ reload-disabled overflow, canonical TF2 and normal vector `002B` service.
 including ADC and frozen debug behavior; Steering explicitly authorized
 REQ-014 and no later completeness/capture work.
 
-**Expected product files/modules:** generic Timer2 diagnostics/state and T2CON
-masks in `emu8051.h`; Timer2 tick/reset/controller synchronization in `core.c`;
-focused `tests/test_stage4_timer2.c`; test build wiring and minimal generic
-README/API documentation. Do not modify `opcodes.c` unless the existing SFR
-gateway cannot express a required live write. Do not modify frozen
-`emu_debug.c`, `emu_debug.h`, `emu_debug_server.c` or protocol behavior.
+**Expected product files/modules:** generic Timer2 identity/T2CON masks in
+`emu8051.h`; Timer2 tick/controller synchronization in `core.c`; focused
+`tests/test_stage4_timer2.c`; test build wiring and minimal generic README/API
+documentation. Reuse the accepted generic timer-overflow observer/count surface
+rather than adding a competing mutable callback. Do not modify `opcodes.c`
+unless the existing SFR gateway cannot express a required live write. Do not
+modify frozen `emu_debug.c`, `emu_debug.h`, `emu_debug_server.c` or protocol
+behavior.
 
 **Required behavior:**
 
@@ -30,8 +32,8 @@ gateway cannot express a required live write. Do not modify frozen
 3. count only timer-function input `T2I1:T2I0=01` in this Slice;
 4. stop without state loss for input selection `00`;
 5. increment once per machine cycle for T2PS=0;
-6. increment once per two machine cycles for T2PS=1;
-7. use the DES-087 deterministic phase rule on clock-selection changes;
+6. increment on every second global machine-cycle boundary for T2PS=1;
+7. use the DES-087 free-running oscillator-divider phase across mode changes;
 8. use live TH2:TL2 as a 16-bit up-counter;
 9. let independent TL2/TH2 writes change live state immediately;
 10. with T2R1=0, wrap FFFF->0000 without CRCL/CRCH reload;
@@ -41,8 +43,10 @@ gateway cannot express a required live write. Do not modify frozen
 14. let ET2/EAL gate service only, never counting or TF2 production;
 15. use only the accepted Timer2 source/vector 002B controller path;
 16. keep unsupported `10`/`11` input and T2R1=1 reload modes producer-inert;
-17. reset Timer2 internal divider/event state deterministically;
-18. emit immutable observer-neutral overflow records and expose a 64-bit count;
+17. reset the Timer2 overflow count deterministically while the global machine
+    cycle counter supplies the free-running /24 phase;
+18. emit immutable observer-neutral overflow records through the accepted timer
+    observer and expose the existing 64-bit per-timer count;
 19. satisfy the exact 43691-cycle `5555` fixture;
 20. satisfy a generic ISR-style stop/port-write/live-reload/clear/restart fixture;
 21. preserve all prior behavior and every explicit stop boundary.
@@ -53,13 +57,13 @@ T2PS fosc/12 vs fosc/24, reload-disabled semantics and TF2 behavior. Ponsse PR
 #25 may prove reached values/consumer ordering but cannot define generic CPU
 semantics.
 
-**Deterministic transition convention:** because the manual specifies /24
-frequency but not an observable sub-machine-cycle phase after dynamic mode
-changes, SLC-015 resets only its bounded /24 divider phase when
-`{T2PS,T2I1,T2I0}` changes. A newly selected /24 source requires two complete
-machine cycles before its first increment. Reviewer must challenge this as an
-explicit emulator convention and open a finding if stronger architectural
-evidence exists.
+**Deterministic transition convention:** Siemens figure 7-33 places the
+oscillator-derived divide-by-two stage before the Timer2 input selector.
+SLC-015 therefore treats /24 phase as free-running with global virtual machine
+time: completed cycles 2,4,6,... are /24 boundaries after reset. T2CON changes
+gate/select that clock but do not invent a prescaler reset. Reviewer must
+challenge this convention against the primary manual and open a finding if
+stronger contradictory evidence exists.
 
 **Invariants:** machine-cycle scheduling, sticky/software-clear TF2, accepted
 12-source interrupt controller, accepted I2FR/I3FR, P5 latch/pin semantics,
