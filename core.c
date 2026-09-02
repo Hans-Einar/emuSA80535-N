@@ -74,6 +74,7 @@ static void sab_irq_sync(struct em8051 *aCPU);
 static void sab_external_sample_port(struct em8051 *aCPU, uint8_t aPort);
 static void sab_external_apply_scheduled(struct em8051 *aCPU);
 static void sab_external_maintain_level_requests(struct em8051 *aCPU);
+static void sab_adc_tick(struct em8051 *aCPU);
 
 static bool sab_external_pin(enum em8051_sab_external_source aSource,
                              uint8_t *aPort, uint8_t *aMask)
@@ -429,6 +430,27 @@ void em8051_set_sab_external_trace(struct em8051 *aCPU,
         return;
     aCPU->sab_external_trace = aTrace;
     aCPU->sab_external_trace_user = aUser;
+}
+
+bool em8051_sab_adc_set_input(struct em8051 *aCPU, uint8_t aChannel,
+                              uint16_t aNormalizedInput)
+{
+    if (!aCPU || aCPU->mVariant != EM8051_VARIANT_SAB80535 ||
+        aChannel >= EM8051_SAB_ADC_CHANNEL_COUNT)
+    {
+        return false;
+    }
+    aCPU->mSABADCInputs[aChannel] = aNormalizedInput;
+    return true;
+}
+
+void em8051_set_sab_adc_trace(struct em8051 *aCPU,
+                              em8051sabadctrace aTrace, void *aUser)
+{
+    if (!aCPU)
+        return;
+    aCPU->sab_adc_trace = aTrace;
+    aCPU->sab_adc_trace_user = aUser;
 }
 
 void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
@@ -921,6 +943,161 @@ bool em8051_sab_uart_inject_rx_frame(struct em8051 *aCPU, uint8_t aData,
     return true;
 }
 
+static void sab_adc_set_busy(struct em8051 *aCPU, bool aBusy)
+{
+    uint8_t *adcon =
+        &aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_ADCON)];
+    aCPU->mSABADCBusy = aBusy;
+    if (aBusy)
+        *adcon |= SAB_ADCONMASK_BSY;
+    else
+        *adcon &= (uint8_t)~SAB_ADCONMASK_BSY;
+}
+
+static bool sab_adc_references_valid(uint8_t aDAPR)
+{
+    uint8_t lower = (uint8_t)(aDAPR & 0x0fu);
+    uint8_t upper_nibble = (uint8_t)(aDAPR >> 4);
+    uint8_t upper = upper_nibble == 0u ? 16u : upper_nibble;
+
+    if (lower > 12u || (upper_nibble != 0u && upper_nibble < 4u) ||
+        upper < lower)
+        return false;
+    return (uint8_t)(upper - lower) >= 4u;
+}
+
+static uint8_t sab_adc_convert(uint16_t aInput, uint8_t aDAPR)
+{
+    uint32_t lower = (uint32_t)(aDAPR & 0x0fu);
+    uint32_t upper_nibble = (uint32_t)(aDAPR >> 4);
+    uint32_t upper = upper_nibble == 0u ? 16u : upper_nibble;
+    uint32_t scaled_input = 16u * (uint32_t)aInput;
+    uint32_t lower_endpoint = 65535u * lower;
+    uint32_t upper_endpoint = 65535u * upper;
+    uint32_t numerator;
+    uint32_t denominator;
+    uint32_t result;
+
+    if (scaled_input <= lower_endpoint)
+        return 0u;
+    if (scaled_input >= upper_endpoint)
+        return 0xffu;
+
+    numerator = (scaled_input - lower_endpoint) * 256u;
+    denominator = 65535u * (upper - lower);
+    result = numerator / denominator;
+    return (uint8_t)(result > 0xffu ? 0xffu : result);
+}
+
+static void sab_adc_trace_emit(struct em8051 *aCPU,
+                               enum em8051_sab_adc_trace_event aEvent,
+                               uint64_t aMachineCycle)
+{
+    struct em8051_sab_adc_trace_record record;
+    uint8_t ircon;
+
+    if (!aCPU->sab_adc_trace)
+        return;
+    memset(&record, 0, sizeof(record));
+    ircon = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)];
+    record.event = aEvent;
+    record.machine_cycle = aMachineCycle;
+    record.channel = aCPU->mSABADCLatchedChannel;
+    record.dapr = aCPU->mSABADCLatchedDAPR;
+    record.normalized_input = aCPU->mSABADCLatchedInput;
+    record.addat = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_ADDAT)];
+    record.busy = aCPU->mSABADCBusy;
+    record.iadc = (ircon & SAB_IRCONMASK_IADC) != 0;
+    record.references_valid = aCPU->mSABADCReferenceValid;
+    record.continuous_requested = aCPU->mSABADCContinuousRequested;
+    aCPU->sab_adc_trace(&record, aCPU->sab_adc_trace_user);
+}
+
+static void sab_adc_request_start(struct em8051 *aCPU)
+{
+    if (!aCPU->mSABADCStartPending)
+    {
+        aCPU->mSABADCArmRestart =
+            aCPU->mSABADCActive || aCPU->mSABADCArmed;
+    }
+    aCPU->mSABADCActive = false;
+    aCPU->mSABADCArmed = false;
+    aCPU->mSABADCCycles = 0;
+    aCPU->mSABADCStartPending = true;
+}
+
+static void sab_adc_finish_sfr_transaction(struct em8051 *aCPU)
+{
+    if (aCPU->mVariant != EM8051_VARIANT_SAB80535)
+        return;
+    if (aCPU->mSABSfrWriteDepth != 0u)
+        aCPU->mSABSfrWriteDepth--;
+    sab_adc_set_busy(aCPU, aCPU->mSABADCBusy);
+    if (aCPU->mSABSfrWriteDepth == 0u && aCPU->mSABADCStartPending)
+    {
+        aCPU->mSABADCStartPending = false;
+        aCPU->mSABADCArmed = true;
+    }
+}
+
+static void sab_adc_tick(struct em8051 *aCPU)
+{
+    uint8_t adcon;
+    uint64_t machine_cycle;
+
+    if (aCPU->mVariant != EM8051_VARIANT_SAB80535 ||
+        aCPU->mSABADCStartPending)
+    {
+        return;
+    }
+
+    machine_cycle = aCPU->mMachineCycleCount + 1u;
+    if (aCPU->mSABADCArmed)
+    {
+        adcon = aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_ADCON)];
+        aCPU->mSABADCLatchedChannel =
+            (uint8_t)(adcon & SAB_ADCONMASK_MX);
+        aCPU->mSABADCLatchedDAPR =
+            aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_DAPR)];
+        aCPU->mSABADCLatchedInput =
+            aCPU->mSABADCInputs[aCPU->mSABADCLatchedChannel];
+        aCPU->mSABADCReferenceValid =
+            sab_adc_references_valid(aCPU->mSABADCLatchedDAPR);
+        aCPU->mSABADCContinuousRequested =
+            (adcon & SAB_ADCONMASK_ADM) != 0;
+        aCPU->mSABADCArmed = false;
+        aCPU->mSABADCActive = true;
+        aCPU->mSABADCCycles = 1u;
+        sab_adc_set_busy(aCPU, true);
+        sab_adc_trace_emit(aCPU,
+            aCPU->mSABADCArmRestart ? EM8051_SAB_ADC_TRACE_RESTART :
+                                      EM8051_SAB_ADC_TRACE_START,
+            machine_cycle);
+        aCPU->mSABADCArmRestart = false;
+        return;
+    }
+
+    if (!aCPU->mSABADCActive)
+        return;
+    aCPU->mSABADCCycles++;
+    if (aCPU->mSABADCCycles < 15u)
+        return;
+
+    if (aCPU->mSABADCReferenceValid)
+    {
+        aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_ADDAT)] =
+            sab_adc_convert(aCPU->mSABADCLatchedInput,
+                            aCPU->mSABADCLatchedDAPR);
+    }
+    aCPU->mSABADCActive = false;
+    sab_adc_set_busy(aCPU, false);
+    aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)] |=
+        SAB_IRCONMASK_IADC;
+    sab_irq_sync(aCPU);
+    sab_adc_trace_emit(aCPU, EM8051_SAB_ADC_TRACE_COMPLETE,
+                       machine_cycle);
+}
+
 uint8_t em8051_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
 {
     uint8_t index;
@@ -958,6 +1135,15 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     if (!aCPU || aAddress < 0x80u)
         return;
     index = (uint8_t)(aAddress - 0x80u);
+    if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
+    {
+        aCPU->mSABSfrWriteDepth++;
+        if (aAddress == EM8051_SAB_SFR_ADCON)
+        {
+            aValue = (uint8_t)((aValue & (uint8_t)~SAB_ADCONMASK_BSY) |
+                               (aCPU->mSABADCBusy ? SAB_ADCONMASK_BSY : 0u));
+        }
+    }
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
         aAddress == (uint8_t)(REG_SBUF + 0x80u))
     {
@@ -970,9 +1156,15 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
             aCPU->sfrwrite[index](aCPU, aAddress);
         aCPU->mSFR[index] = aCPU->mSABUartRxData;
         em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
+        sab_adc_finish_sfr_transaction(aCPU);
         return;
     }
     aCPU->mSFR[index] = aValue;
+    if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
+        aAddress == EM8051_SAB_SFR_DAPR)
+    {
+        sab_adc_request_start(aCPU);
+    }
     if (aCPU->sfrwrite[index])
         aCPU->sfrwrite[index](aCPU, aAddress);
     if (sab_port_index(aCPU, aAddress) >= 0)
@@ -986,6 +1178,7 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     {
         sab_irq_arm_inhibit(aCPU);
     }
+    sab_adc_finish_sfr_transaction(aCPU);
 }
 
 bool em8051_sab_irq_set_pending(struct em8051 *aCPU,
@@ -1706,6 +1899,7 @@ static bool handle_interrupts(struct em8051 *aCPU)
 static void advance_machine_cycle(struct em8051 *aCPU)
 {
     timer_tick(aCPU);
+    sab_adc_tick(aCPU);
     aCPU->mMachineCycleCount++;
     sab_external_apply_scheduled(aCPU);
     sab_external_maintain_level_requests(aCPU);
@@ -1946,6 +2140,19 @@ void reset(struct em8051 *aCPU, bool aWipe)
     aCPU->mSABExternalScheduleCount = 0;
     memset(aCPU->mSABExternalSchedule, 0,
            sizeof(aCPU->mSABExternalSchedule));
+    memset(aCPU->mSABADCInputs, 0, sizeof(aCPU->mSABADCInputs));
+    aCPU->mSABADCLatchedInput = 0;
+    aCPU->mSABSfrWriteDepth = 0;
+    aCPU->mSABADCLatchedChannel = 0;
+    aCPU->mSABADCLatchedDAPR = 0;
+    aCPU->mSABADCCycles = 0;
+    aCPU->mSABADCStartPending = false;
+    aCPU->mSABADCArmRestart = false;
+    aCPU->mSABADCArmed = false;
+    aCPU->mSABADCActive = false;
+    aCPU->mSABADCBusy = false;
+    aCPU->mSABADCReferenceValid = false;
+    aCPU->mSABADCContinuousRequested = false;
 
     aCPU->mPC = 0;
     aCPU->mTickDelay = 0;

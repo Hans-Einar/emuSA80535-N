@@ -142,8 +142,8 @@ canonical SFR flags are cleared. TF2 is gated by IEN0.ET2 and EXF2 by
 IEN1.EXEN2. Siemens arbitration is held off until one further instruction has
 executed after `RETI` or a write to IEN0, IEN1, IP0 or IP1.
 
-The controller does not add UART mode-3 timing, ADC conversion, Timer-2
-counting, GPIO edge sampling or live I/O.
+The interrupt controller itself does not produce UART frames, ADC conversions,
+Timer-2 counts, GPIO edge samples or live I/O; those producers remain separate.
 
 Deterministic Timer0/Timer1 timing
 =================================
@@ -239,6 +239,36 @@ exact cycle, source, old/new resolved level, trigger classification and final
 canonical request state. A null or active observer does not affect execution.
 The API is in-memory only and assigns no board, connector or physical-I/O
 meaning to any pin.
+
+SAB80535 deterministic A/D converter
+=====================================
+
+The SAB variant provides a deterministic single-conversion path for the eight
+generic analog channels AN0..AN7. `em8051_sab_adc_set_input()` stores an
+unsigned 16-bit normalized sample: 0 is external VAGND and 65535 is external
+VAREF. The selected channel, DAPR byte and sample are latched on the first
+machine cycle after a DAPR write, with no host clock, thread or physical input.
+
+Every architectural DAPR write starts or supersedes one conversion. BSY rises
+on conversion cycle 1; at cycle 15 a valid result is transferred to ADDAT, BSY
+clears and canonical IRCON.IADC is asserted. The existing EADC/EAL, priority,
+preemption, vector `0043` and RETI controller behavior then applies. IADC is
+software-clear and survives a new start/restart. Reentrant DAPR writes from an
+SFR callback are coalesced at the outermost write gateway so only the final
+channel/reference/input context starts and no stale completion is queued.
+
+DAPR programs the lower and upper internal references in sixteenth steps.
+Lower 0 selects external VAGND; upper 0 selects external VAREF. Nonzero lower
+values 1..12 and upper values 4..15 are accepted when the effective span is at
+least four steps. Conversion uses deterministic integer floor arithmetic and
+clips at the selected endpoints. An unsupported reference pair still consumes
+15 cycles and asserts IADC, but preserves ADDAT rather than inventing a result.
+
+`em8051_set_sab_adc_trace()` optionally observes immutable START, RESTART and
+COMPLETE records with virtual cycle, latched input/reference context, ADDAT,
+BSY, IADC, reference validity and the latched ADM request. ADM=1 permits the
+one explicit DAPR-triggered conversion but does not auto-chain; full continuous
+conversion is not implemented by this single-conversion surface.
 
 Headless emu-debug 1.0 runtime
 ==============================
