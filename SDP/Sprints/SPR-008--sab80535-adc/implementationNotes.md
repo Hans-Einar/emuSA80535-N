@@ -28,6 +28,13 @@ Status: review pending; Worker implementation recorded but not accepted.
 
 REV-SLC-014 must independently audit exact product HEAD before acceptance.
 
+## Accepted review
+
+REV-SLC-014 approved exact product/test HEAD `0bd3913...` with no findings.
+Its independent Siemens, 5.96-million-state arithmetic, adversarial callback/
+restart, cross-platform sanitizer, exact-DAP, scope and product-identity audits
+pass. VER-SLC-014 is still required before acceptance.
+
 ## Stop boundary
 
 No Timer2, capture/compare, P1000 board/NEC/calibration logic, full continuous

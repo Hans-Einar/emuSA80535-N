@@ -27,22 +27,27 @@ unmerged for Steering.
 - Fresh Worker product/test commit
   `0bd39132b2eaffbfc5190e223b54743f17fc68fa` completed with all focused,
   cross-platform, sanitizer, frozen-debug and exact-DAP gates green.
+- Fresh REV-SLC-014 approved the exact product/test HEAD with no findings and
+  independently passed Siemens, exhaustive arithmetic, adversarial callback,
+  cross-platform, DAP and scope/identity audits.
 
 ## Not Done
 
-- Independent REV-SLC-014, Master verification, acceptance, implementation PR
-  and Issue #13/Ponsse handoffs.
+- Master verification, acceptance, implementation PR and Issue #13/Ponsse
+  handoffs.
 
 ## Exact Next Step
 
-Publish the Worker completion checkpoint and dispatch a separate fresh
-Reviewer against exact product HEAD `0bd3913...`.
+Publish the REV-SLC-014 checkpoint, then run independent Master VER-SLC-014
+against exact product HEAD `0bd3913...`.
 
 ## Verification Completed
 
 - Worker: all 28 focused classes, complete Windows/strict/WSL/sanitizer
   core+debug matrix and exact-DAP integration reported passing. Master
   verification has not started.
+- Reviewer: the complete matrix plus exhaustive arithmetic and adversarial
+  callback/restart probes passed; no findings.
 
 ## Traceability IDs In Play
 
