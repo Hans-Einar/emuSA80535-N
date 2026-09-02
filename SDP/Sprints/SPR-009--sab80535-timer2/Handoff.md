@@ -48,3 +48,11 @@ I/O, `emu-debug` changes or REQ-015 work without a new Steering authorization.
 
 MND-001, STU-001, REQ-014, ARCH-002..ARCH-006, DES-086..DES-095, SPR-009,
 ITR-015, SLC-015, REV-SLC-015 and VER-SLC-015 are current/accepted.
+
+## Cross-repository handoffs
+
+- Ponsse Issue #26 exact CPU convergence handoff: https://github.com/Hans-Einar/ponsse/issues/26#issuecomment-5517911661
+- Ponsse Issue #47 peripheral-simulator dependency handoff: https://github.com/Hans-Einar/ponsse/issues/47#issuecomment-5517915220
+
+Both consumers are instructed to pin exact accepted CPU product HEAD
+`e388a007635acb4f964326f817a3d6eb049ccf6d` rather than the moving PR/SDP head.
