@@ -58,4 +58,5 @@ review, corrective product commit `d956177add44dda9efbd6d9e372a9c0a6d40f777`,
 separate correction review, VER-SLC-017 and the DES-090..DES-097 integration-
 seam freeze. No frontend, protocol, DAP, CPU producer or physical/product scope
 was entered. SPR-008 is complete and awaits takeover-PR review; merge requires
-separate Steering authorization.
+separate Steering authorization. Takeover PR #16 is open against the PR #11
+design branch and explicitly supersedes, without merging, runtime PR #12.

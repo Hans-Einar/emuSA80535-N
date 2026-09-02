@@ -13,8 +13,12 @@ work remain deferred.
 - Active takeover branch: `codex/debug-trace-runtime-takeover`
 - Related PR #11: design PR, open against `master`; do not merge here
 - Related PR #12: runtime PR, open against PR #11 branch; do not merge here
-- Takeover PR: not opened until review, corrections, verification and SDP
-  integration are complete
+- Takeover PR #16:
+  https://github.com/Hans-Einar/emuSA80535-N/pull/16
+- Takeover PR base: `codex/tracepoint-debugger-spec` (PR #11 branch)
+- Takeover PR head: `codex/debug-trace-runtime-takeover`
+- Topology: PR #16 supersedes runtime PR #12 but does not rewrite, merge or
+  close PR #11/#12; merge requires separate Steering authorization
 
 ## Exact next step
 
