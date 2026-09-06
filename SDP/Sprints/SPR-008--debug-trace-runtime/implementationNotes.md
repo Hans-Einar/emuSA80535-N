@@ -2,6 +2,14 @@
 
 ## Current reconciliation acceptance — 2026-09-06
 
+Publication gate passed at `98826ab901da017879beebf5765ab535f84f0e17`:
+GitHub reports PR #16 open, unmerged and mergeable against exact pinned
+master `b43fe36b0965b6ac8628677bb6fcc16513d1f567`. Remote branch SHA matched
+the local committed SHA, final repository gates passed, and the worktree was
+clean. No Actions runs or commit-status checks were registered for this head;
+the required executed Windows/WSL evidence is recorded below. This publication
+checkpoint is SDP metadata only and introduces no additional product change.
+
 Master verification of exact candidate
 `c21d63f121f6305afd006a145a96c8dddae8b55e` passed 81 accepted execution steps
 on each of Windows and WSL, plus the actual eleven-suite Makefile runs on both.

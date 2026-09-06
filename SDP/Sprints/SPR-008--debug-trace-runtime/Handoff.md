@@ -1,8 +1,15 @@
 # Handoff — SLC-017 current-master reconciliation
 
 Updated: 2026-09-06
-Local disposition: reconciliation reviewed, verified and accepted;
-awaiting publication gate and Steering merge. No implementation slice is active.
+Disposition: READY_FOR_STEERING_MERGE. PR #16 remains open and unmerged.
+No implementation slice is active.
+
+Publication checkpoint: GitHub confirmed head
+`98826ab901da017879beebf5765ab535f84f0e17` against exact master
+`b43fe36b0965b6ac8628677bb6fcc16513d1f567`, `mergeable: true`, `merged: false`
+on 2026-09-06. All final static/source-identity checks passed at that head.
+This final publication record changes SDP metadata only; the Master final
+report rechecks the exact resulting remote HEAD after publishing this record.
 
 ## Authority and exact identities
 
@@ -56,11 +63,11 @@ through the audit's explicit source-scoped mapping.
 
 ## Exact next step and boundary
 
-Publish the final branch HEAD without force, verify that current remote master
-is still the pinned SHA, the exact remote PR head matches, and PR #16 is open,
-unmerged and mergeable. Only then report READY_FOR_STEERING_MERGE. The Master
-final report supplies those remote observations; this file cannot embed its
-own containing commit's hash.
+The publication gate passed at the checkpoint above. Revalidate the current
+remote head and pinned master before Steering merges; there is no remaining
+reconciliation implementation, review or verification blocker. This file
+cannot embed its own containing commit's hash; Git and the Master final report
+identify the final metadata-only publication commit.
 
 Steering owns merging PR #16, closing superseded PRs #11/#12 and Issue #14,
 and opening the separate Gate-B producer/safe-boundary/versioned-wire issue

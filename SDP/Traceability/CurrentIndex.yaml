@@ -6,6 +6,14 @@ active:
   iteration: null
   slice: null
 
+merge_gate:
+  status: READY_FOR_STEERING_MERGE
+  pull_request: 16
+  master: b43fe36b0965b6ac8628677bb6fcc16513d1f567
+  confirmed_publication_head: 98826ab901da017879beebf5765ab535f84f0e17
+  tested_reviewed_candidate: c21d63f121f6305afd006a145a96c8dddae8b55e
+  merge_authority: Steering
+
 items:
   REV-SLC-017-EVIDENCE-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
