@@ -1,12 +1,21 @@
 schema_version: emu-sab80535-current-index-v1
-updated: 2026-09-03
+updated: 2026-09-06
 
 active:
   sprint: null
   iteration: null
   slice: null
 
+merge_gate:
+  status: READY_FOR_STEERING_MERGE
+  pull_request: 16
+  master: b43fe36b0965b6ac8628677bb6fcc16513d1f567
+  confirmed_publication_head: 98826ab901da017879beebf5765ab535f84f0e17
+  tested_reviewed_candidate: c21d63f121f6305afd006a145a96c8dddae8b55e
+  merge_authority: Steering
+
 items:
+  REV-SLC-017-EVIDENCE-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
   STU-001: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-SAB80535-STU-001.md}
   STU-002: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-DEBUG-STU-002.md}
@@ -109,3 +118,91 @@ items:
   SLC-015: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-009--sab80535-timer2/ScrumIterations.md}
   REV-SLC-015: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-015.md}
   VER-SLC-015: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-015.md}
+
+  # Debugger identities qualify only parallel-history collisions.
+  REV-SLC-017-RECONCILIATION: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
+  VER-SLC-017-RECONCILIATION: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-SLC-017-RECONCILIATION.md}
+  STU-003: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-DEBUG-STU-003.md}
+  DEBUG-DES-064..DEBUG-DES-089: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-DEBUG-DES-007.md}
+  DEBUG-DES-090..DEBUG-DES-097: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-DEBUG-DES-008.md}
+  DEBUG-SPR-007: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/sprint.md}
+  DEBUG-ITR-013: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
+  DEBUG-SLC-013: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
+  REV-DEBUG-SLC-013: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-DEBUG-SLC-013.md}
+  VER-DEBUG-SLC-013: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-DEBUG-SLC-013.md}
+  DEBUG-ITR-014: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
+  DEBUG-SLC-014: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
+  REV-DEBUG-SLC-014: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-DEBUG-SLC-014.md}
+  VER-DEBUG-SLC-014: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-DEBUG-SLC-014.md}
+  DEBUG-SPR-008: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/sprint.md}
+  DEBUG-ITR-015: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  DEBUG-SLC-015: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  REV-DEBUG-SLC-015: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-DEBUG-SLC-015.md}
+  VER-DEBUG-SLC-015: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-DEBUG-SLC-015.md}
+  ITR-016: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  SLC-016: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  REV-SLC-016: {kind: review, status: approved-with-review-correction, state: current, source: SDP/CodeReview/REV-SLC-016.md}
+  VER-SLC-016: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-016.md}
+  ITR-017: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  SLC-017: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  REV-SLC-017: {kind: review, status: provisional-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-017.md}
+  REV-SLC-017-F001..F005: {kind: finding-range, status: corrected, state: current, source: SDP/CodeReview/REV-SLC-017.md}
+  REV-SLC-017-HOLISTIC: {kind: review, status: corrections-required, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
+  REV-SLC-017-HOLISTIC-F001..F005: {kind: finding-range, status: resolved, severity: medium, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
+  REV-SLC-017-HOLISTIC-F006: {kind: finding, status: resolved, severity: low, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
+  REV-SLC-017-CORRECTIONS: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-017-CORRECTIONS.md}
+  VER-SLC-017: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-SLC-017.md}
+  AUD-SLC-017-RECONCILIATION: {kind: audit, status: passed, state: current, source: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md}
+
+identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
+
+# These aliases require the debugger source scope; never apply to master.
+legacy_debugger_aliases:
+  SPR-007: DEBUG-SPR-007
+  SPR-008: DEBUG-SPR-008
+  ITR-013: DEBUG-ITR-013
+  ITR-014: DEBUG-ITR-014
+  ITR-015: DEBUG-ITR-015
+  SLC-013: DEBUG-SLC-013
+  SLC-014: DEBUG-SLC-014
+  SLC-015: DEBUG-SLC-015
+  REV-SLC-013: REV-DEBUG-SLC-013
+  REV-SLC-014: REV-DEBUG-SLC-014
+  REV-SLC-015: REV-DEBUG-SLC-015
+  VER-SLC-013: VER-DEBUG-SLC-013
+  VER-SLC-014: VER-DEBUG-SLC-014
+  VER-SLC-015: VER-DEBUG-SLC-015
+  DES-064: DEBUG-DES-064
+  DES-065: DEBUG-DES-065
+  DES-066: DEBUG-DES-066
+  DES-067: DEBUG-DES-067
+  DES-068: DEBUG-DES-068
+  DES-069: DEBUG-DES-069
+  DES-070: DEBUG-DES-070
+  DES-071: DEBUG-DES-071
+  DES-072: DEBUG-DES-072
+  DES-073: DEBUG-DES-073
+  DES-074: DEBUG-DES-074
+  DES-075: DEBUG-DES-075
+  DES-076: DEBUG-DES-076
+  DES-077: DEBUG-DES-077
+  DES-078: DEBUG-DES-078
+  DES-079: DEBUG-DES-079
+  DES-080: DEBUG-DES-080
+  DES-081: DEBUG-DES-081
+  DES-082: DEBUG-DES-082
+  DES-083: DEBUG-DES-083
+  DES-084: DEBUG-DES-084
+  DES-085: DEBUG-DES-085
+  DES-086: DEBUG-DES-086
+  DES-087: DEBUG-DES-087
+  DES-088: DEBUG-DES-088
+  DES-089: DEBUG-DES-089
+  DES-090: DEBUG-DES-090
+  DES-091: DEBUG-DES-091
+  DES-092: DEBUG-DES-092
+  DES-093: DEBUG-DES-093
+  DES-094: DEBUG-DES-094
+  DES-095: DEBUG-DES-095
+  DES-096: DEBUG-DES-096
+  DES-097: DEBUG-DES-097
