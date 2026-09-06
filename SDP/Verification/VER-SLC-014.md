@@ -1,40 +1,81 @@
-# VER-SLC-014 — Multi-trace routing design verification
+# VER-SLC-014 — Deterministic MYMOS ADC verification
 
 Status: passed
 Verified Slice: SLC-014
+Verified product/test HEAD: `0bd39132b2eaffbfc5190e223b54743f17fc68fa`
+Verified product tree: `d6e6ee7f93d545f61f3b33abe08070cc0e0964c2`
+Verifier: Master
 Verified: 2026-09-02
 
-## Scope
+## Result
 
-Verify that the documentation-only refinement is deterministic, bounded,
-internally consistent and remains inside the generic emulator/debugger
-boundary. This verification accepts no product implementation.
+Passed. SLC-014 satisfies REQ-013. REV-SLC-014 approved the exact product HEAD
+with no findings, so no corrective Slice is required.
 
-## Results
+## Master executable evidence
 
-- The Worker refinement and independent REV-SLC-014 corrections were inspected.
-- Trace sessions have stable IDs, bounded metadata, explicit enabled state,
-  one destination and one interrupt policy.
-- Canonical events are sequenced once and routed with sorted, duplicate-free,
-  bounded trace-ID sets; shared destinations do not duplicate records.
-- Before/after trace-on and trace-off semantics cover existing state and
-  deterministic conflicts between multiple gates.
-- Include, suppress-during-interrupt and interrupt-only policies define outer
-  and nested interrupt boundaries and bounded suppression summaries.
-- Derived `watch.match` events receive their own sequence, are explicitly
-  routed, drain without callback recursion and define quiet/console/stop
-  precedence.
-- File, ring, interactive console and dedicated raw-CLI stdout destinations are
-  separated from the `emu-debug` NDJSON stdout protocol.
-- Configuration counts, route fan-out, pending derived events, metadata and
-  output are bounded; invalid or dangling relationships fail atomically.
-- Repository format and traceability syntax checks pass.
-- `make core-test` passes all Stage-0, IRQ, timer, UART and port/MOVX suites.
-- The Slice changes documentation and SDP records only; no emulator product,
-  DAP or target-specific physical-I/O code is present.
+1. Windows GCC 12.2 `make core-test` — Stage0, IRQ, Timer, UART, ports, edges
+   and ADC suites passed.
+2. Windows GCC `make debug-test` — frozen debug facade and process suites
+   passed.
+3. Windows Clang 18.1.8 strict C99, `-Wall -Wextra -Wshadow -Werror
+   -pedantic` — all seven core suites and debug facade/process passed from a
+   clean rebuild.
+4. openSUSE Leap 15.5 WSL GCC 7.5 — all seven core suites and Linux debug
+   facade/process passed with Python 3.13.9.
+5. WSL GCC ASan+UBSan with warnings-as-errors, frame pointers, leak detection
+   and halt-on-error — all seven core suites and debug facade/process passed
+   without report.
+6. Frozen DAP exact HEAD `36639b48ddb2ffbafa14c00da794fe1734f7483b`
+   was checked out into a detached temporary worktree, installed from lock,
+   built unchanged and passed 45/45 contract, fixture/hash and real contract/
+   fake equivalence/F5 smoke against the current emulator executable. The
+   temporary worktree was removed afterward.
 
-## Disposition
+## Coverage
 
-SLC-014 passes and is accepted as an implementation-ready refinement of
-DES-064..DES-089. Product work must begin with bounded implementation Slice A
-and retain the golden ordering/routing tests specified in the design.
+The focused suite covers every Issue #13 class 1..28: reset; all channels;
+every DAPR byte; virtual and exact cycle-15 timing; BSY protection; ADDAT/IADC;
+EADC/EAL pending and enable-after-pending; vector/priority/preemption/RETI;
+software-clear IADC; restart/no-ghost and changed-context latch; reference
+ranges/zero endpoints/clipping/floor; long replay; multi-cycle/entry/ISR/IDLE;
+BD/CLK/UART preservation; callbacks; observer neutrality; all accepted core,
+debug and DAP regressions; classic isolation and forbidden scope.
+
+REV-SLC-014 additionally passed an independent 5,963,941-state uint64 oracle
+over valid reference/input combinations plus all 256 DAPR bytes, opcode timing,
+cycle-14 restart, nested/direct callback mutation, BSY and reset under Windows
+and WSL sanitizers.
+
+## Identity, scope and traceability evidence
+
+- Authorized master `a4d24786eb86a55479adc4ef14d0f27424fb5705` is an
+  ancestor of the reviewed product commit.
+- Product tree/parent match REV-SLC-014. The diff is exactly `README.md`,
+  `core.c`, `emu8051.h`, `tests/Makefile` and `tests/test_stage3_adc.c`.
+- Later commits are SDP-only; all product/test blobs remain identical to the
+  reviewed product commit.
+- `opcodes.c`, frozen `emu_debug.c`, `emu_debug.h`, `emu_debug_server.c`, debug
+  tests and DAP integration test have unchanged blobs.
+- Case-sensitive added-line audit found no P1000/Ponsse/NEC/D71055/PCB3,
+  Timer2/T2CON/CCEN/capture-compare, target calibration, live GPIO/serial/CAN/
+  USB, physical control, wall-clock/thread/socket/device or protocol behavior.
+- Ponsse PR #25 remains at exact evidence HEAD
+  `19ef6ff45efa719612b70e70b8c31b9cb2ebb7e9`.
+- Ledger parsing passed with 158 unique valid NDJSON events before this record;
+  the complete REQ-013/design/Slice/review/verification relation chain exists.
+- Emulator and DAP worktrees are clean after build and temporary-worktree
+  cleanup. The unrelated pre-existing Ponsse `MVP1/` content was untouched.
+
+## Timing authority disposition
+
+The Siemens manual provides no numeric MYMOS offsets for figure 7-32's generic
+early BSY/IADC anticipation. Issue #13 explicitly fixes the externally visible
+completion boundary. Worker, Reviewer and Master therefore accept atomic
+ADDAT/BSY/IADC exposure at exact cycle 15 as the non-invented deterministic
+SLC-014 abstraction.
+
+## First remaining blocker
+
+Open the focused implementation PR against `master`, leave it unmerged, and
+publish the exact accepted CPU revision to Issue #13 and Ponsse Issues #26/#47.

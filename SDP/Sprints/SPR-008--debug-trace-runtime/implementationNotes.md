@@ -219,3 +219,31 @@ SLC-017 is accepted at corrected product HEAD
 `d956177add44dda9efbd6d9e372a9c0a6d40f777` under the final SDP-only takeover
 HEAD. PR review remains external to Slice acceptance and merge remains
 Steering-controlled.
+
+## Worker current-master reconciliation — 2026-09-06
+
+Merged exact master `b43fe36b0965b6ac8628677bb6fcc16513d1f567` into first parent
+`1ba90778aaa7a155bc68d8f913531d61414f8b1e` under the bounded Issue #14 contract.
+Ten real conflicts were resolved: test Makefile union; six colliding review/
+verification paths preserved for both scopes; and the three traceability
+files reconciled without rewriting historical ledger lines. No product source
+was edited. Master core/peripheral sources/tests import unchanged, and all
+accepted standalone debugger modules/tests plus DES-090..097 are blob-identical
+to the accepted PR baseline.
+
+Canonical current-master IDs/paths remain intact. Colliding debugger IDs and
+evidence paths have explicit DEBUG qualification in the registry; historical
+source labels stay scoped to their preserved document. See
+`SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md` for every conflict, parent hash, file classification, full ID
+mapping and historical ledger provenance. In particular old references below
+or above to REV/VER-SLC-013..015 in this debugger sprint resolve to the
+REV/VER-DEBUG-SLC-013..015 preserved documents, not master peripheral evidence.
+
+Status: implementation complete; fresh independent reconciliation review and
+the full new Master verification remain pending. PR #16 is not merged.
+
+Worker smoke passed all three freshly compiled Windows GCC strict C99 focused
+suites. Duplicate-safe YAML/NDJSON, master registry/relation preservation,
+parent-ledger reconstruction, eleven-suite Makefile union, conflict-marker and
+copy-aware whitespace checks passed; see the audit for exact flags and the
+inherited Markdown-hardbreak preservation note.

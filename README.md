@@ -142,8 +142,8 @@ canonical SFR flags are cleared. TF2 is gated by IEN0.ET2 and EXF2 by
 IEN1.EXEN2. Siemens arbitration is held off until one further instruction has
 executed after `RETI` or a write to IEN0, IEN1, IP0 or IP1.
 
-The controller does not add UART mode-3 timing, ADC conversion, Timer-2
-counting, GPIO edge sampling or live I/O.
+The interrupt controller itself does not produce UART frames, ADC conversions,
+Timer-2 counts, GPIO edge samples or live I/O; those producers remain separate.
 
 Deterministic Timer0/Timer1 timing
 =================================
@@ -206,6 +206,69 @@ count, executing PC, address, direction, final read/architectural write value,
 and the full P1 output-latch snapshot captured before a legacy XDATA callback.
 Existing `xread`/`xwrite` callbacks and generic XDATA backing remain unchanged.
 The CPU assigns no board or bank meaning to P1 bits and opens no live I/O.
+
+SAB80535 deterministic external interrupts
+============================================
+
+The SAB variant maps INT0/INT1 to resolved P3.2/P3.3 and INT2..INT6 to
+resolved P1.4/P1.0/P1.1/P1.2/P1.3. The immediate
+`em8051_sab_external_drive()` / `em8051_sab_external_release()` APIs use the
+same virtual external-drive state as the port API and never rewrite a port
+latch. Direct virtual port drive/release and CPU latch writes are sampled by
+the same detector, so firmware reads and interrupt production share one
+resolved-pin truth.
+
+INT0/INT1 honor TCON IT0/IT1: edge mode latches a high-to-low transition;
+level mode tracks a resolved low request until the pin is released. INT2 and
+INT3 use the live T2CON I2FR/I3FR selection (clear means falling, set means
+rising). INT4, INT5 and INT6 use their Siemens-documented fixed rising edge.
+All producers set only TCON IE0/IE1 or IRCON IEX2..IEX6. Enable, priority,
+preemption, vector entry, auto-clear and RETI behavior remain in the existing
+twelve-source controller.
+
+`em8051_sab_external_schedule()` accepts current or future completed-machine-
+cycle timestamps. Current events apply synchronously. Future events use a
+fixed 64-entry CPU-owned queue, must be appended in nondecreasing time order,
+and execute FIFO at equal timestamps as virtual cycles advance. Past,
+out-of-order and over-capacity events are rejected. Reset releases the lines,
+clears the queue and seeds the prior samples from the generic released/high
+pins without emitting an edge.
+
+`em8051_set_sab_external_trace()` observes immutable records containing the
+exact cycle, source, old/new resolved level, trigger classification and final
+canonical request state. A null or active observer does not affect execution.
+The API is in-memory only and assigns no board, connector or physical-I/O
+meaning to any pin.
+
+SAB80535 deterministic A/D converter
+=====================================
+
+The SAB variant provides a deterministic single-conversion path for the eight
+generic analog channels AN0..AN7. `em8051_sab_adc_set_input()` stores an
+unsigned 16-bit normalized sample: 0 is external VAGND and 65535 is external
+VAREF. The selected channel, DAPR byte and sample are latched on the first
+machine cycle after a DAPR write, with no host clock, thread or physical input.
+
+Every architectural DAPR write starts or supersedes one conversion. BSY rises
+on conversion cycle 1; at cycle 15 a valid result is transferred to ADDAT, BSY
+clears and canonical IRCON.IADC is asserted. The existing EADC/EAL, priority,
+preemption, vector `0043` and RETI controller behavior then applies. IADC is
+software-clear and survives a new start/restart. Reentrant DAPR writes from an
+SFR callback are coalesced at the outermost write gateway so only the final
+channel/reference/input context starts and no stale completion is queued.
+
+DAPR programs the lower and upper internal references in sixteenth steps.
+Lower 0 selects external VAGND; upper 0 selects external VAREF. Nonzero lower
+values 1..12 and upper values 4..15 are accepted when the effective span is at
+least four steps. Conversion uses deterministic integer floor arithmetic and
+clips at the selected endpoints. An unsupported reference pair still consumes
+15 cycles and asserts IADC, but preserves ADDAT rather than inventing a result.
+
+`em8051_set_sab_adc_trace()` optionally observes immutable START, RESTART and
+COMPLETE records with virtual cycle, latched input/reference context, ADDAT,
+BSY, IADC, reference validity and the latched ADM request. ADM=1 permits the
+one explicit DAPR-triggered conversion but does not auto-chain; full continuous
+conversion is not implemented by this single-conversion surface.
 
 Headless emu-debug 1.0 runtime
 ==============================

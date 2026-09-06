@@ -559,39 +559,32 @@ static void test_save_change_access_restore_and_external_force(void)
     CHECK(capture.records[0].p1_latch == 0xc0u);
 }
 
-static int gIrqTraceCount;
-
-static void count_irq_trace(const struct em8051_sab_irq_trace_record *aRecord,
-                            void *aUser)
-{
-    (void)aRecord;
-    (void)aUser;
-    gIrqTraceCount++;
-}
-
-static void test_external_drive_has_no_irq_or_edge_semantics(void)
+static void test_external_drive_preserves_latches_and_cannot_direct_service(void)
 {
     struct fixture fixture;
-    uint16_t pending;
-    uint8_t tcon;
-    uint8_t ircon;
+    struct em8051_run_result result;
+    uint8_t p1_latch;
+    uint8_t p3_latch;
 
     setup_fixture(&fixture, EM8051_VARIANT_SAB80535);
-    gIrqTraceCount = 0;
-    em8051_set_sab_irq_trace(&fixture.cpu, count_irq_trace, NULL);
-    pending = fixture.cpu.mSABIrqPending;
-    tcon = fixture.cpu.mSFR[REG_TCON];
-    ircon = fixture.cpu.mSFR[EM8051_SAB_SFR_IRCON - 0x80u];
     CHECK(em8051_sab_port_drive(&fixture.cpu, EM8051_SAB_PORT_P1,
                                 0xffu, 0));
     CHECK(em8051_sab_port_drive(&fixture.cpu, EM8051_SAB_PORT_P3,
                                 0xffu, 0xffu));
     CHECK(em8051_sab_port_release(&fixture.cpu,
                                   EM8051_SAB_PORT_P1, 0xffu));
-    CHECK(fixture.cpu.mSABIrqPending == pending);
-    CHECK(fixture.cpu.mSFR[REG_TCON] == tcon);
-    CHECK(fixture.cpu.mSFR[EM8051_SAB_SFR_IRCON - 0x80u] == ircon);
-    CHECK(gIrqTraceCount == 0);
+    CHECK(em8051_sab_port_get_latch(&fixture.cpu,
+                                    EM8051_SAB_PORT_P1, &p1_latch));
+    CHECK(em8051_sab_port_get_latch(&fixture.cpu,
+                                    EM8051_SAB_PORT_P3, &p3_latch));
+    CHECK(p1_latch == 0xffu);
+    CHECK(p3_latch == 0xffu);
+    CHECK((fixture.cpu.mSFR[EM8051_SAB_SFR_IRCON - 0x80u] & 0x3eu) ==
+          0x3eu);
+    CHECK(em8051_run(&fixture.cpu, 1, &result) ==
+          EM8051_STOP_INSTRUCTION_LIMIT);
+    CHECK(fixture.cpu.mPC == 1u);
+    CHECK(fixture.cpu.mSABIrqDepth == 0u);
 }
 
 int main(void)
@@ -606,7 +599,7 @@ int main(void)
     test_movx_backing_dptr_and_ri_context();
     test_legacy_callbacks_and_pre_callback_snapshot();
     test_save_change_access_restore_and_external_force();
-    test_external_drive_has_no_irq_or_edge_semantics();
+    test_external_drive_preserves_latches_and_cannot_direct_service();
 
     if (gFailures != 0)
     {

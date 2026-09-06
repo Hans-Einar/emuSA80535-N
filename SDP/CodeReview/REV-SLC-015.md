@@ -1,97 +1,100 @@
-# REV-SLC-015 — Standalone debug event/watch runtime
+# REV-SLC-015 — Deterministic Siemens Timer2 review
 
-Date: 2026-09-02
-Reviewer role: fresh independent SDP Reviewer
-Disposition: **approved with review corrections**
+Status: approved
+Reviewed Slice: SLC-015
+Reviewed product/test HEAD: `e388a007635acb4f964326f817a3d6eb049ccf6d`
+Reviewed tree: `8eb677ad298a3a743adb9d51f464b90ba755b0cf`
+Frozen master baseline: `bc86d2633b6057529e6fd1e666896c24d72822aa`
+Reviewer: fresh independent ChatGPT Work reviewer
+Reviewed: 2026-09-03
+Issue checkpoint: https://github.com/Hans-Einar/emuSA80535-N/issues/17#issuecomment-5517618869
 
-## Scope reviewed
+> This repository record is a Master-side transcription of the independently
+> published Reviewer disposition above. It does not replace or retroactively
+> self-author the independent review.
 
-- the SLC-015 contract and DES-064..DES-089;
-- `emu_debug_event.h/.c` and `tests/test_debug_event.c`;
-- build integration and the complete product-code diff;
-- C99 portability, bounded behavior, signed comparisons, unknown values,
-  observer neutrality and isolation from CPU/peripheral work.
+## Disposition
 
-## Findings and corrections
+**APPROVED.** No findings were opened. There are no `REV-SLC-015-Fxxx` IDs.
+Only exact product/test HEAD `e388a007635acb4f964326f817a3d6eb049ccf6d`
+and tree `8eb677ad298a3a743adb9d51f464b90ba755b0cf` are approved.
+Later PR #18 commits are outside the independent review identity.
 
-### REV-SLC-015-F001 — Signed comparison was implementation-dependent
+## Independent Siemens reconciliation
 
-Severity: medium. Status: corrected.
+Primary architectural authority was the Siemens *SAB 80515/SAB 80C515
+User's Manual*, Edition 08.95. The Reviewer independently checked the Timer2
+and interrupt material against a 270-page manual scan with SHA-256
+`9eaf3fd71619c2043d0a0ed11cede6009a433122a44a12bbcd5d2fb27e297f72`.
 
-The original signed comparator converted out-of-range `uint64_t` values to
-`int64_t`. C99 makes that conversion implementation-defined, including the
-important 64-bit negative range. The comparator now orders equal-width
-two's-complement bit patterns by sign bit and unsigned order, without an
-out-of-range signed conversion. Signed constant validation was changed to
-check canonical sign extension using unsigned operations. A 64-bit
-`INT64_MIN < -1` regression case was added.
+The independently accepted Timer2 interpretation is:
 
-### REV-SLC-015-F002 — One observer could alter another observer's event
+- T2CON bits 7..0 are `T2PS,I3FR,I2FR,T2R1,T2R0,T2CM,T2I1,T2I0`;
+- `T2I1:T2I0=01` is the internal timer-function source;
+- `00` is stopped;
+- SLC-015 intentionally leaves `10` external-counter and `11` gated sources
+  producer-inert;
+- `T2PS=0` advances at `fosc/12`, one increment per machine cycle;
+- `T2PS=1` advances at `fosc/24`, every second completed global machine cycle;
+- the divide-by-two stage is placed before input selection in the Siemens
+  diagram and no T2CON-write phase reset is documented, so the design's
+  free-running `/2` phase is accepted as a bounded deterministic model;
+- with `T2R1=0`, hardware reload is disabled and wrap does not copy CRCL/CRCH;
+- TF2 is canonical IRCON.C6, sticky/software-clear, and vector entry/RETI do
+  not clear it.
 
-Severity: medium. Status: corrected.
+## Behavioral audit
 
-The public callback type is `const`, but a callback can cast the qualifier
-away because the dispatch object's underlying storage was mutable. All later
-observers then saw the mutation. Dispatch now gives every observer a fresh
-copy of the same canonical event. A hostile-observer regression test proves
-that the following observer and assigned sequence remain unchanged.
+The Reviewer independently confirmed:
 
-This correction preserves observer neutrality without exposing CPU state or
-changing producer behavior.
+- eligible Timer2 cycles use the current live `TH2:TL2`, increment it as a
+  16-bit up-counter and write the post-increment bytes back;
+- independent TL2 and TH2 writes are immediate and non-atomic, so a timer tick
+  between writes observes the intermediate architectural pair;
+- `FFFF -> 0000` produces a Timer2 overflow event and sets TF2;
+- repeated wraps remain observable through the 64-bit timer count and immutable
+  observer even while TF2 is already set;
+- counting and TF2 production are independent of ET2/EAL, while service remains
+  exclusively under the accepted interrupt controller;
+- enable-after-pending, paired four-level priority, preemption, vector `002B`,
+  in-service state and RETI release use the established controller path;
+- stop/restart preserves the live count and TF2, and the free-running `/2`
+  phase continues across selection changes;
+- SLC-013 I2FR/I3FR behavior sharing T2CON is unchanged;
+- starting at `0x5555` in `/12` mode remains `0xFFFF` after 43,690 cycles and
+  wraps exactly on cycle 43,691;
+- Timer2 overflow has no automatic P5.4 action;
+- there is no EXF2 producer, capture/compare behavior, P1000/NEC/board policy,
+  physical/live I/O or frozen debug-protocol behavior in the runtime diff;
+- classic 8051/8052 variants gain no Siemens Timer2 producer behavior.
 
-### REV-SLC-015-F003 — Derived watch events could re-enter the matcher
+## Independent executable evidence
 
-Severity: medium. Status: corrected.
+The Reviewer ran, independently of the Worker summary:
 
-DES-084 forbids a `watch.match` from recursively producing another
-`watch.match`. The standalone matcher now returns no matches for that event
-kind, and a regression test covers the boundary. The later router therefore
-has a defensive guarantee in addition to its own non-recursive queue rule.
+- GCC strict C99 with warnings-as-errors: complete Stage0, IRQ, Timer0/1, UART,
+  ports/MOVX, SLC-013 edges, ADC and Timer2 matrix passed;
+- `debug_facade_tests` and `test_emu_debug_process.py` against exact-head
+  `emu-debug`: passed;
+- GCC ASan+UBSan complete core matrix: passed; local LSan was disabled because
+  the managed review environment blocks `/proc` thread inspection, while the
+  Worker CI independently passed Clang ASan+UBSan with leak detection enabled;
+- a separate Reviewer probe swept multiple initial phases, stop/start and
+  `/12`/`/24` changes, both TL2/TH2 write orders, repeated sticky-TF2 wraps,
+  CRCL/CRCH and P5 isolation, and masked/pending/priority/preemption/RETI cases;
+- frozen DAP exact HEAD `36639b48ddb2ffbafa14c00da794fe1734f7483b`
+  built and passed its full test suite (97 pass, 2 platform-specific skips),
+  fixture hash and real-contract/equivalence/F5 smoke;
+- Worker Actions run `33688691147`, job `100442147454`, was inspected only as
+  corroborating evidence.
 
-## API and boundary assessment
+## Scope and identity
 
-- The API is additive C99 and does not include or modify CPU-core structures.
-- Capacity is compile-time bounded: 8 observers, 64 watches, 8 actions per
-  watch and 16 deduplicated trace routes per result.
-- Replacement validates and sorts into temporary storage before changing the
-  live table; invalid and duplicate configurations are atomic failures.
-- Registration mutation and nested dispatch are rejected while dispatching.
-- Width and signedness must match explicitly. Every comparison, including
-  `ne`, evaluates false for an unknown operand.
-- Stop actions coalesce; quiet suppresses console but does not suppress stop
-  or trace routing. Results retain ascending watch-ID and trace-ID order.
-- The product diff does not touch `core.c`, `opcodes.c`, peripherals,
-  `emu_debug`, DAP, instruction timing or architectural state.
+Runtime product changes are limited to `core.c` and `emu8051.h`, with focused
+build/test wiring in `tests/Makefile` and `tests/test_stage4_timer2.c` already
+present in the reviewed tree. `emu_debug*`, opcode execution, disassembly,
+loader and main remain byte-unchanged from the accepted baseline.
 
-## Independent evidence
-
-Commands run from the worktree root:
-
-```text
-make debug-event-test
-make core-test
-valgrind --quiet --error-exitcode=99 --leak-check=full ./tests/debug_event_tests
-gcc -std=c99 -pedantic -Wall -Wextra -Wshadow -Wconversion \
-    -Wsign-conversion -Werror -I. tests/test_debug_event.c \
-    emu_debug_event.c -o /tmp/em8051-debug-review
-/tmp/em8051-debug-review
-git diff --check
-```
-
-Results:
-
-- focused debug event/watch suite: passed;
-- Stage-0, IRQ, timer, UART and port/MOVX regression suites: passed;
-- Valgrind full leak check: passed with no reported errors;
-- strict C99 pedantic/conversion build and run: passed;
-- whitespace/error check: passed;
-- Clang is not installed on this host, so independent Clang verification is
-  deferred to CI or another environment.
-
-## Disposition rationale
-
-The three review findings were corrected in the Slice worktree and covered by
-focused regression tests. No unresolved blocker remains within SLC-015. The
-runtime is suitable as the standalone debugger-owned foundation; CPU producer
-instrumentation, derived-event scheduling, interrupt routing, trace gates and
-sinks remain correctly deferred to later slices.
+The review approves no deferred Timer2 mode and is not merge authorization.
+Master verification against the same exact product/test identity remains the
+acceptance gate.

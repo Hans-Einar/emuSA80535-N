@@ -7,10 +7,17 @@ below. PR #16 targets master and must not be merged by this task. The active
 pass is debugger SPR-008 / ITR-017 / SLC-017 current-master reconciliation.
 Baseline: accepted PR `1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed`;
 exact fetched master: `b43fe36b0965b6ac8628677bb6fcc16513d1f567`.
-Next: fresh Worker merges that exact master and resolves bounded conflicts,
-then fresh independent reconciliation review and complete new verification.
+Worker completed the bounded merge/conflict resolution; the merge commit is
+the next reconciliation review baseline. Next: fresh independent reconciliation
+review and complete new Master verification before any merge-readiness claim.
 All accepted runtime semantics and DES-090..DES-097 must survive.
 CurrentIndex, Relations and Ledger register the reconciliation pass.
+The current registry identity for this debugger sprint is `DEBUG-SPR-008`;
+master's `SPR-008` denotes ADC. Historical debugger SLC-015 and DES-090..097
+references below retain their source-scoped meanings. See
+`SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md` for the explicit mapping,
+conflict resolutions and preservation evidence. Older topology and next-step
+sections below are historical only; PR #16 currently targets `master`.
 
 SLC-015 and SLC-016 are accepted. SLC-017 is under the Issue #14 takeover
 acceptance pass. The active work is a fresh holistic review, any authorized

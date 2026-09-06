@@ -1,109 +1,109 @@
-# REV-SLC-013 — Tracepoint debugger design review
+# REV-SLC-013 — Deterministic external-edge review
 
-Status: approved-with-review-corrections  
-Reviewed Slice: SLC-013  
-Reviewed product baseline: `d9f80eba172dd9d7281aaa9e5cfef461b6b9709b`  
-Frozen DAP authority: `36639b48ddb2ffbafa14c00da794fe1734f7483b`  
-Reviewer: fresh independent reviewer  
+Status: approved
+Reviewed Slice: SLC-013
+Reviewed product/test HEAD: `3cfc4a8e9a5accb4a91df36b0b03119bc4d1de9b`
+Reviewed tree: `f691504135f3caf2f61dd3e85069f77b2a6fd7ec`
+Reviewed parent: `a9167b3acfb317315534b5059fad22d58f105dd8`
+Reviewer: fresh independent reviewer
 Reviewed: 2026-09-02
 
 ## Disposition
 
-Approved as a documentation/design Slice after the corrections recorded below.
-No product C or TypeScript was changed. The proposal is implementable in staged
-Slices and preserves the frozen protocol 1.0 and generic emulator boundary.
+Approved with no findings. No `REV-SLC-013-Fxxx` IDs were opened. The exact
+product/test commit satisfies DES-064..DES-073 and all 23 Issue #7 classes
+without bypassing the accepted interrupt controller.
 
-## Source audit
+## Independent Siemens reconciliation
 
-- `core.c:1314-1384` proves that pending `mTickDelay` cycles advance timers and
-  return without interrupt arbitration or opcode execution; zero-delay
-  arbitration precedes opcode fetch; IDLE advances timer cycles without an
-  instruction.
-- `core.c:713-739` proves SAB Timer1 overflow feeds the UART producer before
-  invoking the timer overflow compatibility observer.
-- `core.c:1049-1167` proves accepted SAB interrupt entry mutates stack, PC and
-  controller state and starts an entry delay before the vector opcode.
-- `core.c:1405-1449` proves the current public runner drains delay before
-  returning a boundary, while POWER DOWN and IDLE need explicit watch-stop
-  treatment.
-- `emu_debug.c:578-648` proves facade CODE breakpoints are pre-execution and
-  that execution currently advances through one-instruction calls.
-- `emu_debug_server.c:807-809` and process tests prove stdout is protocol-only;
-  trace files must remain separate.
-- Frozen DAP protocol 1.0 requires the seven named capabilities and permits a
-  minor mismatch only through capability-compatible semantics. It has no
-  watchpoint/trace/file command today.
+Primary authority was the Siemens *SAB 80515/SAB 80C515 Family User's Manual*,
+Edition 08.95:
 
-## Review corrections
+- chapter 7.1.3, table 7-1, page 42: P3.2/INT0, P3.3/INT1, P1.4/INT2 and
+  P1.0..P1.3/INT3..INT6;
+- figure 7-5, page 43: alternate inputs require released/high port latches;
+- chapter 8.1, figures 8-4..8-6, pages 117..119: TCON/T2CON/IRCON flag and
+  selection paths;
+- table 8-2, page 124: canonical flags and vectors;
+- chapter 8.4, page 125: INT0/INT1 level or falling edge, I2FR/I3FR selectable
+  falling/rising edges, INT4..INT6 fixed rising edges and machine-cycle
+  sampling.
 
-### REV-SLC-013-F001 — corrected — event order contradicted `tick()`
+The independently accepted matrix is:
 
-The original prose placed interrupt acceptance after instruction-end in one
-normative pass. Actual execution arbitrates at the following zero-delay
-boundary, before the next opcode, and peripheral producers run in every delay
-cycle. DES-068 and the detailed design now specify this exact order, including
-Timer1-to-UART order, entry delays, IDLE and POWER DOWN.
+| Source | Pin | Flag | Trigger | Vector |
+|---|---|---|---|---:|
+| INT0 | P3.2 | TCON.IE0 | IT0=0 low; IT0=1 falling | `0003` |
+| INT1 | P3.3 | TCON.IE1 | IT1=0 low; IT1=1 falling | `0013` |
+| INT2 | P1.4 | IRCON.IEX2 | I2FR=0 falling; 1 rising | `004B` |
+| INT3 | P1.0 | IRCON.IEX3 | I3FR=0 falling; 1 rising | `0053` |
+| INT4 | P1.1 | IRCON.IEX4 | rising | `005B` |
+| INT5 | P1.2 | IRCON.IEX5 | rising | `0063` |
+| INT6 | P1.3 | IRCON.IEX6 | rising | `006B` |
 
-### REV-SLC-013-F002 — corrected — watchpoint could never safely stop in IDLE
+Compare/Timer2 producer paths in the same manual remain excluded.
 
-“Next completed instruction” was insufficient for peripheral-only delay/IDLE
-events. DES-069 now defines a safe execution boundary and forbids stranding
-`mTickDelay`. A stopped debugger mutation reports synchronously.
+## Behavioral audit
 
-### REV-SLC-013-F003 — corrected — core/session events were conflated
+- The bounded 64-event CPU queue rejects past/out-of-order/overflow work,
+  applies current events synchronously, future events at exact completed
+  cycles and equal timestamps FIFO. Ring wrap/refill and multi-cycle cases are
+  deterministic and memory-safe.
+- Detection consumes canonical resolved pins. Latch-low dominates external
+  high, stimulus never rewrites latches, and latch writes/reentrant callbacks
+  leave detector and port reads coherent.
+- INT0/INT1 edge latch/auto-clear/re-arm and level persistence/release are
+  correct across masking, service, RETI and inhibit.
+- I2FR/I3FR are consulted when a transition is observed; selection changes do
+  not synthesize, reinterpret or clear an edge. INT4..INT6 are independent
+  fixed-rising sources.
+- Only TCON.IE0/IE1 and IRCON.IEX2..IEX6 are produced. Existing priority,
+  polling, preemption, in-service, entry, RETI, auto-clear and inhibit logic is
+  the only service path.
+- Reset releases drives, clears queue/history, seeds high prior samples and
+  creates no edge or trace. Trace records are normalized value-only data and
+  observer-neutral.
+- Generic length and saw fixtures reach real vectors `0003`/`0053`; P3.5 and
+  P1.1 remain ordinary resolved-pin samples.
+- The revised SLC-010 regression removes only its obsolete edge-neutral
+  expectation and retains latch preservation plus no-direct-service proof.
 
-The core bus now explicitly emits raw architectural facts. The debugger adds
-session/generation/sequence and synthesizes reset/load/mutation/loss/sink
-envelopes. Bounded fan-out, registration-during-dispatch rejection and legacy
-callback single-observation rules are explicit.
+Siemens page 120 says level-mode IE0/IE1 are line-controlled and cannot be set
+by writing one. The accepted DES-012 synthetic request seam deliberately
+permits direct flag assertion and predates SLC-013. The new hardware-line path
+tracks its own level assertion and is correctly line-controlled. This frozen
+test seam is not an SLC-013 finding.
 
-### REV-SLC-013-F004 — corrected — ring loss marker edge cases
+## Independent evidence
 
-The prior marker-before-next-record rule did not define capacity one or marker-
-caused eviction. Overwrite now requires capacity at least two; the first
-evicting record may precede one bounded, non-recursive coalesced marker.
+- Windows GCC 12.2: all six core suites, debug facade and process suite pass.
+- Windows Clang 18.1.8 strict C99/`-Werror`/`-pedantic`: all six core suites,
+  debug facade and process suite pass.
+- openSUSE WSL GCC 7.5: all six core suites, debug facade and process suite
+  pass with Python 3.13.9.
+- WSL ASan+UBSan strict: all six core suites, debug facade and process suite
+  pass without report.
+- Independent Windows and WSL-sanitized queue wrap/refill/FIFO, multi-cycle,
+  callback and reentrancy probes pass.
+- Diff, ancestry, NDJSON, immutable trace and forbidden-scope audits pass.
 
-### REV-SLC-013-F005 — corrected — file path/stdout policy too weak
+The sibling DAP checkout is not the frozen accepted revision, so it was not
+modified or used to bypass identity. This is not an SLC-013 blocker because
+the frozen debug modules and protocol tests are unchanged and green.
 
-Absolute path alone did not prevent symlink/reparse traversal, special files or
-overwrite. The design now requires canonical parent validation, exclusive
-creation, restrictive permissions, continuation validation, no-overwrite
-rotation and optional configured trace root. Headless trace bytes never share
-protocol stdout.
+## Scope and identity
 
-### REV-SLC-013-F006 — corrected — condition example addressed an object
+The reviewed product diff is exactly `README.md`, `core.c`, `emu8051.h`,
+`tests/Makefile`, `tests/test_stage2_edges.c` and `tests/test_stage2_ports.c`.
+`opcodes.c` and all frozen `emu-debug` product/tests have unchanged blobs.
 
-The example now reads scalar `newValue.value`, and comparisons against explicit
-unknown values have deterministic false semantics.
+No ADC, Siemens Timer2 behavior, P1000/NEC/D71055/board/signal policy,
+live/physical I/O, direct PC/vector hook, second controller, wall-clock/thread
+scheduler or protocol change was added. Later commits through
+`f6b479ceb4b22158925b5913caa61aa5c39f4329` modify SDP only; product/test blobs
+remain identical to the reviewed commit.
 
-## Verification
+## First remaining blocker
 
-- `make core-test`: passed Stage0, IRQ, timer, UART and port/MOVX suites.
-- debug facade binary/test: passed.
-- process test could not run in this worktree environment: Make invokes missing
-  `python`; available Python is 3.6.15 and cannot parse the test's
-  `from __future__ import annotations`. This is an environment/toolchain gap,
-  not a product or design failure; the unchanged process suite previously
-  guards stdout behavior.
-- `git diff --check`: passed.
-- target/live audit: only explicit non-goal/test prohibitions mention target or
-  physical endpoint terms; no target address, device profile or live endpoint
-  was introduced.
-
-## Remaining implementation risks
-
-- Golden ordering tests must be written before refactoring `tick()`; otherwise
-  instrumentation could accidentally redefine architectural order.
-- Callbacks need a fixed subscriber bound and a documented policy for removal
-  after dispatch.
-- Cross-platform secure file creation requires separate POSIX and Windows
-  implementations and adversarial symlink/reparse tests.
-- The legacy curses command editor is new UI work; the accepted first version
-  is deliberately a bounded modal command line plus paged ring view.
-- Snapshot/replay remains a later Slice and is not evidence of present support.
-
-## Boundary
-
-This approval covers design documentation only. It authorizes no trace product
-implementation, DAP change, target-specific peripheral, firmware semantics,
-physical serial/network/GPIO/CAN endpoint or machine control.
+Master must complete VER-SLC-013 against exact product HEAD and integrate
+acceptance before the focused implementation PR and cross-repository handoffs.
