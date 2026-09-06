@@ -4,6 +4,8 @@ updated: 2026-09-06
 identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 
 relations:
+  - {from: REV-SLC-017-RECONCILIATION, type: opens, to: REV-SLC-017-EVIDENCE-F001}
+  - {from: SLC-017, type: resolves, to: REV-SLC-017-EVIDENCE-F001}
   - {from: STU-001, type: informs, to: MND-001}
   - {from: REQ-001..REQ-015, type: derives_from, to: MND-001}
   - {from: REQ-001..REQ-015, type: informed_by, to: STU-001}
@@ -209,3 +211,5 @@ relations:
   - {from: REV-SLC-016, type: opens, to: REV-SLC-016-F001}
   - {from: REV-SLC-016-F001, type: corrected_by, to: SLC-016}
   - {from: AUD-SLC-017-RECONCILIATION, type: audits, to: SLC-017}
+  - {from: REV-SLC-017-RECONCILIATION, type: reviews, to: AUD-SLC-017-RECONCILIATION}
+  - {from: VER-SLC-017-RECONCILIATION, type: verifies, to: AUD-SLC-017-RECONCILIATION}

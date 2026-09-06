@@ -1,74 +1,69 @@
-# Handoff
+# Handoff — SLC-017 current-master reconciliation
 
-## Current handoff — 2026-09-06
+Updated: 2026-09-06
+Local disposition: reconciliation reviewed, verified and accepted;
+awaiting publication gate and Steering merge. No implementation slice is active.
 
-Issue #14 comment 5517725977 supersedes historical next-step/topology text
-below. PR #16 targets master and must not be merged by this task. The active
-pass is debugger SPR-008 / ITR-017 / SLC-017 current-master reconciliation.
-Baseline: accepted PR `1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed`;
-exact fetched master: `b43fe36b0965b6ac8628677bb6fcc16513d1f567`.
-Worker completed the bounded merge/conflict resolution and nine-line
-Markdown whitespace correction; the resulting HEAD is the next reconciliation
-review baseline. Next: fresh independent reconciliation
-review and complete new Master verification before any merge-readiness claim.
-All accepted runtime semantics and DES-090..DES-097 must survive.
-CurrentIndex, Relations and Ledger register the reconciliation pass.
-The current registry identity for this debugger sprint is `DEBUG-SPR-008`;
-master's `SPR-008` denotes ADC. Historical debugger SLC-015 and DES-090..097
-references below retain their source-scoped meanings. See
-`SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md` for the explicit mapping,
-conflict resolutions and preservation evidence. Older topology and next-step
-sections below are historical only; PR #16 currently targets `master`.
+## Authority and exact identities
 
-SLC-015 and SLC-016 are accepted. SLC-017 is under the Issue #14 takeover
-acceptance pass. The active work is a fresh holistic review, any authorized
-standalone-runtime corrections, full verification and a documentation-only
-facade/versioning/paging freeze. Core producer hooks and all frontend/protocol
-work remain deferred.
+Latest authority: [Stage-4 Steering rebaseline](https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5559152334),
+continuing the [bounded merge-readiness gate](https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5517725977).
 
-## Pull request
+- Branch: `codex/debug-trace-runtime-takeover`.
+- PR: https://github.com/Hans-Einar/emuSA80535-N/pull/16, targeting `master`.
+- Exact master: `b43fe36b0965b6ac8628677bb6fcc16513d1f567` (includes ADC/Timer2).
+- Accepted prior PR head: `1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed`.
+- Source WIP: `356836637d5ff432d91fc508fd55b2f17b45cdb3`.
+- Accepted correction product: `d956177add44dda9efbd6d9e372a9c0a6d40f777`.
+- Reconciliation merge: `74dca67aafebdddc82ade3e5d6864a1457ea75bb`.
+- Exact reviewed and tested candidate: `c21d63f121f6305afd006a145a96c8dddae8b55e`.
+- Subsequent changes contain SDP evidence/handoff only. The final branch HEAD
+  is obtained from Git; the Master publication report binds the remote PR to
+  that exact SHA after its final source-identity and mergeability check.
 
-- Source WIP branch: `codex/debug-trace-runtime-slc017-wip`
-- Source WIP HEAD: `356836637d5ff432d91fc508fd55b2f17b45cdb3`
-- Active takeover branch: `codex/debug-trace-runtime-takeover`
-- Related PR #11: design PR, open against `master`; do not merge here
-- Related PR #12: runtime PR, open against PR #11 branch; do not merge here
-- Takeover PR #16:
-  https://github.com/Hans-Einar/emuSA80535-N/pull/16
-- Takeover PR base: `codex/tracepoint-debugger-spec` (PR #11 branch)
-- Takeover PR head: `codex/debug-trace-runtime-takeover`
-- Topology: PR #16 supersedes runtime PR #12 but does not rewrite, merge or
-  close PR #11/#12; merge requires separate Steering authorization
+## Completed bounded work
 
-## Exact next step
+Ten conflicts were reconciled: the test Makefile, three traceability files,
+and six colliding review/verification paths. The Makefile runs the union of
+all eleven existing test suites. Master's canonical evidence/identities remain
+intact; debugger collisions have explicit DEBUG aliases and preserved evidence
+copies. Both historical ledger streams reconstruct exactly. Nine inherited
+Markdown hardbreak lines were normalized to pass plain whitespace gates.
 
-Open the takeover PR from `codex/debug-trace-runtime-takeover` against the
-stacked design branch `codex/tracepoint-debugger-spec`. State explicitly that
-it supersedes runtime PR #12 without merging or rewriting PR #11/#12. Do not
-merge the takeover PR without separate Steering authorization.
+All master product/test blobs, including ADC and Timer2, are unchanged.
+Accepted standalone debugger modules/tests, all six corrections and frozen
+DES-090..DES-097 are unchanged. No new CPU producer, safe-boundary stop,
+CLI/DAP/wire/sink, source map, product or physical-I/O feature was introduced.
 
-## Traceability IDs
+## Review and verification
 
-- `SPR-008`, `ITR-017`, `SLC-015`, `SLC-016`, `SLC-017`
-- historical/provisional `REV-SLC-017`
-- completed, corrections-required `REV-SLC-017-HOLISTIC`
-- resolved `REV-SLC-017-HOLISTIC-F001..F006`
-- approved `REV-SLC-017-CORRECTIONS`
-- passed-with-environment-note `VER-SLC-017`
-- active target design `DES-090..DES-097`
+- `REV-SLC-017-RECONCILIATION`: approved, no new reconciliation finding.
+- `VER-SLC-017-RECONCILIATION`: passed-with-environment-note.
+- Strict GCC/Clang focused, Stage0..Stage4, facade and NDJSON gates passed on
+  Windows and WSL; Clang ASan/UBSan passed all twelve C suites on both.
+- Both actual Makefile runs passed all eleven default regression recipes.
+- Static analysis, plain whitespace checks, YAML/NDJSON, parent preservation,
+  namespace/provenance and forbidden-scope audits passed.
+- Valgrind: NOT_AVAILABLE in available environments under the where-available
+  rule. Harness-only corrections and exact tool versions are recorded in VER.
 
-## Verification completed
+The audit and evidence manifest are under `SDP/Verification/`; reproduction
+tools are under `SDP/Verification/Tools/`. CurrentIndex, Relations and Ledger
+record the accepted reconciliation and keep substantive SLC-017 acceptance.
+The registry identity of this debugger sprint is `DEBUG-SPR-008`; master
+`SPR-008` is ADC. Historical debugger SLC-015 and DES-090..097 meanings resolve
+through the audit's explicit source-scoped mapping.
 
-- strict GCC/Clang focused suites on Windows and WSL: passed;
-- Clang ASan/UBSan on Windows and WSL: passed;
-- full Stage-0/IRQ/timer/UART/port-MOVX/event/trace/runtime regressions under
-  GCC and Clang on Windows and WSL: passed;
-- existing debugger facade and modern-Python process suites: passed;
-- Clang static analyzer, diff, traceability and forbidden-scope gates: passed;
-- Valgrind: not installed, recorded in VER-SLC-017 under “where available”.
+## Exact next step and boundary
 
-## Design freeze
+Publish the final branch HEAD without force, verify that current remote master
+is still the pinned SHA, the exact remote PR head matches, and PR #16 is open,
+unmerged and mergeable. Only then report READY_FOR_STEERING_MERGE. The Master
+final report supplies those remote observations; this file cannot embed its
+own containing commit's hash.
 
-DES-090..DES-097 is authoritative for the future stable wrapper and page
-cursor. The current runtime C header remains internal. No frontend/protocol/
-DAP/CPU implementation is present in this takeover.
+Steering owns merging PR #16, closing superseded PRs #11/#12 and Issue #14,
+and opening the separate Gate-B producer/safe-boundary/versioned-wire issue
+for DAP Issue #6. Do not merge or start that next feature scope under this
+reconciliation contract. Worker and independent Reviewer have completed their
+assigned passes; no implementation agent remains responsible for open work.

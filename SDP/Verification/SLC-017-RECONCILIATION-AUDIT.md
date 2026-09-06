@@ -1,8 +1,15 @@
 # SLC-017 current-master reconciliation audit
 
-Status: implementation complete; independent review and full verification pending
+Status: reviewed and verified — bounded reconciliation accepted
 Date: 2026-09-06
+Final evidence: REV-SLC-017-RECONCILIATION and VER-SLC-017-RECONCILIATION
+approve/pass exact candidate `c21d63f121f6305afd006a145a96c8dddae8b55e`.
+Historical Worker-only pending statements below describe that earlier stage.
 Scope: Issue #14 Steering comment 5517725977; PR #16 is not merged.
+Latest authority: Stage-4 Steering rebaseline comment 5559152334,
+https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5559152334.
+It confirms the exact master used here and preserves Stage0..Stage4 including
+ADC and Timer2 without introducing additional feature scope.
 
 ## Exact inputs and method
 

@@ -2,11 +2,12 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-09-06
 
 active:
-  sprint: DEBUG-SPR-008
-  iteration: ITR-017
-  slice: SLC-017
+  sprint: null
+  iteration: null
+  slice: null
 
 items:
+  REV-SLC-017-EVIDENCE-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
   STU-001: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-SAB80535-STU-001.md}
   STU-002: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-DEBUG-STU-002.md}
@@ -111,8 +112,8 @@ items:
   VER-SLC-015: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-015.md}
 
   # Debugger identities qualify only parallel-history collisions.
-  REV-SLC-017-RECONCILIATION: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
-  VER-SLC-017-RECONCILIATION: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-017-RECONCILIATION.md}
+  REV-SLC-017-RECONCILIATION: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
+  VER-SLC-017-RECONCILIATION: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-SLC-017-RECONCILIATION.md}
   STU-003: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-DEBUG-STU-003.md}
   DEBUG-DES-064..DEBUG-DES-089: {kind: design-range, status: active, state: current, source: SDP/05--Design/EMU-DEBUG-DES-007.md}
   DEBUG-DES-090..DEBUG-DES-097: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-DEBUG-DES-008.md}
@@ -125,7 +126,7 @@ items:
   DEBUG-SLC-014: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-007--tracepoint-debugger-design/ScrumIterations.md}
   REV-DEBUG-SLC-014: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-DEBUG-SLC-014.md}
   VER-DEBUG-SLC-014: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-DEBUG-SLC-014.md}
-  DEBUG-SPR-008: {kind: sprint, status: active-reconciliation, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/sprint.md}
+  DEBUG-SPR-008: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/sprint.md}
   DEBUG-ITR-015: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   DEBUG-SLC-015: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   REV-DEBUG-SLC-015: {kind: review, status: approved-with-review-corrections, state: current, source: SDP/CodeReview/REV-DEBUG-SLC-015.md}
@@ -134,7 +135,7 @@ items:
   SLC-016: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   REV-SLC-016: {kind: review, status: approved-with-review-correction, state: current, source: SDP/CodeReview/REV-SLC-016.md}
   VER-SLC-016: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-016.md}
-  ITR-017: {kind: iteration, status: active-reconciliation, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
+  ITR-017: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   SLC-017: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-008--debug-trace-runtime/ScrumIterations.md}
   REV-SLC-017: {kind: review, status: provisional-with-review-corrections, state: current, source: SDP/CodeReview/REV-SLC-017.md}
   REV-SLC-017-F001..F005: {kind: finding-range, status: corrected, state: current, source: SDP/CodeReview/REV-SLC-017.md}
@@ -143,7 +144,7 @@ items:
   REV-SLC-017-HOLISTIC-F006: {kind: finding, status: resolved, severity: low, state: current, source: SDP/CodeReview/REV-SLC-017-HOLISTIC.md}
   REV-SLC-017-CORRECTIONS: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-017-CORRECTIONS.md}
   VER-SLC-017: {kind: verification, status: passed-with-environment-note, state: current, source: SDP/Verification/VER-SLC-017.md}
-  AUD-SLC-017-RECONCILIATION: {kind: audit, status: implementation-complete-review-pending, state: current, source: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md}
+  AUD-SLC-017-RECONCILIATION: {kind: audit, status: passed, state: current, source: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md}
 
 identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 

@@ -1,10 +1,19 @@
 # SPR-008 — Generic debugger trace runtime
 
-Status: active — Issue #14 bounded current-master reconciliation
+Status: complete — bounded reconciliation reviewed and verified; Steering merge pending
 Sprint ID: SPR-008
 Started: 2026-09-02
 
 ## Goal
+
+Current result (2026-09-06): the exact current-master reconciliation is
+complete at reviewed/tested candidate `c21d63f121f6305afd006a145a96c8dddae8b55e`.
+REV-SLC-017-RECONCILIATION approves with no new finding, and
+VER-SLC-017-RECONCILIATION passes the full available Windows/WSL matrix,
+including ADC and Timer2. Subsequent changes are SDP evidence only. Remote
+publication/mergeability is checked before the final READY report; Steering
+retains exclusive PR merge authority. Historical checkpoints below are
+superseded by this result and the current Handoff.
 
 Implement the debugger-owned, processor-independent foundation from
 DES-064..DES-089 without changing instruction execution or SAB80535 peripheral
@@ -14,6 +23,9 @@ semantics.
 
 Current authority (2026-09-06): Issue #14 Steering comment
 https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5517725977.
+Latest Stage-4 rebaseline authority:
+https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5559152334.
+It confirms the same exact master and preservation of accepted ADC/Timer2.
 PR #16 now targets `master`. Reconcile the accepted takeover HEAD
 `1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed` with exact fetched master
 `b43fe36b0965b6ac8628677bb6fcc16513d1f567` using a history-preserving merge.

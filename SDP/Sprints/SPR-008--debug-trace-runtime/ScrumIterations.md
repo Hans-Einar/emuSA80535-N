@@ -2,8 +2,12 @@
 
 ## Current contract — SLC-017 current-master reconciliation (2026-09-06)
 
-Active Sprint: debugger SPR-008; Iteration: ITR-017; Slice: SLC-017.
+Completed Sprint: DEBUG-SPR-008; Iteration: ITR-017; Slice: SLC-017.
 Authority: Issue #14 comment 5517725977 and the current user instruction.
+Reconfirmed by the latest Stage-4 Steering rebaseline, comment 5559152334:
+https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5559152334.
+It pins the same exact master below and explicitly preserves Stage0..Stage4,
+including accepted ADC and Timer2. It authorizes no new feature scope.
 This bounded corrective pass reopens merge readiness only, not accepted
 SLC-015..017 behavior or DES-090..DES-097 design decisions.
 
@@ -44,7 +48,26 @@ DES-064..DES-097, SPR-008 / ITR-017 / SLC-017, accepted SLC-015..016,
 REV-SLC-017-HOLISTIC-F001..F006, REV-SLC-017-CORRECTIONS, VER-SLC-017,
 REV-SLC-017-RECONCILIATION, VER-SLC-017-RECONCILIATION.
 
-Status: active; Worker, independent review and new verification pending.
+Status: complete; bounded reconciliation approved and verified.
+
+### Current result
+
+Fresh Worker merge `74dca67aafebdddc82ade3e5d6864a1457ea75bb` and bounded
+whitespace followup produce exact candidate
+`c21d63f121f6305afd006a145a96c8dddae8b55e`. Fresh independent
+REV-SLC-017-RECONCILIATION approves that reconciliation with no new finding.
+Master VER-SLC-017-RECONCILIATION passes strict GCC/Clang, complete Stage0..4,
+facade/process, all twelve Clang sanitizer suites and actual merged Makefile
+runs on Windows and WSL, plus static/repository gates. Valgrind remains
+NOT_AVAILABLE under the where-available rule. Product/test/design preservation
+proves accepted ADC/Timer2, SLC-015..017 corrections and DES-090..097 survived.
+No corrective implementation pass or new feature is required. Registry,
+relations, ledger and Handoff record completion; no sprint remains active.
+Final publication checks must confirm the exact remote head is mergeable
+against the pinned master before reporting READY_FOR_STEERING_MERGE.
+
+The remaining sections are historical execution checkpoints. Their earlier
+active/pending/topology statements are superseded by this current result.
 
 ## ITR-015 — Standalone event and watch matcher foundation
 

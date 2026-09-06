@@ -1,5 +1,26 @@
 # Implementation notes
 
+## Current reconciliation acceptance — 2026-09-06
+
+Master verification of exact candidate
+`c21d63f121f6305afd006a145a96c8dddae8b55e` passed 81 accepted execution steps
+on each of Windows and WSL, plus the actual eleven-suite Makefile runs on both.
+The matrix includes GCC/Clang strict focused and Stage0..Stage4 regressions,
+ADC/Timer2, debugger C facade, modern-Python NDJSON, Clang ASan/UBSan on all
+twelve C suites and empty-diagnostic static analysis. Plain diff whitespace,
+duplicate-safe YAML, NDJSON, historical ledger preservation and forbidden-scope
+checks passed. VER-SLC-017-RECONCILIATION records exact tools and reproducible
+commands, the CRT/archive harness corrections, and unavailable Valgrind.
+
+Fresh REV-SLC-017-RECONCILIATION approves the exact candidate with no new
+finding and independently checks the verification log hashes/results. All
+master sources/tests, accepted debugger module/tests and frozen DES-090..097
+are preserved; no product correction was needed. Latest Steering comment
+5559152334 confirms the same pinned Stage-4 master. This closes the bounded
+reconciliation; subsequent changes are SDP evidence only. Final publication
+must bind the exact remote head and confirm mergeability, with merge itself
+reserved for Steering. Historical pending notes below are superseded here.
+
 SLC-015 is intentionally standalone. It establishes the debugger-side seam so
 ongoing SAB80535 conversion work need only call a stable event-ingest API in a
 later Slice.
