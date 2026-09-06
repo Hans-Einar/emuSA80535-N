@@ -1,5 +1,5 @@
 schema_version: emu-sab80535-current-index-v1
-updated: 2026-09-02
+updated: 2026-09-06
 
 active:
   sprint: SPR-008
@@ -7,6 +7,8 @@ active:
   slice: SLC-017
 
 items:
+  REV-SLC-017-RECONCILIATION: {kind: review, status: planned, state: target, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
+  VER-SLC-017-RECONCILIATION: {kind: verification, status: planned, state: target, source: SDP/Verification/VER-SLC-017-RECONCILIATION.md}
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
   STU-001: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-SAB80535-STU-001.md}
   STU-002: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-DEBUG-STU-002.md}

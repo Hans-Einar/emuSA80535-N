@@ -1,6 +1,6 @@
 # SPR-008 — Generic debugger trace runtime
 
-Status: active — Issue #14 takeover review and acceptance
+Status: active — Issue #14 bounded current-master reconciliation
 Sprint ID: SPR-008
 Started: 2026-09-02
 
@@ -11,6 +11,16 @@ DES-064..DES-089 without changing instruction execution or SAB80535 peripheral
 semantics.
 
 ## Integration strategy
+
+Current authority (2026-09-06): Issue #14 Steering comment
+https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5517725977.
+PR #16 now targets `master`. Reconcile the accepted takeover HEAD
+`1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed` with exact fetched master
+`b43fe36b0965b6ac8628677bb6fcc16513d1f567` using a history-preserving merge.
+The active scope is ITR-017 / SLC-017 reconciliation only; the substantive
+runtime acceptance and DES-090..DES-097 remain accepted. Historical topology
+statements below describe earlier checkpoints and are superseded here.
+No PR merge, new feature or semantic redesign is authorized.
 
 This is a stacked branch based on tracepoint design PR #11. It is isolated in
 `/home/warloc/git/emuSA80535-N-debug-trace-runtime` and will be opened as a

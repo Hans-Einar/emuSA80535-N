@@ -1,5 +1,51 @@
 # Scrum iterations
 
+## Current contract — SLC-017 current-master reconciliation (2026-09-06)
+
+Active Sprint: debugger SPR-008; Iteration: ITR-017; Slice: SLC-017.
+Authority: Issue #14 comment 5517725977 and the current user instruction.
+This bounded corrective pass reopens merge readiness only, not accepted
+SLC-015..017 behavior or DES-090..DES-097 design decisions.
+
+- Merge exact fetched master `b43fe36b0965b6ac8628677bb6fcc16513d1f567`
+  into `codex/debug-trace-runtime-takeover`, starting from accepted PR HEAD
+  `1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed` plus this contract record.
+- Resolve only drift conflicts. Expected surfaces are test Makefile and
+  colliding SDP review/verification files, registry, relations and ledger.
+  Preserve newer master CPU/peripheral/test behavior and accepted debugger
+  modules/tests byte-for-byte wherever no integration correction is needed.
+- Preserve both histories and all six corrections from product commit
+  `d956177add44dda9efbd6d9e372a9c0a6d40f777`.
+- Resolve pre-existing parallel-branch ID collisions explicitly: retain
+  current-master canonical IDs/paths; qualify colliding debugger registry
+  identities and evidence paths with DEBUG, documenting aliases to their
+  original source-scoped IDs. Preserve original scoped SLC-015..017 and
+  DES-090..DES-097 meanings. Keep all historical ledger records, with an
+  explicit provenance/disambiguation mapping rather than rewriting history.
+- No CLI/DAP/wire/CPU/sink/source-map/product/physical-I/O implementation.
+  SharedUI is not applicable to this C runtime reconciliation.
+- Fresh Worker owns the merge and conflict resolutions; a separate fresh
+  Reviewer audits the exact reconciliation and both parent baselines.
+- Required verification: strict GCC/Clang C99 focused event/watch/trace/runtime;
+  all master Stage-0/IRQ/timer/UART/port-MOVX plus external-edge/ADC/Timer2
+  regressions; debugger C facade; modern-Python emu-debug 1.0 NDJSON;
+  Windows and WSL/Linux ASan/UBSan; available Valgrind; static analysis;
+  diff whitespace, duplicate-safe YAML and NDJSON parse, traceability
+  preservation, forbidden-scope and reconciliation-only diff audit.
+- Required records: REV-SLC-017-RECONCILIATION and
+  VER-SLC-017-RECONCILIATION; update sprint notes, handoff, CurrentIndex,
+  Relations and append Ledger events before declaring merge readiness.
+- Completion: exact new PR HEAD is published, exact master is its ancestor,
+  GitHub reports mergeable, all required available verification passes and
+  fresh review approves. Report READY_FOR_STEERING_MERGE; do not merge PR #16.
+
+Traceability: MND-001, REQ-016, ARCH-007..ARCH-010, debugger
+DES-064..DES-097, SPR-008 / ITR-017 / SLC-017, accepted SLC-015..016,
+REV-SLC-017-HOLISTIC-F001..F006, REV-SLC-017-CORRECTIONS, VER-SLC-017,
+REV-SLC-017-RECONCILIATION, VER-SLC-017-RECONCILIATION.
+
+Status: active; Worker, independent review and new verification pending.
+
 ## ITR-015 — Standalone event and watch matcher foundation
 
 Status: complete

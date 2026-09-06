@@ -2,6 +2,8 @@ schema_version: emu-sab80535-relations-v1
 updated: 2026-09-02
 
 relations:
+  - {from: REV-SLC-017-RECONCILIATION, type: reviews, to: SLC-017}
+  - {from: VER-SLC-017-RECONCILIATION, type: verifies, to: SLC-017}
   - {from: STU-001, type: informs, to: MND-001}
   - {from: REQ-001..REQ-015, type: derives_from, to: MND-001}
   - {from: REQ-001..REQ-015, type: informed_by, to: STU-001}

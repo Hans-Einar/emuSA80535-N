@@ -1,5 +1,17 @@
 # Handoff
 
+## Current handoff — 2026-09-06
+
+Issue #14 comment 5517725977 supersedes historical next-step/topology text
+below. PR #16 targets master and must not be merged by this task. The active
+pass is debugger SPR-008 / ITR-017 / SLC-017 current-master reconciliation.
+Baseline: accepted PR `1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed`;
+exact fetched master: `b43fe36b0965b6ac8628677bb6fcc16513d1f567`.
+Next: fresh Worker merges that exact master and resolves bounded conflicts,
+then fresh independent reconciliation review and complete new verification.
+All accepted runtime semantics and DES-090..DES-097 must survive.
+CurrentIndex, Relations and Ledger register the reconciliation pass.
+
 SLC-015 and SLC-016 are accepted. SLC-017 is under the Issue #14 takeover
 acceptance pass. The active work is a fresh holistic review, any authorized
 standalone-runtime corrections, full verification and a documentation-only
