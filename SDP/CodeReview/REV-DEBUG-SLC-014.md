@@ -1,7 +1,7 @@
 # REV-SLC-014 — Multi-trace routing refinement
 
-Status: approved with review corrections  
-Slice: SLC-014  
+Status: approved with review corrections
+Slice: SLC-014
 Scope: documentation and SDP records only
 
 ## Review performed

@@ -1,10 +1,10 @@
 # REV-SLC-013 — Tracepoint debugger design review
 
-Status: approved-with-review-corrections  
-Reviewed Slice: SLC-013  
-Reviewed product baseline: `d9f80eba172dd9d7281aaa9e5cfef461b6b9709b`  
-Frozen DAP authority: `36639b48ddb2ffbafa14c00da794fe1734f7483b`  
-Reviewer: fresh independent reviewer  
+Status: approved-with-review-corrections
+Reviewed Slice: SLC-013
+Reviewed product baseline: `d9f80eba172dd9d7281aaa9e5cfef461b6b9709b`
+Frozen DAP authority: `36639b48ddb2ffbafa14c00da794fe1734f7483b`
+Reviewer: fresh independent reviewer
 Reviewed: 2026-09-02
 
 ## Disposition

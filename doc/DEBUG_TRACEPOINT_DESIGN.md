@@ -1,7 +1,7 @@
 # Generic debugger tracepoint design
 
-Status: implementation-ready proposal, documentation only  
-Baseline: `emuSA80535-N` `d9f80eba172dd9d7281aaa9e5cfef461b6b9709b`  
+Status: implementation-ready proposal, documentation only
+Baseline: `emuSA80535-N` `d9f80eba172dd9d7281aaa9e5cfef461b6b9709b`
 Frozen optional consumer study: `emuSA80535-DAP`
 `36639b48ddb2ffbafa14c00da794fe1734f7483b`
 

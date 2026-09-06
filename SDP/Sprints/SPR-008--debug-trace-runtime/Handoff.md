@@ -7,8 +7,9 @@ below. PR #16 targets master and must not be merged by this task. The active
 pass is debugger SPR-008 / ITR-017 / SLC-017 current-master reconciliation.
 Baseline: accepted PR `1e588d28fb168a7c5a42c4c7dc4b51f84d29d1ed`;
 exact fetched master: `b43fe36b0965b6ac8628677bb6fcc16513d1f567`.
-Worker completed the bounded merge/conflict resolution; the merge commit is
-the next reconciliation review baseline. Next: fresh independent reconciliation
+Worker completed the bounded merge/conflict resolution and nine-line
+Markdown whitespace correction; the resulting HEAD is the next reconciliation
+review baseline. Next: fresh independent reconciliation
 review and complete new Master verification before any merge-readiness claim.
 All accepted runtime semantics and DES-090..DES-097 must survive.
 CurrentIndex, Relations and Ledger register the reconciliation pass.

@@ -247,3 +247,15 @@ suites. Duplicate-safe YAML/NDJSON, master registry/relation preservation,
 parent-ledger reconstruction, eleven-suite Makefile union, conflict-marker and
 copy-aware whitespace checks passed; see the audit for exact flags and the
 inherited Markdown-hardbreak preservation note.
+
+
+### Authorized whitespace gate correction
+
+After merge `74dca67aafebdddc82ade3e5d6864a1457ea75bb`, Master authorized
+removal of only nine inherited trailing Markdown hardbreaks: five lines in
+REV-DEBUG-SLC-013, two in REV-DEBUG-SLC-014 and two in
+`doc/DEBUG_TRACEPOINT_DESIGN.md`. This makes plain diff whitespace gates
+pass against both exact master and the accepted prior PR HEAD. Linewise
+`rstrip()` comparison verifies unchanged historical content; exact original
+bytes remain in Git history. Frozen DES-090..097, Ledger, product sources and
+tests remain unchanged. See the audit for exact paths and line numbers.

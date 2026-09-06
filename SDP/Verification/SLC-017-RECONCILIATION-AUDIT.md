@@ -13,8 +13,10 @@ Scope: Issue #14 Steering comment 5517725977; PR #16 is not merged.
 - Common branch ancestor: `d9f80eba172dd9d7281aaa9e5cfef461b6b9709b`.
 - Worker ran `git merge --no-ff --no-commit b43fe36b0965b6ac8628677bb6fcc16513d1f567` and
   resolved the ten actual conflict paths listed below. The resulting merge
-  preserves both ancestries. Its exact commit is recorded by the subsequent
-  Master review/verification records; a commit cannot embed its own hash.
+  preserves both ancestries. Exact merge commit:
+  `74dca67aafebdddc82ade3e5d6864a1457ea75bb`. A subsequent docs-only
+  whitespace correction is recorded below; the final reviewed HEAD is recorded
+  by Master review/verification.
 
 ## Conflict inventory and resolution
 
@@ -24,8 +26,8 @@ Scope: Issue #14 Steering comment 5517725977; PR #16 is not merged.
 | `SDP/Traceability/CurrentIndex.yaml` | Master canonical entries and requirement/acceptance states retained; debugger-only entries unioned with scoped aliases for colliding IDs. The debugger-parent stale planned `REQ-013..REQ-015` aggregate is superseded by master's individual `REQ-013`, `REQ-014`, `REQ-015` states. Active work is `DEBUG-SPR-008` / `ITR-017` / `SLC-017`; acceptance of debugger `DEBUG-SLC-015`, `SLC-016` and `SLC-017` remains intact. |
 | `SDP/Traceability/Relations.yaml` | Union of master relations and qualified debugger relations. Duplicate identical relations omitted. Holistic review range expanded into its three explicit slice targets to avoid a mixed-namespace range. |
 | `SDP/Traceability/Ledger.ndjson` | Exact common prefix plus master suffix plus exact debugger suffix; no historic record or ID rewritten. Explicit block provenance below disambiguates duplicate historic event IDs and scoped entity IDs. New implementation event appended. |
-| `SDP/CodeReview/REV-SLC-013.md` | Current-master bytes retained at the canonical path; debugger-parent bytes preserved at `SDP/CodeReview/REV-DEBUG-SLC-013.md`. Historic labels in the preserved document remain source-scoped. |
-| `SDP/CodeReview/REV-SLC-014.md` | Current-master bytes retained at the canonical path; debugger-parent bytes preserved at `SDP/CodeReview/REV-DEBUG-SLC-014.md`. Historic labels in the preserved document remain source-scoped. |
+| `SDP/CodeReview/REV-SLC-013.md` | Current-master bytes retained at the canonical path; debugger-parent content preserved at `SDP/CodeReview/REV-DEBUG-SLC-013.md`, with only 5 inherited trailing Markdown hardbreaks removed for the required whitespace gate (see exception below). Historic labels in the preserved document remain source-scoped. |
+| `SDP/CodeReview/REV-SLC-014.md` | Current-master bytes retained at the canonical path; debugger-parent content preserved at `SDP/CodeReview/REV-DEBUG-SLC-014.md`, with only 2 inherited trailing Markdown hardbreaks removed for the required whitespace gate (see exception below). Historic labels in the preserved document remain source-scoped. |
 | `SDP/CodeReview/REV-SLC-015.md` | Current-master bytes retained at the canonical path; debugger-parent bytes preserved at `SDP/CodeReview/REV-DEBUG-SLC-015.md`. Historic labels in the preserved document remain source-scoped. |
 | `SDP/Verification/VER-SLC-013.md` | Current-master bytes retained at the canonical path; debugger-parent bytes preserved at `SDP/Verification/VER-DEBUG-SLC-013.md`. Historic labels in the preserved document remain source-scoped. |
 | `SDP/Verification/VER-SLC-014.md` | Current-master bytes retained at the canonical path; debugger-parent bytes preserved at `SDP/Verification/VER-DEBUG-SLC-014.md`. Historic labels in the preserved document remain source-scoped. |
@@ -150,7 +152,9 @@ from current master; they are upstream integration, not worker implementation:
 - `tests/test_stage3_adc.c`
 - `tests/test_stage4_timer2.c`
 
-The only reconciled non-SDP file is `tests/Makefile`. In particular `core.c`,
+The only reconciled build/product file is `tests/Makefile`;
+`doc/DEBUG_TRACEPOINT_DESIGN.md` receives only the two inherited trailing
+Markdown hardbreak removals documented below. In particular `core.c`,
 `emu8051.h`, newer peripheral tests and README import the master blobs;
 `opcodes.c`, `emu_debug.c/.h`, server/protocol code and all accepted standalone
 runtime modules/tests receive no implementation edit. The merge adds no
@@ -180,7 +184,8 @@ checked with `git hash-object --path PATH PATH` against
 | `tests/test_debug_trace.c` | `567f0ecda474c6172bc330499e3ec07099c3d140` |
 | `tests/test_emu_debug_process.py` | `1bef88c7dc00af0b63620bb0a1df6fb78d6b5232` |
 
-Preserved duplicate evidence blobs:
+Original debugger evidence blobs (REV-013/014 have the whitespace-only
+normalization exception below; the other four copies retain these exact IDs):
 
 | Debugger-qualified path | Original debugger Git blob ID |
 |---|---|
@@ -191,9 +196,9 @@ Preserved duplicate evidence blobs:
 | `SDP/Verification/VER-DEBUG-SLC-014.md` | `07eebb7691d96cd25e33e8216cd340d9f6b45330` |
 | `SDP/Verification/VER-DEBUG-SLC-015.md` | `6d7554042dc49a687c652d42ce42d5b4795b5046` |
 
-Additional changes are reconciliation bookkeeping only: this audit,
-implementation notes, current handoff, registry identities/status, relations and one appended
-ledger event. Current-master design and evidence content remains unchanged;
+Additional changes are reconciliation bookkeeping and the authorized nine-line
+whitespace normalization only: this audit, implementation notes, current
+handoff, registry identities/status, relations and one appended ledger event. Current-master design and evidence content remains unchanged;
 accepted debugger design bodies including DES-090..097 remain unchanged.
 
 ## Worker verification
@@ -220,10 +225,25 @@ absence of conflict markers, and the eleven-suite Makefile union including
 Windows/Linux variable names. Linux `make -C tests -B -n test OS=Linux`
 enumerates all eleven build-and-run pairs.
 
-`git diff --cached -C --find-copies-harder --check` passes. Copy detection
-recognizes all six historical debugger evidence files as 100% copies. Plain
-diff checking without copy detection reports seven existing Markdown hardbreak
-lines in the copied REV-013/014 bodies; those bytes predate reconciliation and
-are retained to preserve accepted evidence. The broader PR-versus-master diff
-also includes two pre-existing hardbreaks in `doc/DEBUG_TRACEPOINT_DESIGN.md`.
-No new reconciliation text introduces whitespace errors.
+The initial merge preserved all six historical evidence copies byte-for-byte.
+Plain `git diff --check` treated seven old Markdown hardbreaks in two copies
+as newly added whitespace, and the broader PR-versus-master diff also exposed
+two such inherited lines in the existing design synopsis. Master explicitly
+authorized only these nine whitespace removals to satisfy both plain gates;
+this supersedes byte-identical preservation for those three files only.
+
+| Path | Exact normalization |
+|---|---|
+| `SDP/CodeReview/REV-DEBUG-SLC-013.md` | Remove trailing spaces from lines 3–7 (five lines). |
+| `SDP/CodeReview/REV-DEBUG-SLC-014.md` | Remove trailing spaces from lines 3–4 (two lines). |
+| `doc/DEBUG_TRACEPOINT_DESIGN.md` | Remove trailing spaces from lines 3–4 (two lines). |
+
+The prose, labels, ordering and all other content remain unchanged. Comparison
+of every line after `rstrip()` matches the accepted parent content exactly;
+original bytes remain available in the accepted parent Git blobs above and in
+the initial merge. This normalization does not modify frozen DES-090..097,
+any ledger byte, any product source or any test. The four other relocated
+review/verification files remain exact byte copies. Plain whitespace checks
+against exact master and the prior accepted PR baseline pass after this
+bounded correction. No test rerun is needed for trailing Markdown whitespace;
+the full new Master verification still follows on the final exact HEAD.
