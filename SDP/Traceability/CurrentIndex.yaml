@@ -1,5 +1,5 @@
 schema_version: emu-sab80535-current-index-v1
-updated: 2026-09-06
+updated: 2026-10-24
 
 active:
   sprint: null
@@ -7,12 +7,14 @@ active:
   slice: null
 
 merge_gate:
-  status: READY_FOR_STEERING_MERGE
+  status: STEERING_MERGE_AUTHORIZED
   pull_request: 16
   master: b43fe36b0965b6ac8628677bb6fcc16513d1f567
-  confirmed_publication_head: 98826ab901da017879beebf5765ab535f84f0e17
+  confirmed_publication_head: 2faeec3c903bed2decbe7fde94a05fdbab3ce697
   tested_reviewed_candidate: c21d63f121f6305afd006a145a96c8dddae8b55e
   merge_authority: Steering
+  authorization: explicit-human-user-request-2026-10-24
+  publication_record: https://github.com/Hans-Einar/emuSA80535-N/pull/16
 
 items:
   REV-SLC-017-EVIDENCE-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}

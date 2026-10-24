@@ -1,10 +1,16 @@
 # SPR-008 — Generic debugger trace runtime
 
-Status: complete — bounded reconciliation reviewed and verified; Steering merge pending
+Status: complete — bounded reconciliation accepted; human-authorized Steering merge
 Sprint ID: SPR-008
 Started: 2026-09-02
 
 ## Goal
+
+Steering acceptance (2026-10-24): the human user delegated the Steering role
+and explicitly authorized PR #16 integration into the default branch `master`.
+The published head, unchanged tested product/build content and reconciliation
+audit were revalidated. The current Handoff and append-only ledger record the
+acceptance; PR #16 records the merge outcome and exact resulting commit.
 
 Current result (2026-09-06): the exact current-master reconciliation is
 complete at reviewed/tested candidate `c21d63f121f6305afd006a145a96c8dddae8b55e`.

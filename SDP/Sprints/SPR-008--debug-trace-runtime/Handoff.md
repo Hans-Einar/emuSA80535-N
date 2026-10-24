@@ -1,8 +1,31 @@
 # Handoff — SLC-017 current-master reconciliation
 
-Updated: 2026-09-06
-Disposition: READY_FOR_STEERING_MERGE. PR #16 remains open and unmerged.
+Updated: 2026-10-24
+Disposition: ACCEPTED; Steering merge explicitly authorized by the human user.
+Publication state and the resulting merge commit are recorded by PR #16:
+https://github.com/Hans-Einar/emuSA80535-N/pull/16.
 No implementation slice is active.
+
+## Steering acceptance — 2026-10-24
+
+The human user explicitly delegated the Steering role and requested merge into
+the repository's primary branch. The actual default branch is `master`.
+This supplies the separate authorization reserved by the previous handoff.
+
+Steering revalidated exact published head
+`2faeec3c903bed2decbe7fde94a05fdbab3ce697` against exact default-branch head
+`b43fe36b0965b6ac8628677bb6fcc16513d1f567`. GitHub reported PR #16 CLEAN and
+MERGEABLE. The committed independent review and full verification remain
+applicable: all non-SDP content equals tested candidate
+`c21d63f121f6305afd006a145a96c8dddae8b55e`. The fresh reconciliation audit
+passed ancestry, accepted-source/master preservation, whitespace, scope,
+duplicate-safe YAML, NDJSON and historical-ledger checks.
+
+Steering approves a normal merge commit for PR #16, preserving upstream and
+takeover ancestry. This acceptance record changes SDP metadata only. The merge
+must match the exact resulting published PR head. After GitHub confirms the
+merge, close superseded PRs #11/#12 and complete Issue #14. Gate-B development
+remains a separately scoped follow-up; this merge does not activate it.
 
 Publication checkpoint: GitHub confirmed head
 `98826ab901da017879beebf5765ab535f84f0e17` against exact master
@@ -13,7 +36,7 @@ report rechecks the exact resulting remote HEAD after publishing this record.
 
 ## Authority and exact identities
 
-Latest authority: [Stage-4 Steering rebaseline](https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5559152334),
+Implementation authority: [Stage-4 Steering rebaseline](https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5559152334),
 continuing the [bounded merge-readiness gate](https://github.com/Hans-Einar/emuSA80535-N/issues/14#issuecomment-5517725977).
 
 - Branch: `codex/debug-trace-runtime-takeover`.
@@ -63,14 +86,13 @@ through the audit's explicit source-scoped mapping.
 
 ## Exact next step and boundary
 
-The publication gate passed at the checkpoint above. Revalidate the current
-remote head and pinned master before Steering merges; there is no remaining
-reconciliation implementation, review or verification blocker. This file
-cannot embed its own containing commit's hash; Git and the Master final report
-identify the final metadata-only publication commit.
+The separately authorized Steering merge is the remaining publication action.
+The PR's GitHub merge record identifies completion and the resulting exact
+default-branch commit; this file is the acceptance evidence carried by that
+commit. No reconciliation implementation, review or verification blocker
+remains. Worker and independent Reviewer have completed their assigned passes.
 
-Steering owns merging PR #16, closing superseded PRs #11/#12 and Issue #14,
-and opening the separate Gate-B producer/safe-boundary/versioned-wire issue
-for DAP Issue #6. Do not merge or start that next feature scope under this
-reconciliation contract. Worker and independent Reviewer have completed their
-assigned passes; no implementation agent remains responsible for open work.
+After integration, the next development contract is a separate Gate-B
+producer/safe-boundary/versioned-wire issue for DAP Issue #6. It must preserve
+the accepted single emulator-owned semantic model and the frozen facade and
+paging decisions. No implementation slice is active or activated here.
