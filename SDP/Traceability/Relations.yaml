@@ -1,7 +1,11 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-09-03
+updated: 2026-09-06
+
+identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 
 relations:
+  - {from: REV-SLC-017-RECONCILIATION, type: opens, to: REV-SLC-017-EVIDENCE-F001}
+  - {from: SLC-017, type: resolves, to: REV-SLC-017-EVIDENCE-F001}
   - {from: STU-001, type: informs, to: MND-001}
   - {from: REQ-001..REQ-015, type: derives_from, to: MND-001}
   - {from: REQ-001..REQ-015, type: informed_by, to: STU-001}
@@ -150,7 +154,6 @@ relations:
   - {from: SLC-014, type: implements_design, to: DES-074..DES-085}
   - {from: REV-SLC-014, type: reviews, to: SLC-014}
   - {from: VER-SLC-014, type: verifies, to: SLC-014}
-
   - {from: DES-086..DES-095, type: refines, to: ARCH-002..ARCH-006}
   - {from: SPR-009, type: schedules, to: REQ-014}
   - {from: SLC-015, type: belongs_to, to: ITR-015}
@@ -160,3 +163,53 @@ relations:
   - {from: SLC-015, type: implements_design, to: DES-086..DES-095}
   - {from: REV-SLC-015, type: reviews, to: SLC-015}
   - {from: VER-SLC-015, type: verifies, to: SLC-015}
+  - {from: REV-SLC-017-RECONCILIATION, type: reviews, to: SLC-017}
+  - {from: VER-SLC-017-RECONCILIATION, type: verifies, to: SLC-017}
+  - {from: STU-003, type: informs, to: DEBUG-DES-064..DEBUG-DES-079}
+  - {from: DEBUG-DES-064..DEBUG-DES-079, type: refines, to: ARCH-007..ARCH-010}
+  - {from: DEBUG-DES-090..DEBUG-DES-097, type: refines, to: ARCH-007..ARCH-010}
+  - {from: DEBUG-DES-090..DEBUG-DES-097, type: freezes_integration_seam_for, to: DEBUG-DES-064..DEBUG-DES-089}
+  - {from: DEBUG-SLC-013, type: belongs_to, to: DEBUG-ITR-013}
+  - {from: DEBUG-ITR-013, type: belongs_to, to: DEBUG-SPR-007}
+  - {from: DEBUG-SLC-013, type: studies, to: STU-003}
+  - {from: DEBUG-SLC-013, type: specifies, to: DEBUG-DES-064..DEBUG-DES-079}
+  - {from: REV-DEBUG-SLC-013, type: reviews, to: DEBUG-SLC-013}
+  - {from: VER-DEBUG-SLC-013, type: verifies, to: DEBUG-SLC-013}
+  - {from: DEBUG-SLC-014, type: belongs_to, to: DEBUG-ITR-014}
+  - {from: DEBUG-ITR-014, type: belongs_to, to: DEBUG-SPR-007}
+  - {from: DEBUG-SLC-014, type: refines, to: DEBUG-DES-064..DEBUG-DES-079}
+  - {from: DEBUG-SLC-014, type: specifies, to: DEBUG-DES-080..DEBUG-DES-089}
+  - {from: REV-DEBUG-SLC-014, type: reviews, to: DEBUG-SLC-014}
+  - {from: VER-DEBUG-SLC-014, type: verifies, to: DEBUG-SLC-014}
+  - {from: DEBUG-SLC-015, type: belongs_to, to: DEBUG-ITR-015}
+  - {from: DEBUG-ITR-015, type: belongs_to, to: DEBUG-SPR-008}
+  - {from: DEBUG-SLC-015, type: implements_design, to: DEBUG-DES-064..DEBUG-DES-089}
+  - {from: REV-DEBUG-SLC-015, type: reviews, to: DEBUG-SLC-015}
+  - {from: VER-DEBUG-SLC-015, type: verifies, to: DEBUG-SLC-015}
+  - {from: SLC-016, type: belongs_to, to: ITR-016}
+  - {from: ITR-016, type: belongs_to, to: DEBUG-SPR-008}
+  - {from: SLC-016, type: implements_design, to: DEBUG-DES-080..DEBUG-DES-089}
+  - {from: REV-SLC-016, type: reviews, to: SLC-016}
+  - {from: VER-SLC-016, type: verifies, to: SLC-016}
+  - {from: SLC-017, type: belongs_to, to: ITR-017}
+  - {from: ITR-017, type: belongs_to, to: DEBUG-SPR-008}
+  - {from: SLC-017, type: composes, to: DEBUG-SLC-015}
+  - {from: SLC-017, type: composes, to: SLC-016}
+  - {from: REV-SLC-017, type: reviews, to: SLC-017}
+  - {from: REV-SLC-017, type: opens, to: REV-SLC-017-F001..F005}
+  - {from: REV-SLC-017-F001..F005, type: corrected_by, to: SLC-017}
+  - {from: REV-SLC-017-HOLISTIC, type: reviews, to: DEBUG-SLC-015}
+  - {from: REV-SLC-017-HOLISTIC, type: reviews, to: SLC-016}
+  - {from: REV-SLC-017-HOLISTIC, type: reviews, to: SLC-017}
+  - {from: REV-SLC-017-HOLISTIC, type: opens, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: SLC-017, type: addresses, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: REV-SLC-017-CORRECTIONS, type: reviews, to: SLC-017}
+  - {from: REV-SLC-017-CORRECTIONS, type: verifies_corrections, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: SLC-017, type: resolves, to: REV-SLC-017-HOLISTIC-F001..F006}
+  - {from: VER-SLC-017, type: verifies, to: SLC-017}
+  - {from: SLC-017, type: freezes_design, to: DEBUG-DES-090..DEBUG-DES-097}
+  - {from: REV-SLC-016, type: opens, to: REV-SLC-016-F001}
+  - {from: REV-SLC-016-F001, type: corrected_by, to: SLC-016}
+  - {from: AUD-SLC-017-RECONCILIATION, type: audits, to: SLC-017}
+  - {from: REV-SLC-017-RECONCILIATION, type: reviews, to: AUD-SLC-017-RECONCILIATION}
+  - {from: VER-SLC-017-RECONCILIATION, type: verifies, to: AUD-SLC-017-RECONCILIATION}
