@@ -1,5 +1,17 @@
 # Implementation notes
 
+## Steering integration completed — 2026-10-24
+
+PR #16 merged into default branch `master` at
+`c8b82aba78dd1adcd474eb3bcd69424009a6a035` from exact PR head
+`1c8d9537a77a77c8d2a7d929621616f11dcb6940`. The additional Steering commit
+contains SDP metadata only. The merged tree equals the PR tree; all non-SDP
+content remains identical to the approved/tested candidate. Fresh static,
+preservation and traceability checks passed on the actual merge commit.
+The unchanged product evidence remains applicable without repeating the full
+compiler matrix. Issue #14 completed, PR #11 is recognized as merged through
+ancestry, and superseded PR #12 is closed. No Gate-B feature work started.
+
 ## Current reconciliation acceptance — 2026-09-06
 
 Publication gate passed at `98826ab901da017879beebf5765ab535f84f0e17`:

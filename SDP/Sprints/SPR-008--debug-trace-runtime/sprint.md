@@ -1,6 +1,6 @@
 # SPR-008 — Generic debugger trace runtime
 
-Status: complete — bounded reconciliation accepted; human-authorized Steering merge
+Status: complete — merged into master; Issue #14 completed
 Sprint ID: SPR-008
 Started: 2026-09-02
 

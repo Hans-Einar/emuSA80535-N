@@ -7,7 +7,7 @@ active:
   slice: null
 
 merge_gate:
-  status: STEERING_MERGE_AUTHORIZED
+  status: MERGED
   pull_request: 16
   master: b43fe36b0965b6ac8628677bb6fcc16513d1f567
   confirmed_publication_head: 2faeec3c903bed2decbe7fde94a05fdbab3ce697
@@ -15,6 +15,12 @@ merge_gate:
   merge_authority: Steering
   authorization: explicit-human-user-request-2026-10-24
   publication_record: https://github.com/Hans-Einar/emuSA80535-N/pull/16
+  target_branch: master
+  merged_head: 1c8d9537a77a77c8d2a7d929621616f11dcb6940
+  merge_commit: c8b82aba78dd1adcd474eb3bcd69424009a6a035
+  issue_14: completed
+  pr_11: merged-via-integrated-ancestry
+  pr_12: closed-superseded
 
 items:
   REV-SLC-017-EVIDENCE-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}

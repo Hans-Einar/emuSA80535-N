@@ -1,10 +1,25 @@
 # Handoff — SLC-017 current-master reconciliation
 
 Updated: 2026-10-24
-Disposition: ACCEPTED; Steering merge explicitly authorized by the human user.
+Disposition: MERGED into `master`; Issue #14 completed.
 Publication state and the resulting merge commit are recorded by PR #16:
 https://github.com/Hans-Einar/emuSA80535-N/pull/16.
 No implementation slice is active.
+
+## Confirmed integration — 2026-10-24
+
+GitHub confirms PR #16 merged as
+`c8b82aba78dd1adcd474eb3bcd69424009a6a035`, with first parent
+`b43fe36b0965b6ac8628677bb6fcc16513d1f567` and merged PR head
+`1c8d9537a77a77c8d2a7d929621616f11dcb6940`. The latter adds only the
+Steering authorization record to the accepted publication head. The merged
+tree equals that PR head and all non-SDP content equals the reviewed/tested
+candidate. The post-merge preservation/traceability audit passed.
+
+Issue #14 is closed as completed. GitHub recognizes PR #11 as merged through
+the integrated ancestry; superseded PR #12 is closed. The acceptance and
+publication checkpoints below are historical. Gate-B remains separate future
+work and no implementation slice is activated by this closeout.
 
 ## Steering acceptance — 2026-10-24
 
@@ -86,11 +101,9 @@ through the audit's explicit source-scoped mapping.
 
 ## Exact next step and boundary
 
-The separately authorized Steering merge is the remaining publication action.
-The PR's GitHub merge record identifies completion and the resulting exact
-default-branch commit; this file is the acceptance evidence carried by that
-commit. No reconciliation implementation, review or verification blocker
-remains. Worker and independent Reviewer have completed their assigned passes.
+Steering integration and Issue #14 closeout are complete. The PR's GitHub
+merge record and the exact commit above identify the delivered result. No
+reconciliation implementation, review or verification blocker remains.
 
 After integration, the next development contract is a separate Gate-B
 producer/safe-boundary/versioned-wire issue for DAP Issue #6. It must preserve
