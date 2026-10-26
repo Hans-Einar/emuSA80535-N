@@ -111,6 +111,9 @@ RPM envelope hash, not its payload or source identity.
 
 ## Remaining gate
 
-Independent review must approve before publication. The Master must verify
-signed artifacts and a clean public HTTPS/DNF installation with both RPM and
-repository metadata signature checks enabled before closing SLC-018.
+Independent REV-SLC-018 approved the package candidate after its own source
+RPM rebuild and checks. Publication is held following the user's architecture
+questions about simulator composition and independent debugger attachment.
+No upload/signing/publication was performed. If this release scope is retained,
+the Master must still verify signed artifacts and a clean public HTTPS/DNF
+installation with both RPM and metadata signature checks before closing SLC-018.

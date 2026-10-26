@@ -1,9 +1,11 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-10-26
+updated: 2026-10-27
 
 identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 
 relations:
+  - {from: REV-SLC-018, type: reviews, to: SLC-018}
+  - {from: VER-SLC-018, type: verifies, to: SLC-018}
   - {from: REQ-017, type: derives_from, to: MND-001}
   - {from: DES-098..DES-100, type: realizes, to: REQ-017}
   - {from: SPR-010, type: schedules, to: REQ-017}
