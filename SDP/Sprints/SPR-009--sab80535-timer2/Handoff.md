@@ -2,9 +2,15 @@
 
 ## Current Objective
 
-SLC-015 is independently reviewed and Master-verified. The only remaining
-Stage-4 action is Steering review of PR #18 and an explicit merge decision.
-No new CPU Slice is active or authorized.
+Stage 4 is accepted and integrated. PR #18 merged into `master` on
+2026-09-06 as `b43fe36b0965b6ac8628677bb6fcc16513d1f567`; Issue #17 is closed
+completed. The prior pre-merge checkpoint below is historical and does not
+request another merge. Current work selection belongs to
+`SDP/Traceability/CurrentIndex.yaml`.
+
+Integration authority:
+https://github.com/Hans-Einar/emuSA80535-N/issues/17#issuecomment-5559140973.
+This closeout does not activate Stage 5 or broaden the accepted Timer2 modes.
 
 ## Authoritative Source Documents
 
@@ -22,7 +28,8 @@ No new CPU Slice is active or authorized.
 - Exact accepted product/test HEAD: `e388a007635acb4f964326f817a3d6eb049ccf6d`.
 - Exact accepted product tree: `8eb677ad298a3a743adb9d51f464b90ba755b0cf`.
 - Frozen DAP integration HEAD: `36639b48ddb2ffbafa14c00da794fe1734f7483b`.
-- Implementation PR: #18, open and intentionally unmerged.
+- Implementation PR: #18, merged; the following identity rules describe the
+  historical pre-merge acceptance checkpoint.
 
 Commits after `e388a007...` are temporary CI cleanup and SDP/review/verification
 evidence only. Product/test blobs must remain identical through the final PR
@@ -57,7 +64,7 @@ ITR-015, SLC-015, REV-SLC-015 and VER-SLC-015 are current/accepted.
 Both consumers are instructed to pin exact accepted CPU product HEAD
 `e388a007635acb4f964326f817a3d6eb049ccf6d` rather than the moving PR/SDP head.
 
-## Final Stage-4 checkpoint
+## Historical pre-merge Stage-4 checkpoint
 
 Issue #17 READY/Steering checkpoint: https://github.com/Hans-Einar/emuSA80535-N/issues/17#issuecomment-5517933325
 

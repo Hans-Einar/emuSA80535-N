@@ -1,7 +1,7 @@
 # EMU-SAB80535-REQ-001 — SAB80535 emulator requirements baseline
 
 Status: active target baseline  
-Requirement set: REQ-001..REQ-016
+Requirement set: REQ-001..REQ-017
 Established: 2026-08-31
 
 ## Stage 0 — deterministic core boundary
@@ -58,6 +58,16 @@ Established: 2026-08-31
   UTF-8 NDJSON stdio, deterministic synchronous execution and atomic public
   snapshots, preserve all accepted CPU/peripheral behavior, and open no
   physical or target-specific I/O.
+
+## Generic distribution and embedding SDK
+
+- **REQ-017 — AlmaLinux delivery:** provide reproducible AlmaLinux 10.2 x86_64
+  RPMs for the accepted headless debug executable and a matching static
+  embedding SDK (headers/library/pkg-config), preserving generic CPU behavior,
+  licensing and protocol 1.0. Verify installed consumers and publish signed
+  artifacts through the user's existing app repository. This requirement
+  derives from MND-001 and the user's 2026-10-26 delivery request; it does not
+  activate additional CPU modes, Gate B or target simulator implementation.
 
 ## Cross-cutting acceptance rules
 

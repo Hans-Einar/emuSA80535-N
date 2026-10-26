@@ -1,10 +1,10 @@
 schema_version: emu-sab80535-current-index-v1
-updated: 2026-10-24
+updated: 2026-10-26
 
 active:
-  sprint: null
-  iteration: null
-  slice: null
+  sprint: SPR-010
+  iteration: ITR-018
+  slice: SLC-018
 
 merge_gate:
   status: MERGED
@@ -23,6 +23,11 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
+  REQ-017: {kind: requirement, status: active, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
+  DES-098..DES-100: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-PACKAGE-DES-010.md}
+  SPR-010: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/sprint.md}
+  ITR-018: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/ScrumIterations.md}
+  SLC-018: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/ScrumIterations.md}
   REV-SLC-017-EVIDENCE-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-017-RECONCILIATION.md}
   MND-001: {kind: mandate, status: active, state: current, source: SDP/01--Mandate/EMU-SAB80535-MND-001.md}
   STU-001: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-SAB80535-STU-001.md}
