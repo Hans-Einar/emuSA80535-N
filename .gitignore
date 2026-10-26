@@ -28,6 +28,13 @@ tests/stage1_uart_tests*
 tests/stage2_port_tests*
 tests/debug_facade_tests*
 tests/debug-*.bin
+tests/stage2_edge_tests*
+tests/stage3_adc_tests*
+tests/stage4_timer2_tests*
+tests/debug_event_tests*
+tests/debug_trace_tests*
+tests/debug_runtime_tests*
+emusa80535.pc
 
 #editor temp files
 \#*

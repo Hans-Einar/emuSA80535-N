@@ -15,4 +15,26 @@
 
 ## Worker result
 
-Pending.
+Implemented generic `sdk`/POSIX `install` targets, a static library of the eight
+accepted core/debug units, five installed headers and pkg-config metadata.
+The RPM split is `emusa80535` (headless runtime) and `emusa80535-devel`
+(same-build static SDK); no shared ABI or advanced debugger completion is
+claimed. Added a clean-HEAD deterministic archive helper and an installed-only
+consumer that exercises instruction execution, XDATA callbacks, disassembly,
+snapshot facade and standalone runtime linkage. The install check also tests
+protocol 1.0 and exact source identity.
+
+Initial Worker checks on AlmaLinux 10.2 x86_64:
+
+- `make -j4 sdk emu-debug`: passed.
+- Fresh executable rebuild and `make install` to
+  `/tmp/emusa80535-worker-stage`, prefix `/usr`, libdir `/usr/lib64`: passed.
+- `python3 packaging/check_install.py ... --commit <HEAD>`: passed.
+- All eleven default suites plus facade and NDJSON process suite: passed.
+- Dirty-source archive creation: rejected as required.
+- `git diff --check`: passed.
+
+The first installed-consumer attempt exposed an example ordering mistake:
+variant initialization cold-clears CODE. The example now copies its synthetic
+program after initialization. No emulator source change was required.
+Clean committed-source RPM build/check and independent review follow.

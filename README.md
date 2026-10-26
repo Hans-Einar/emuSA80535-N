@@ -322,6 +322,10 @@ product sources.
 Install
 =======
 
+For the headless executable and static embedding SDK on AlmaLinux 10.2, see
+[RPM packaging and embedding](packaging/README.md). These packages do not
+require curses. The instructions below concern the legacy interactive UI.
+
 You need to install the ncurses lib development files, which is the only dependency.
 
 On Debian/Ubuntu it is simply done as
