@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "emu8051.h"
+#include <emusa80535/emu8051.h>
 
 #define EM8051_RAW_CODE_SIZE 65536u
 

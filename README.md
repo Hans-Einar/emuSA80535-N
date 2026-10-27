@@ -341,3 +341,16 @@ Arguments to functions are prefixed with "a", such as in
     static int read_mem(struct em8051 *aCPU, int aAddress)
 
 Local variables are using standard [snake case](https://wikipedia.org/wiki/Snake_case).
+
+## Shared interface contracts
+
+[Interface bundle 0.1.0](interfaces/0.1.0/README.md) defines CPU/controller,
+loadable board, debugger transport and DAP contracts with availability labels.
+Canonical headers live in `lib/include/emusa80535`; all new consumers include
+`<emusa80535/...>` with `-Ilib/include` (or installed pkg-config flags).
+Target runtime declarations are not implemented library functions yet.
+
+Run `make interface-check` (C/C++ compilers, Python3 and Python jsonschema), then
+export an exact clean committed revision with
+`python3 interfaces/tools/bundle.py export --output /tmp/emusa80535-interfaces-0.1.0.tar.gz`.
+See the bundle's versioning document for hashes, consumer locks and verification.

@@ -7,7 +7,7 @@
  * object/array/string/integer access needed by the frozen protocol.
  */
 
-#include "emu_debug.h"
+#include <emusa80535/emu_debug.h>
 
 #include <errno.h>
 #include <inttypes.h>

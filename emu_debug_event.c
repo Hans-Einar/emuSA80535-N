@@ -4,7 +4,7 @@
  * Distributed under the MIT license; see LICENSE.
  */
 
-#include "emu_debug_event.h"
+#include <emusa80535/emu_debug_event.h>
 
 #include <limits.h>
 #include <string.h>

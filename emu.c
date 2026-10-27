@@ -42,7 +42,7 @@
 #else
 #include "curses.h"
 #endif
-#include "emu8051.h"
+#include <emusa80535/emu8051.h>
 #include "emulator.h"
 
 unsigned char history[HISTORY_LINES * (128 + 64 + sizeof(int))];

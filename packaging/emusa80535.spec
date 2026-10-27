@@ -59,6 +59,7 @@ python3 packaging/check_install.py %{buildroot} --libdir %{_libdir} --commit "$(
 %{_libdir}/libemusa80535.a
 %{_libdir}/pkgconfig/emusa80535.pc
 %doc %{_docdir}/%{name}/sdk_smoke.c
+%doc %{_docdir}/%{name}/interface-bundles/
 
 %changelog
 * Mon Oct 26 2026 Hans-Einar <warloc@beinerud> - 1.0.0-1

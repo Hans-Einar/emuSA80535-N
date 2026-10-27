@@ -4,7 +4,7 @@
  * Licensed under the repository MIT license.
  */
 
-#include "emu_debug.h"
+#include <emusa80535/emu_debug.h>
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -30,7 +30,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "emu8051.h"
+#include <emusa80535/emu8051.h>
 
 #define SAB_SFR_INDEX(aAddress) ((uint8_t)((aAddress) - 0x80u))
 #define SAB_IRQ_BIT(aSource) ((uint16_t)(1u << (unsigned)(aSource)))

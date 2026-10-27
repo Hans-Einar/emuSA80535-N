@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "emu8051.h"
+#include <emusa80535/emu8051.h>
 
 #define BAD_VALUE 0x77
 #define PSW aCPU->mSFR[REG_PSW]

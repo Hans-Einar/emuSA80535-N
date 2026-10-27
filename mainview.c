@@ -31,7 +31,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "curses.h"
-#include "emu8051.h"
+#include <emusa80535/emu8051.h>
 #include "emulator.h"
 
 /*

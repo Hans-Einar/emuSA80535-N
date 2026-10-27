@@ -1,6 +1,7 @@
 ifeq ($(origin CC),default)
 CC := gcc
 endif
+CPPFLAGS += -I../lib/include
 CFLAGS ?= -O2 -g
 CFLAGS += -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow
 
@@ -40,43 +41,46 @@ NODE ?= node
 DEBUG_BIN ?= ../emu-debug
 DAP_ROOT ?= ../../emuSA80535-DAP
 
+PUBLIC_HEADERS := $(wildcard ../lib/include/emusa80535/*.h ../lib/include/emusa80535/contracts/*.h)
+$(STAGE0_BIN) $(STAGE1_BIN) $(TIMER_BIN) $(UART_BIN) $(PORT_BIN) $(EDGE_BIN) $(ADC_BIN) $(TIMER2_BIN) $(DEBUG_BIN_TEST) $(DEBUG_EVENT_BIN) $(DEBUG_TRACE_BIN) $(DEBUG_RUNTIME_BIN): $(PUBLIC_HEADERS)
+
 all: $(STAGE0_BIN) $(STAGE1_BIN) $(TIMER_BIN) $(UART_BIN) $(PORT_BIN) $(EDGE_BIN) $(ADC_BIN) $(TIMER2_BIN) $(DEBUG_EVENT_BIN) $(DEBUG_TRACE_BIN) $(DEBUG_RUNTIME_BIN)
 
 $(STAGE0_BIN): test_stage0.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage0.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage0.c $(CORE_SRC)
 
 $(STAGE1_BIN): test_stage1_irq.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage1_irq.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage1_irq.c $(CORE_SRC)
 
 $(TIMER_BIN): test_stage1_timers.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage1_timers.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage1_timers.c $(CORE_SRC)
 
 $(UART_BIN): test_stage1_uart.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage1_uart.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage1_uart.c $(CORE_SRC)
 
 $(PORT_BIN): test_stage2_ports.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage2_ports.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage2_ports.c $(CORE_SRC)
 
 $(EDGE_BIN): test_stage2_edges.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage2_edges.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage2_edges.c $(CORE_SRC)
 
 $(ADC_BIN): test_stage3_adc.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage3_adc.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage3_adc.c $(CORE_SRC)
 
 $(TIMER2_BIN): test_stage4_timer2.c $(CORE_SRC) ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_stage4_timer2.c $(CORE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_stage4_timer2.c $(CORE_SRC)
 
 $(DEBUG_BIN_TEST): test_debug_facade.c $(DEBUG_SRC) ../emu_debug.h ../emu8051.h
-	$(CC) $(CFLAGS) -o $@ test_debug_facade.c $(DEBUG_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ test_debug_facade.c $(DEBUG_SRC)
 
 $(DEBUG_EVENT_BIN): test_debug_event.c ../emu_debug_event.c ../emu_debug_event.h
-	$(CC) $(CFLAGS) -Werror -o $@ test_debug_event.c ../emu_debug_event.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Werror -o $@ test_debug_event.c ../emu_debug_event.c
 
 $(DEBUG_TRACE_BIN): test_debug_trace.c ../emu_debug_trace.c ../emu_debug_trace.h ../emu_debug_event.h
-	$(CC) $(CFLAGS) -Werror -o $@ test_debug_trace.c ../emu_debug_trace.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Werror -o $@ test_debug_trace.c ../emu_debug_trace.c
 
 $(DEBUG_RUNTIME_BIN): test_debug_runtime.c ../emu_debug_runtime.c ../emu_debug_runtime.h ../emu_debug_trace.c ../emu_debug_trace.h ../emu_debug_event.c ../emu_debug_event.h
-	$(CC) $(CFLAGS) -Werror -o $@ test_debug_runtime.c ../emu_debug_runtime.c ../emu_debug_trace.c ../emu_debug_event.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Werror -o $@ test_debug_runtime.c ../emu_debug_runtime.c ../emu_debug_trace.c ../emu_debug_event.c
 
 test: $(STAGE0_BIN) $(STAGE1_BIN) $(TIMER_BIN) $(UART_BIN) $(PORT_BIN) $(EDGE_BIN) $(ADC_BIN) $(TIMER2_BIN) $(DEBUG_EVENT_BIN) $(DEBUG_TRACE_BIN) $(DEBUG_RUNTIME_BIN)
 	./$(STAGE0_BIN)

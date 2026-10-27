@@ -2,7 +2,7 @@
  * Copyright 2026 Hans-Einar
  * Distributed under the MIT license; see LICENSE.
  */
-#include "emu_debug_trace.h"
+#include <emusa80535/emu_debug_trace.h>
 
 #include <string.h>
 

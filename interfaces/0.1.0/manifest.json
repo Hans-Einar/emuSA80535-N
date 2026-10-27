@@ -1,0 +1,92 @@
+{
+  "availability": {
+    "boardAbi": "declarations-only",
+    "cpuControllerApi": "declarations-only",
+    "dapAttach": "mapping-only",
+    "legacyCpuAndDebug": "implemented-same-build",
+    "runtimeWire2": "specification-only",
+    "sessionDebugApi": "declarations-only"
+  },
+  "bundleVersion": "0.1.0",
+  "files": {
+    "LICENSE": "3c05d81f8d97faa7f8acc73af3e1a41491d9cea7f7ed01e5b03ec5c4e9566751",
+    "interfaces/0.1.0/README.md": "182668f3456f13217dd574c4b354336302e7218a5e3fc406327631be3688a1cf",
+    "interfaces/0.1.0/consumers.json": "d870546f0ec71a84b730cf62701916085c5912a26ef267310eb627185dfb223d",
+    "interfaces/0.1.0/docs/01-overview.md": "c311896f463185450be406ffed40d381245a1b86cffc7f31c32e6556b6e39518",
+    "interfaces/0.1.0/docs/02-cpu.md": "30d27ff6386932ce320ef71ae312c52d7bb0a7e598992e36d25f79ca2a25a87d",
+    "interfaces/0.1.0/docs/03-board.md": "7a826a7dcb13ba3088b36ec43cbc0a354463d6d777ab14f0d3a511141a2b3a4f",
+    "interfaces/0.1.0/docs/04-time.md": "641d6bdf85c8bfb263e28fb79831ac09dae68be8b910a17be5354ad4bbaac6da",
+    "interfaces/0.1.0/docs/05-session.md": "4f5db372159232331b55fd8b1d8b2936e55ed1ceea09fd8532c11b6bb0b241d5",
+    "interfaces/0.1.0/docs/06-debug-service.md": "4c5a471c3f98cc8e5e80e1dc1259eae47fd1096e451f4705be8cba652d662614",
+    "interfaces/0.1.0/docs/07-wire.md": "aa63bb32285f6f9580ff3d64e31b9bf3bcecba1ca70a069bd0f6e48e7e5dcc68",
+    "interfaces/0.1.0/docs/08-dap.md": "42e54bce2f148322c4d70001d3013c8836f79c4bdb8519390166d519848f6e18",
+    "interfaces/0.1.0/docs/09-host.md": "d0b216fad4efbbd18a09ea339a239a983d938c4844cc4cdef96baf5ff1b64642",
+    "interfaces/0.1.0/docs/10-legacy.md": "afebd3cabb3a25fd509b223d447ed1545a643b66be2baddb514088e60546acbe",
+    "interfaces/0.1.0/docs/11-versioning.md": "1eb1bb3e9afe5f41ad28f9d63ce73105885e980959e9c1b9b32bf708f15f1ca8",
+    "interfaces/0.1.0/docs/12-conformance.md": "0bb60005bacb1f68fa0830be0960fd7291b68facf57f7bdeccb92effd1bfc5b9",
+    "interfaces/0.1.0/examples/consumer.c": "cb00399a52d71671077c1e93adcc289389d2a16f4b39b0a79ff4412b18a5e328",
+    "interfaces/0.1.0/examples/consumer.lock.example.json": "70963ce4782cf5e7b625fb76a174c24ee7c896c319847662cbb469cd5dc80d6d",
+    "interfaces/0.1.0/examples/runtime-2.0.ndjson": "46b018d531aa367effc69ffd275c9d6e0608f78ae2d7650e1f9fe0c44855a8a2",
+    "interfaces/0.1.0/reference/dap-LICENSE": "c52a00ba6a403c7f07bc6ca5c7d50411a4aae36cf9b4199a79af6f0c67f47be5",
+    "interfaces/0.1.0/reference/debug-model.md": "120d053d535801afabdb18437a9e68a41f1d1f790d498b7b0bd83facda7d4631",
+    "interfaces/0.1.0/reference/debug-stable-facade.md": "b47e7882d70ac88b1243a95161666aa27fccb4a82c9c5552b731349bf43d021a",
+    "interfaces/0.1.0/reference/legacy-protocol-1.0.md": "6ee44685fcc2022916eb9ba2648baa9a030c924df7afffe6d84a9741f089cee6",
+    "interfaces/0.1.0/schemas/runtime-2.0.schema.json": "c0c70f0625cb1f840cde25a3adf132a2d5dd4d37463d98c95b9444ff3ad441b5",
+    "interfaces/README.md": "586988ad7b7555f29fc37ee3d0273a6da1d64f4d96898dd9f434824d88d4aaa2",
+    "interfaces/tools/bundle.py": "52a460d9057244f977e85884a4f2dae23e8ba74404f3d0b1bec786b9659bbffb",
+    "interfaces/tools/check_contracts.py": "66f34b08d907f32ae48669ea91316304340179a207ad5390218588bd6c768d92",
+    "interfaces/tools/wire.py": "122ad0df93230964a71382dd25d6837f670491fd4c969e0e7333313b78947a02",
+    "lib/include/emusa80535/contracts/board.h": "28e1a51a25a31a6ab7b6942609963bf6893ed46c5da7be88b3ed44d713835678",
+    "lib/include/emusa80535/contracts/cpu.h": "1ddca48c1ec69cc74db6f6623187a794fbae83a40cc119fa4871066f555dbbb6",
+    "lib/include/emusa80535/contracts/debug.h": "5da8b83e9ee813cee5b71ca90df2388828342a6eb634805955d50cc71df0dc73",
+    "lib/include/emusa80535/contracts/runtime.h": "c60d1d2028cbe3e6d9e67ffb6c0071b67c11d098caa8dce8952b6d4af63ef1be",
+    "lib/include/emusa80535/contracts/types.h": "3befc82e87f706bb2df7d68f1838e46db545199014f51dd1e8087eaa9d7e8e3c",
+    "lib/include/emusa80535/contracts/version.h": "0d9faafe76de3ec8ad86940f4844bf9cb9d787d6541a578be5b84d0d001d950e",
+    "lib/include/emusa80535/emu8051.h": "a26d5667bc03534e7e78ffff2519ff2d7583673417d5d0c3cd0768c38faa9959",
+    "lib/include/emusa80535/emu_debug.h": "c143d75d75f6dce4996ea2a05317d61fa9aa93486f5d566137e7ebe38b9f8573",
+    "lib/include/emusa80535/emu_debug_event.h": "3220dc04178155c7d3afe7b4814a38b99064b9f084382e12f6a6d6e287bdeb1b",
+    "lib/include/emusa80535/emu_debug_runtime.h": "a739b419bcef2afc19b40fd52295a5d55c0b63c28a11a08c207fbbef77b99151",
+    "lib/include/emusa80535/emu_debug_trace.h": "72a391a5a29a9e0d513d28fedef208f4153f4d9259f399fb842ca39322f0b8ff"
+  },
+  "references": [
+    {
+      "path": "interfaces/0.1.0/reference/debug-model.md",
+      "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+      "sha256": "120d053d535801afabdb18437a9e68a41f1d1f790d498b7b0bd83facda7d4631",
+      "sourceCommit": "d4497fac6ca5d99d9192f660d01989ca080740fc",
+      "sourcePath": "SDP/05--Design/EMU-DEBUG-DES-007.md"
+    },
+    {
+      "path": "interfaces/0.1.0/reference/debug-stable-facade.md",
+      "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+      "sha256": "b47e7882d70ac88b1243a95161666aa27fccb4a82c9c5552b731349bf43d021a",
+      "sourceCommit": "d4497fac6ca5d99d9192f660d01989ca080740fc",
+      "sourcePath": "SDP/05--Design/EMU-DEBUG-DES-008.md"
+    },
+    {
+      "path": "interfaces/0.1.0/reference/legacy-protocol-1.0.md",
+      "repository": "https://github.com/Hans-Einar/emuSA80535-DAP",
+      "sha256": "6ee44685fcc2022916eb9ba2648baa9a030c924df7afffe6d84a9741f089cee6",
+      "sourceCommit": "2e4c2dae2bb3637c4f3dbf803b83cc3f7e246301",
+      "sourcePath": "protocol/EMU_DEBUG_API_REQUIREMENTS.md"
+    }
+  ],
+  "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+  "status": "engineering-contract-target-runtime-unimplemented",
+  "versions": {
+    "boardAbi": {
+      "major": 1,
+      "minor": 0,
+      "platform": "linux-x86_64-sysv-le"
+    },
+    "legacyWire": {
+      "major": 1,
+      "minor": 0
+    },
+    "nativeApi": 1,
+    "runtimeWire": {
+      "major": 2,
+      "minor": 0
+    }
+  }
+}
