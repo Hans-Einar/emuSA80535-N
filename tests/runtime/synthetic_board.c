@@ -11,7 +11,7 @@ struct board
     struct emuif_board_host host;
     uint64_t cycle, accesses, ports, applied, last_order, last_cycle;
     unsigned value;
-    int fault;
+    int fault, wake;
 };
 static emuif_status create(const struct emuif_board_host *h, const struct emuif_board_create *c,
                            void **out)
@@ -25,6 +25,7 @@ static emuif_status create(const struct emuif_board_host *h, const struct emuif_
         return EMUIF_CAPACITY;
     b->host = *h;
     b->fault = c->config_bytes == 14 && !memcmp(c->config_utf8, "{\"fault\":true}", 14);
+    b->wake = c->config_bytes == 13 && !memcmp(c->config_utf8, "{\"wake\":true}", 13);
     *out = b;
     return EMUIF_OK;
 }
@@ -46,6 +47,18 @@ static emuif_status boundary(void *v, const struct emuif_board_boundary *x)
 {
     struct board *b = v;
     b->cycle = x->cycle;
+    if (b->wake && x->cycle == 0)
+    {
+        struct emuif_input input = {0};
+        input.struct_size = sizeof(input);
+        input.api_version = 1;
+        input.kind = EMUIF_INPUT_INTERRUPT;
+        input.index = 0;
+        input.value = 0;
+        input.mask = 1;
+        input.cycle = 20;
+        return b->host.schedule_input(b->host.context, &input);
+    }
     return EMUIF_OK;
 }
 static emuif_status access(void *v, const struct emuif_bus_access *a, struct emuif_bus_result *r)

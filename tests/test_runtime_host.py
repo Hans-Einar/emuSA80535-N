@@ -148,6 +148,18 @@ def main():
         invoke([state], changes={'--image-sha256': '0' * 64}, expected=2)
         invoke([state], changes={'--board-sha256': '0' * 64}, expected=2)
         invoke([state], changes={'--script': 'relative'}, expected=2)
+        # The old-SDK shared board schedules a real virtual interrupt to wake IDLE.
+        code = bytearray(65536)
+        code[:4] = bytes.fromhex('02002032')
+        code[0x20:0x2b] = bytes.fromhex('75a88175880143870180fe')
+        image.write_bytes(code)
+        config.write_bytes(b'{"wake":true}')
+        waking = invoke([{'op': 'run', 'cycles': 12}, state, {'op': 'run', 'cycles': 28}, inspect])
+        assert waking[2]['snapshot']['idle'] is True
+        assert waking[3]['snapshot']['idle'] is False
+        assert int(waking[3]['snapshot']['instructions']) > 4
+        assert waking[4]['body']['payload']['cycle'] == waking[3]['snapshot']['cycle']
+        config.write_bytes(b'{}')
         image.write_bytes(bytes(65535))
         invoke([state], expected=2)
     print('runtime host: script1 schemas, ABI0.1 modules, replay, controls, faults and startup rejection passed')
