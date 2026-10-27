@@ -134,6 +134,9 @@ def main():
             {'op': 'boardInspect', 'schema': 'bad/schema', 'request': {}},
             {'op': 'boardInspect', 'schema': 'x', 'request': {'large': 'x' * 4096}},
         ]
+        nested = {}
+        for _ in range(14): nested = {'nested': nested}
+        bad_commands.append({'op': 'boardInput', 'schema': 'synthetic.inputs.v1', 'cycle': None, 'payload': nested})
         for bad in bad_commands: invoke([run, bad], expected=2)
         for raw in [b'', b'{}\n', b'{"format":"emu-runtime-script","version":2}\n', b'\xef\xbb\xbf' + json.dumps(header).encode() + b'\n', json.dumps(header).encode() + b'\r\n', json.dumps(header).encode() + b'\n\n', json.dumps(header).encode(), json.dumps(header).encode() + b'\n{"op":"state","op":"state"}\n', json.dumps(header).encode() + b'\n{"op":"state"}\x00\n', json.dumps(header).encode() + b'\n{"op":"\xff"}\n']:
             invoke(raw=raw, expected=2)

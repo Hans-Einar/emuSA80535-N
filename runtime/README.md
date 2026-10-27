@@ -50,7 +50,8 @@ most65536 bytes, total file at most8MiB. No blank lines, comments, BOM, CR,
 duplicate keys, unknown fields, malformed UTF-8 or noncanonical uint64 strings.
 The complete file and static ranges are validated before loading any module or
 executing any command. JSON bounds: depth16,8192 values,256 object members and
-1024 array elements per record. Payload/request object compact JSON is <=4096
+1024 array elements per record. Board command depth is limited to15 because the
+native wire arguments wrapper adds one level. Payload/request object compact JSON is <=4096
 bytes. Board-owned semantics are validated by the session at admission time.
 
 Supported operations (exact shapes in `script1.schema.json`):

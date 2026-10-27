@@ -131,6 +131,19 @@ static int validate_command(struct command *c)
         t = json_member(&d, 0, in ? "payload" : "request");
         if (t < 0 || d.tokens[t].type != JSON_OBJECT)
             return 0;
+        /* The native wire arguments envelope adds one level to script nesting.
+         * Reject this static limit here, before any preceding command can run. */
+        for (i = t; i < json_next(&d, t); i++)
+        {
+            int parent = d.tokens[i].parent, depth = 1;
+            while (parent >= 0)
+            {
+                depth++;
+                parent = d.tokens[parent].parent;
+            }
+            if (depth > 15)
+                return 0;
+        }
         json_compact(&d, t, &compact);
         if (compact.failed || compact.length > 4096)
             return 0;
