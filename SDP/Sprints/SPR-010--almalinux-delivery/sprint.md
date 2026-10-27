@@ -1,6 +1,6 @@
 # SPR-010 — Governance reconciliation and AlmaLinux delivery
 
-Status: active
+Status: deferred; unpublished package prototype retained
 Sprint ID: SPR-010
 Started: 2026-10-26
 Authority: current user's cleanup, ROM-readiness and RPM-publication request

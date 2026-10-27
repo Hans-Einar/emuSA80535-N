@@ -2,7 +2,7 @@
 
 ## ITR-018 / SLC-018 — Package accepted emulator and embedding SDK
 
-Status: active
+Status: deferred; successor SLC-019 establishes runtime architecture
 
 ### Contract
 

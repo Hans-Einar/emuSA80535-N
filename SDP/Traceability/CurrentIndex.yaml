@@ -2,9 +2,9 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-10-27
 
 active:
-  sprint: SPR-010
-  iteration: ITR-018
-  slice: SLC-018
+  sprint: SPR-011
+  iteration: ITR-019
+  slice: SLC-019
 
 merge_gate:
   status: MERGED
@@ -23,10 +23,13 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
+  SPR-011: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-011--runtime-architecture/sprint.md}
+  ITR-019: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-011--runtime-architecture/ScrumIterations.md}
+  SLC-019: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-011--runtime-architecture/ScrumIterations.md}
   REQ-017: {kind: requirement, status: active, state: target, source: SDP/03--Requirements/EMU-SAB80535-REQ-001.md}
   DES-098..DES-100: {kind: design-range, status: active, state: target, source: SDP/05--Design/EMU-PACKAGE-DES-010.md}
-  SPR-010: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/sprint.md}
-  ITR-018: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/ScrumIterations.md}
+  SPR-010: {kind: sprint, status: deferred, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/sprint.md}
+  ITR-018: {kind: iteration, status: deferred, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/ScrumIterations.md}
   SLC-018: {kind: slice, status: awaiting-architecture-clarification, state: current, source: SDP/Sprints/SPR-010--almalinux-delivery/Handoff.md}
   REV-SLC-018: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-018.md}
   VER-SLC-018: {kind: verification, status: pre-publication-passed, state: current, source: SDP/Verification/VER-SLC-018.md}
