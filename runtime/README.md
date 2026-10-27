@@ -113,3 +113,10 @@ Python `jsonschema` and Git history for the immutable0.1 fixture; an unpacked
 verified SDK0.1 include tree can instead be supplied as `EMUIF_SDK01_INCLUDE`.
 Run `make runtime-host-test` after building. No test dependency is needed to run
 the installed executable.
+
+Native consumers: authorized terminate after an unsafe partial fault applies
+termination and closes clients, returning native OK with written=required=0.
+Wire2.1 cannot represent a terminated unsafe snapshot, so no success acknowledgement
+is fabricated. Zero response here means connection closure; ordinary safe
+termination returns its conforming acknowledgement. Script1 has no terminate
+operation and is unaffected by this native lifecycle case.
