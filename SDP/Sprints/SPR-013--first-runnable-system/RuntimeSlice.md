@@ -76,3 +76,17 @@ is emitted. Document unimplemented signals/network/DAP honestly.
   and report evidence. Do not stage another Worker's changes. Master owns SDP
   index/Sprint/handoff/relations/ledger; Reviewer owns REV-SLC-022. Full external
   Ponsse/ROM verification follows a concrete reviewed runtime artifact handoff.
+
+## Implementation clarification — post-fault inspection promise
+
+ABI1 has no native capability bit representing the explicit post-fault promise
+required by wire2.1. Preserve the frozen layout. Public session creation defaults
+to no `boardInspectFault`. The same-source local host may use a private runtime
+policy helper immediately after creation, before any client or execution, to
+opt in when INSPECT exists. The host exposes `--board-inspect-fault`, records the
+policy in its identity, and requires the ordinary pinned module hash. Selecting
+this option asserts the integration's reviewed module promise; merely exporting
+INSPECT is insufficient. This helper is an internal host policy, not a new public
+SDK ABI. The external accepted board has supplied that promise; its launcher can
+select the option. Tests cover default rejection, valid opt-in and late/invalid
+policy changes. No immutable bundle is modified.
