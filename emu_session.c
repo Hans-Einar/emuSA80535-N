@@ -902,7 +902,7 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
             return e;
         if (PREFIX(&response) || response.reserved || response.response_utf8 != bytes ||
             response.capacity != 4096 || response.written > 4096 ||
-            response.required != response.written)
+            response.required < response.written || response.required > response.capacity)
             return fault(s, EMUIF_FAULT);
         inspection = malloc(sizeof *inspection);
         if (!inspection)

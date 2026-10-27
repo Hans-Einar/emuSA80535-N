@@ -149,4 +149,3 @@ void sha256_hex(const uint8_t *aData, size_t aSize,
     }
     aHex[64] = '\0';
 }
-

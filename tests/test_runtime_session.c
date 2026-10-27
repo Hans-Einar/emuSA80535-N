@@ -27,6 +27,8 @@ static unsigned creates, destroys;
 static bool access_fault, stimulus_fault, schedule_test, reentrant;
 static bool reset_fault, wake_test, inspect_destroy, signal_schedule, inspect_deep;
 static unsigned signal_count;
+/* Board ABI permits required to report its fixed minimum output capacity. */
+static unsigned inspect_required_mode;
 static emuif_status access_error = EMUIF_IO;
 static struct emuif_session *session;
 static struct emuif_cpu_api cpu;
@@ -194,7 +196,10 @@ static emuif_status inspect(const void *p, const struct emuif_board_inspect *r,
     n = snprintf((char *)out->response_utf8, out->capacity, "{\n\"accesses\":%u,\"stimuli\":%u\n}",
                  b->accesses, b->stimuli);
     out->written = (uint32_t)n;
-    out->required = (uint32_t)n;
+    out->required = inspect_required_mode == 1   ? 4096
+                    : inspect_required_mode == 2 ? (uint32_t)n - 1
+                    : inspect_required_mode == 3 ? 4097
+                                                 : (uint32_t)n;
     return 0;
 }
 static struct emuif_session_config config(void)
@@ -741,6 +746,39 @@ static void typed_fault_test(void)
     access_error = EMUIF_IO;
     finish();
 }
+static void inspection_capacity_tests(void)
+{
+    unsigned mode;
+    uint64_t cycle, instructions, revision;
+    memset(code, 0, sizeof code);
+    start(true);
+    command("status", NULL);
+    cycle = field64("cycle");
+    instructions = field64("instructions");
+    revision = field64("stopRevision");
+    inspect_required_mode = 1;
+    mutate("boardInspect", "\"schema\":\"fixture.v1\",\"payload\":{}");
+    assert(successful());
+    mutate("boardInspect", "\"schema\":\"fixture.v1\",\"payload\":{}");
+    assert(successful());
+    command("status", NULL);
+    assert(successful() && field64("cycle") == cycle && field64("instructions") == instructions &&
+           field64("stopRevision") == revision);
+    assert(board->accesses == 0 && board->stimuli == 0 && board->boundaries == 1);
+    finish();
+    for (mode = 2; mode <= 3; ++mode)
+    {
+        start(true);
+        inspect_required_mode = mode;
+        mutate("boardInspect", "\"schema\":\"fixture.v1\",\"payload\":{}");
+        error_is("FAULT");
+        command("status", NULL);
+        assert(successful());
+        assert(field64("cycle") == 0 && board->accesses == 0 && board->boundaries == 1);
+        finish();
+    }
+    inspect_required_mode = 0;
+}
 int main(void)
 {
     setup();
@@ -755,6 +793,7 @@ int main(void)
     json_tests();
     termination_and_prefix_tests();
     typed_fault_test();
+    inspection_capacity_tests();
     puts("runtime session tests passed");
     return 0;
 }
