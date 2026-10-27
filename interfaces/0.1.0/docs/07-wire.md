@@ -32,8 +32,10 @@ output. Incomplete hello/frame times out after5 seconds measured by host time;
 this closes the connection, does not advance virtual time. No unsolicited events:
 a running client polls status (recommended10Hz, at most one pending request).
 
-Malformed frame with trustworthy valid ID gets INVALID then close; otherwise
-close without response. Native module failure is FAULT and leaves session faulted.
+Malformed frame with a trustworthy valid ID **and a recognized command** gets
+INVALID then close. If either cannot be recovered, including an unknown command
+string, close without response; do not invent an error envelope outside the
+recognized-command schema. Native module failure is FAULT and leaves session faulted.
 A request with valid schema but illegal state/role returns a correlated error
 without disconnect. Error codes are the status names in [common rules](01-overview.md),
 with message<=256 UTF-8 bytes and retryable false except BUSY. Client timeout

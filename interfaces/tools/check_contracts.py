@@ -55,6 +55,11 @@ def main():
     reject(lambda: validator.validate(bad), "numeric uint64")
     bad["body"]["generation"] = "18446744073709551616"
     reject(lambda: validator.validate(bad), "uint64 overflow")
+    bad = copy.deepcopy(examples[0]); bad["command"] = "unknownCommand"
+    reject(lambda: validator.validate(bad), "unknown command requires close without response")
+    unknown_error = {"type": "response", "id": 1, "command": "unknownCommand",
+                     "success": False, "error": {"code": "INVALID", "message": "unknown", "retryable": False}}
+    reject(lambda: validator.validate(unknown_error), "unknown command has no error envelope")
     bad = copy.deepcopy(examples[0]); bad["extra"] = True
     reject(lambda: validator.validate(bad), "unknown field")
     bad = copy.deepcopy(examples[4]); bad["arguments"]["addresses"] = list(range(1025))
