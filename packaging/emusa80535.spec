@@ -35,7 +35,7 @@ grep -Eq '^[0-9a-f]{40}$' SOURCE_COMMIT
 
 %build
 %set_build_flags
-%make_build emu-debug sdk CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" DEBUG_COMMIT="$(cat SOURCE_COMMIT)"
+%make_build emu-debug emu-runtime sdk CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" DEBUG_COMMIT="$(cat SOURCE_COMMIT)"
 
 %install
 %make_install prefix=%{_prefix} libdir=%{_libdir} DEBUG_COMMIT="$(cat SOURCE_COMMIT)"
@@ -54,11 +54,14 @@ python3 packaging/check_install.py %{buildroot} --libdir %{_libdir} --commit "$(
 %doc %{_docdir}/%{name}/PACKAGING.md
 %{_docdir}/%{name}/source-commit
 %{_bindir}/emu-debug
+%{_bindir}/emu-runtime
+%doc %{_docdir}/%{name}/runtime/
 
 %files devel
 %{_includedir}/%{name}/
 %{_libdir}/libemusa80535.a
 %{_libdir}/libemusa80535_cpu.a
+%{_libdir}/libemusa80535_runtime.a
 %{_libdir}/pkgconfig/emusa80535.pc
 %doc %{_docdir}/%{name}/sdk_smoke.c
 %doc %{_docdir}/%{name}/interface-bundles/

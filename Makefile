@@ -13,15 +13,16 @@ DEBUG_BIN := emu-debug.exe
 CLEAN_CMD = powershell -NoProfile -Command "Remove-Item -Force -ErrorAction Ignore 'emu','emu.exe','emu-debug','emu-debug.exe','emu-debug.ilk','emu-debug.pdb','*.o','libemusa80535.a','libemusa80535_cpu.a','emusa80535.pc'; exit 0"
 else
 DEBUG_BIN := emu-debug
-CLEAN_CMD = rm -f $(BIN) $(DEBUG_BIN) $(OBJ) $(SDK_OBJ) $(SDK_LIB) $(CPU_LIB) emusa80535.pc
+CLEAN_CMD = rm -f $(BIN) $(DEBUG_BIN) $(OBJ) $(SDK_OBJ) $(SDK_LIB) $(CPU_LIB) $(RUNTIME_LIB) $(RUNTIME_OBJ) emu-runtime emusa80535.pc
 endif
 
 DEBUG_COMMIT := $(shell if test -f SOURCE_COMMIT; then cat SOURCE_COMMIT; else git rev-parse --verify HEAD 2>/dev/null || echo unknown; fi)
-DEBUG_SRC := emu_debug_server.c emu_debug.c emu_decode_internal.c core.c opcodes.c disasm.c binary_loader.c
+DEBUG_SRC := emu_debug_server.c emu_json_internal.c emu_sha_internal.c emu_debug.c emu_decode_internal.c core.c opcodes.c disasm.c binary_loader.c
 DAP_ROOT ?= ../emuSA80535-DAP
 
+RUNTIME_LIB := libemusa80535_runtime.a
 SDK_LIB := libemusa80535.a
-SDK_SRC := emu_cpu_facade.c core.c opcodes.c disasm.c binary_loader.c emu_debug.c emu_decode_internal.c \
+SDK_SRC := emu_sha_internal.c emu_cpu_facade.c core.c opcodes.c disasm.c binary_loader.c emu_debug.c emu_decode_internal.c \
 	emu_debug_event.c emu_debug_trace.c emu_debug_runtime.c
 SDK_OBJ := $(SDK_SRC:.c=.sdk.o)
 SDK_HEADERS := $(wildcard lib/include/emusa80535/*.h lib/include/emusa80535/contracts/*.h)
@@ -51,7 +52,7 @@ LDLIBS += -lcurses
 # Rules
 #####################################################################
 HEADERS := $(wildcard *.h) $(SDK_HEADERS)
-SRC := $(filter-out emu_debug_server.c emu_debug.c,$(wildcard *.c))
+SRC := $(filter-out emu_debug_server.c emu_debug.c emu_session.c emu_json_internal.c,$(wildcard *.c))
 OBJ := $(SRC:.c=.o)
 
 %.o: %.c $(HEADERS)
@@ -60,7 +61,7 @@ OBJ := $(SRC:.c=.o)
 $(BIN): $(OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(DEBUG_BIN): $(DEBUG_SRC) $(HEADERS)
+$(DEBUG_BIN): $(DEBUG_SRC) $(HEADERS) FORCE
 	$(CC) $(CPPFLAGS) $(CFLAGS) -std=c99 -DEMU_DEBUG_BUILD_COMMIT=\"$(DEBUG_COMMIT)\" \
 		$(LDFLAGS) -o $@ $(DEBUG_SRC)
 
@@ -71,25 +72,28 @@ $(SDK_LIB): $(SDK_OBJ)
 	$(AR) rcs $@ $^
 
 CPU_LIB := libemusa80535_cpu.a
-CPU_OBJ := $(filter-out emu_debug.sdk.o emu_debug_event.sdk.o emu_debug_trace.sdk.o emu_debug_runtime.sdk.o,$(SDK_OBJ))
+CPU_OBJ := $(filter-out emu_debug.sdk.o emu_debug_event.sdk.o emu_debug_trace.sdk.o emu_debug_runtime.sdk.o emu_sha_internal.sdk.o,$(SDK_OBJ))
 
 $(CPU_LIB): $(CPU_OBJ)
 	$(AR) rcs $@ $^
 
 cpu-sdk: $(CPU_LIB)
 
-sdk: $(SDK_LIB) $(CPU_LIB)
+sdk: $(SDK_LIB) $(CPU_LIB) $(RUNTIME_LIB)
 
 # Generated on every install so changing prefix/libdir never reuses old paths.
 emusa80535.pc: packaging/emusa80535.pc.in FORCE
 	sed -e 's|@PREFIX@|$(prefix)|g' -e 's|@LIBDIR@|$(libdir)|g' \
 		-e 's|@INCLUDEDIR@|$(includedir)|g' -e 's|@VERSION@|$(VERSION)|g' $< > $@
 
-install: $(DEBUG_BIN) $(SDK_LIB) $(CPU_LIB) emusa80535.pc
+install: $(DEBUG_BIN) $(SDK_LIB) $(CPU_LIB) $(RUNTIME_LIB) emu-runtime emusa80535.pc
 	$(INSTALL) -d $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)/pkgconfig \
 		$(DESTDIR)$(includedir)/emusa80535 $(DESTDIR)$(docdir) $(DESTDIR)$(licensedir)
 	$(INSTALL) -m 755 $(DEBUG_BIN) $(DESTDIR)$(bindir)/emu-debug
-	$(INSTALL) -m 644 $(SDK_LIB) $(CPU_LIB) $(DESTDIR)$(libdir)/
+	$(INSTALL) -m 644 $(SDK_LIB) $(CPU_LIB) $(RUNTIME_LIB) $(DESTDIR)$(libdir)/
+	$(INSTALL) -m 755 emu-runtime $(DESTDIR)$(bindir)/
+	$(INSTALL) -d $(DESTDIR)$(docdir)/runtime
+	$(INSTALL) -m 644 runtime/README.md runtime/script1.schema.json runtime/output1.schema.json runtime/example.ndjson $(DESTDIR)$(docdir)/runtime/
 	$(INSTALL) -m 644 emusa80535.pc $(DESTDIR)$(libdir)/pkgconfig/
 	$(INSTALL) -d $(DESTDIR)$(includedir)/emusa80535/contracts
 	$(INSTALL) -m 644 lib/include/emusa80535/*.h $(DESTDIR)$(includedir)/emusa80535/
@@ -153,3 +157,17 @@ cpu-link-test: cpu-sdk
 	$(PYTHON) tests/test_cpu_link.py
 
 .PHONY: cpu-link-test
+
+# Native session/debug controller, separately linkable from the CPU engine.
+RUNTIME_OBJ := emu_session.sdk.o emu_json_internal.sdk.o emu_sha_internal.sdk.o
+CONTRACT_MANIFEST_SHA256 := $(shell sha256sum interfaces/$(CONTRACT_VERSION)/manifest.json | cut -d ' ' -f 1)
+RUNTIME_CPPFLAGS := -DEMU_RUNTIME_COMMIT=\"$(DEBUG_COMMIT)\" -DEMU_CONTRACT_MANIFEST_SHA256=\"$(CONTRACT_MANIFEST_SHA256)\"
+emu_session.sdk.o: emu_session.c $(HEADERS) FORCE
+	$(CC) $(CPPFLAGS) $(RUNTIME_CPPFLAGS) $(CFLAGS) -std=c99 -c -o $@ $<
+$(RUNTIME_LIB): $(RUNTIME_OBJ)
+	$(AR) rcs $@ $^
+runtime-sdk: $(RUNTIME_LIB) $(CPU_LIB)
+runtime-session-test: runtime-sdk
+	$(MAKE) -C tests runtime-session-test
+-include runtime/targets.mk
+.PHONY: runtime-sdk runtime-session-test

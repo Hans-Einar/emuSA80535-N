@@ -1,0 +1,1277 @@
+/* Deterministic session and callback-free wire2.1 service.
+ * Copyright 2026 Hans-Einar. MIT; see LICENSE.
+ * Only the opaque CPU contract is used here. No board decode or physical I/O.
+ */
+#include "emu_breakpoint_internal.h"
+#include "emu_json_internal.h"
+#include "emu_session_internal.h"
+#include "emu_sha_internal.h"
+#include <emusa80535/contracts/debug.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/random.h>
+#ifndef EMU_RUNTIME_COMMIT
+#define EMU_RUNTIME_COMMIT "0000000000000000000000000000000000000000"
+#endif
+#ifndef EMU_CONTRACT_MANIFEST_SHA256
+#define EMU_CONTRACT_MANIFEST_SHA256                                                               \
+    "0000000000000000000000000000000000000000000000000000000000000000"
+#endif
+#define INIT(x)                                                                                    \
+    do                                                                                             \
+    {                                                                                              \
+        memset(&(x), 0, sizeof(x));                                                                \
+        (x).struct_size = sizeof(x);                                                               \
+        (x).api_version = 1;                                                                       \
+    } while (0)
+#define PREFIX(p) prefix((p), sizeof(*(p)))
+struct prefix_record
+{
+    uint32_t size;
+    uint16_t version, flags;
+};
+static emuif_status prefix(const void *p, size_t size)
+{
+    struct prefix_record v;
+    if (!p)
+        return EMUIF_INVALID;
+    memcpy(&v, p, sizeof v);
+    if (v.version != 1)
+        return EMUIF_VERSION;
+    if (v.size < size || v.flags)
+        return EMUIF_INVALID;
+    return EMUIF_OK;
+}
+static bool zeros(const void *p, size_t n)
+{
+    const uint8_t *b = p;
+    while (n--)
+        if (*b++)
+            return false;
+    return true;
+}
+static bool identifier(const char *p, size_t n, bool empty)
+{
+    size_t i = 0;
+    while (i < n && p[i])
+    {
+        unsigned char c = (unsigned char)p[i++];
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+              c == '.' || c == '_' || c == '-'))
+            return false;
+    }
+    return i < n && (empty || i) && zeros(p + i, n - i);
+}
+static bool hex_string(const char *p, size_t n)
+{
+    size_t i;
+    for (i = 0; i < n; i++)
+        if (!((p[i] >= '0' && p[i] <= '9') || (p[i] >= 'a' && p[i] <= 'f')))
+            return false;
+    return p[n] == 0;
+}
+static emuif_status normalize(emuif_status s)
+{
+    return s <= EMUIF_NOT_FOUND ? s : EMUIF_FAULT;
+}
+struct queued_input
+{
+    bool board;
+    struct emuif_input cpu;
+    struct emuif_board_stimulus stimulus;
+    uint8_t payload[4097];
+};
+struct client_state
+{
+    uint64_t id;
+    uint32_t maximum_role, may_terminate, last_id, role;
+    bool hello, attached;
+};
+struct emuif_session
+{
+    struct emuif_cpu_api cpu_api;
+    struct emuif_board_api board_api;
+    struct emuif_cpu *cpu;
+    void *board;
+    uint8_t code[65536], config[16385], breakpoints[8192];
+    uint32_t config_bytes, variant, oscillator, seed, state, reason;
+    uint16_t entry;
+    uint64_t generation, revision, next_order, cycle, scheduling_cycle;
+    emuif_status cause;
+    bool busy, scheduling, fault_inspect, suppress, callback_violation, request_fault;
+    uint16_t suppress_pc;
+    uint64_t suppress_instruction;
+    char id[33], image_hash[65], config_hash[65], module_hash[65];
+    struct queued_input queue[1024];
+    size_t queued;
+    struct client_state clients[8];
+    uint64_t lease;
+    uint64_t *used_clients;
+    size_t used_count;
+};
+static emuif_status fault(struct emuif_session *s, emuif_status code)
+{
+    s->request_fault = true;
+    code = normalize(code);
+    if (code == EMUIF_OK)
+        code = EMUIF_FAULT;
+    if (s->state != EMUIF_STATE_FAULTED)
+    {
+        if (s->revision != UINT64_MAX)
+            s->revision++;
+        s->cause = code;
+    }
+    s->state = EMUIF_STATE_FAULTED;
+    s->reason = 6;
+    return code;
+}
+static emuif_status snapshot(struct emuif_session *s, struct emuif_snapshot *v)
+{
+    emuif_status e;
+    INIT(*v);
+    e = s->cpu_api.snapshot(s->cpu, v);
+    if (e)
+        return fault(s, e);
+    v->generation = s->generation;
+    v->state = s->state;
+    if (s->state == EMUIF_STATE_FAULTED)
+        v->safe_boundary = 0;
+    return EMUIF_OK;
+}
+static emuif_status stop(struct emuif_session *s, uint32_t reason)
+{
+    if (s->revision == UINT64_MAX)
+        return fault(s, EMUIF_EXHAUSTED);
+    s->revision++;
+    s->reason = reason;
+    s->state = reason == 9 ? EMUIF_STATE_TERMINATED : EMUIF_STATE_PAUSED;
+    return EMUIF_OK;
+}
+static uint64_t qcycle(const struct queued_input *q)
+{
+    return q->board ? q->stimulus.cycle : q->cpu.cycle;
+}
+static uint64_t qorder(const struct queued_input *q)
+{
+    return q->board ? q->stimulus.order : q->cpu.order;
+}
+static void insert(struct emuif_session *s, const struct queued_input *q)
+{
+    size_t i = s->queued++;
+    while (i && (qcycle(&s->queue[i - 1]) > qcycle(q) ||
+                 (qcycle(&s->queue[i - 1]) == qcycle(q) && qorder(&s->queue[i - 1]) > qorder(q))))
+    {
+        s->queue[i] = s->queue[i - 1];
+        i--;
+    }
+    s->queue[i] = *q;
+}
+static emuif_status input_valid(struct emuif_session *s, const struct emuif_input *i)
+{
+    emuif_status e = PREFIX(i);
+    uint32_t port;
+    if (e)
+        return e;
+    if (i->order)
+        return EMUIF_INVALID;
+    if (i->cycle <= s->scheduling_cycle)
+        return EMUIF_RANGE;
+    if (s->variant != EMUIF_VARIANT_SAB80535)
+        return EMUIF_UNSUPPORTED;
+    switch (i->kind)
+    {
+    case EMUIF_INPUT_PORT:
+        if (i->index > 5 || i->value > 255 || i->mask > 255)
+            return EMUIF_RANGE;
+        port = i->index;
+        break;
+    case EMUIF_INPUT_INTERRUPT:
+        return i->index <= 6 && i->value <= 1 && i->mask == 1 ? EMUIF_OK : EMUIF_RANGE;
+    case EMUIF_INPUT_ADC:
+        return i->index <= 7 && i->value <= 65535 && i->mask == 65535 ? EMUIF_OK : EMUIF_RANGE;
+    case EMUIF_INPUT_UART_RX:
+        return i->index == 0 && i->value <= 511 && i->mask == 511 ? EMUIF_OK : EMUIF_RANGE;
+    case EMUIF_INPUT_RELEASE:
+        if (i->value)
+            return EMUIF_RANGE;
+        if (i->index >= 256)
+            return i->index <= 262 && i->mask == 1 ? EMUIF_OK : EMUIF_RANGE;
+        if (i->index > 5 || i->mask > 255)
+            return EMUIF_RANGE;
+        port = i->index;
+        break;
+    default:
+        return EMUIF_INVALID;
+    }
+    return port == 1 || port == 3 || port == 4 || port == 5 ? EMUIF_OK : EMUIF_UNSUPPORTED;
+}
+static emuif_status schedule_input(void *ctx, const struct emuif_input *i)
+{
+    struct emuif_session *s = ctx;
+    struct queued_input q;
+    emuif_status e;
+    if (!s->scheduling)
+        return EMUIF_BUSY;
+    e = input_valid(s, i);
+    if (e)
+        return e;
+    if (s->queued == 1024)
+        return EMUIF_CAPACITY;
+    if (s->next_order == UINT64_MAX)
+        return fault(s, EMUIF_EXHAUSTED);
+    memset(&q, 0, sizeof q);
+    q.cpu = *i;
+    q.cpu.struct_size = sizeof q.cpu;
+    q.cpu.order = ++s->next_order;
+    insert(s, &q);
+    return EMUIF_OK;
+}
+static emuif_status bus(void *ctx, const struct emuif_bus_access *a, struct emuif_bus_result *r)
+{
+    struct emuif_session *s = ctx;
+    emuif_status e;
+    s->scheduling_cycle = a->cycle;
+    s->scheduling = true;
+    e = s->board_api.access(s->board, a, r);
+    s->scheduling = false;
+    if (s->state == EMUIF_STATE_FAULTED)
+        return s->cause;
+    return e ? fault(s, e) : EMUIF_OK;
+}
+static emuif_status port(void *ctx, const struct emuif_port_output *a)
+{
+    struct emuif_session *s = ctx;
+    emuif_status e;
+    s->scheduling_cycle = a->cycle;
+    s->scheduling = true;
+    e = s->board_api.port_output(s->board, a);
+    s->scheduling = false;
+    if (s->state == EMUIF_STATE_FAULTED)
+        return s->cause;
+    return e ? fault(s, e) : EMUIF_OK;
+}
+static emuif_status signal_output(void *ctx, const struct emuif_signal_output *a)
+{
+    struct emuif_session *s = ctx;
+    emuif_status e;
+    s->scheduling_cycle = a->cycle;
+    s->scheduling = true;
+    e = s->board_api.signal_output(s->board, a);
+    s->scheduling = false;
+    if (s->state == EMUIF_STATE_FAULTED)
+        return s->cause;
+    return e ? fault(s, e) : EMUIF_OK;
+}
+static emuif_status boundary(struct emuif_session *s)
+{
+    struct emuif_board_boundary b;
+    emuif_status e;
+    while (s->queued && qcycle(&s->queue[0]) <= s->cycle)
+    {
+        struct queued_input q = s->queue[0];
+        memmove(s->queue, s->queue + 1, (--s->queued) * sizeof s->queue[0]);
+        if (qcycle(&q) != s->cycle)
+            return fault(s, EMUIF_STALE);
+        if (q.board)
+        {
+            q.stimulus.payload_utf8 = q.payload;
+            s->scheduling_cycle = q.stimulus.cycle;
+            s->scheduling = true;
+            e = s->board_api.apply_stimulus(s->board, &q.stimulus);
+            s->scheduling = false;
+        }
+        else
+            e = s->cpu_api.apply_input(s->cpu, &q.cpu);
+        if (e)
+            return fault(s, e);
+        if (s->state == EMUIF_STATE_FAULTED)
+            return s->cause;
+    }
+    INIT(b);
+    b.cycle = s->cycle;
+    b.generation = s->generation;
+    s->scheduling_cycle = b.cycle;
+    s->scheduling = true;
+    e = s->board_api.boundary(s->board, &b);
+    s->scheduling = false;
+    if (e)
+        return fault(s, e);
+    return s->state == EMUIF_STATE_FAULTED ? s->cause : EMUIF_OK;
+}
+static emuif_status reset_session(struct emuif_session *s, uint32_t seed, uint16_t entry,
+                                  bool first)
+{
+    struct emuif_reset r;
+    struct emuif_board_reset b;
+    emuif_status e;
+    if (!first && (s->generation == UINT64_MAX || s->revision == UINT64_MAX))
+        return EMUIF_EXHAUSTED;
+    s->queued = 0;
+    s->suppress = false;
+    s->cycle = 0;
+    s->state = EMUIF_STATE_PAUSED;
+    s->cause = 0;
+    s->seed = seed;
+    s->entry = entry;
+    if (!first)
+        s->generation++;
+    INIT(r);
+    r.seed = seed;
+    r.entry = entry;
+    e = s->cpu_api.reset(s->cpu, &r);
+    if (e)
+        return fault(s, e);
+    INIT(b);
+    b.generation = s->generation;
+    b.seed = seed;
+    e = s->board_api.reset(s->board, &b);
+    if (e)
+        return fault(s, e);
+    if (s->state == EMUIF_STATE_FAULTED)
+        return s->cause;
+    e = s->cpu_api.load_code(s->cpu, s->code, 65536);
+    if (e)
+        return fault(s, e);
+    e = boundary(s);
+    if (e)
+        return e;
+    return stop(s, 1);
+}
+static emuif_status board_table(const struct emuif_board_api *b, const struct emuif_cpu_api *cpu,
+                                uint32_t variant)
+{
+    emuif_status e = PREFIX(b);
+    if (e)
+        return e;
+    if (b->abi_major != 1 || b->platform != 1)
+        return EMUIF_VERSION;
+    if (!zeros(b->reserved, sizeof b->reserved) ||
+        !identifier(b->module_id, sizeof b->module_id, false) ||
+        !identifier(b->module_version, sizeof b->module_version, false) ||
+        !identifier(b->build_id, sizeof b->build_id, false))
+        return EMUIF_INVALID;
+    if (!((strlen(b->build_id) == 40 && hex_string(b->build_id, 40)) ||
+          (strlen(b->build_id) == 64 && hex_string(b->build_id, 64))))
+        return EMUIF_INVALID;
+    if (!b->create || !b->destroy || !b->reset || !b->boundary || !b->access || !b->port_output ||
+        !b->signal_output)
+        return EMUIF_INVALID;
+    if (!!(b->capabilities & EMUIF_BOARD_CAP_PEEK) != !!b->peek ||
+        !!(b->capabilities & EMUIF_BOARD_CAP_INSPECT) != !!b->inspect)
+        return EMUIF_INVALID;
+    if ((b->capabilities & EMUIF_BOARD_CAP_STIMULUS) ? (!b->validate_stimulus || !b->apply_stimulus)
+                                                     : (b->validate_stimulus || b->apply_stimulus))
+        return EMUIF_INVALID;
+    if ((b->required_cpu_capabilities & ~cpu->capabilities) ||
+        ((b->required_cpu_capabilities & EMUIF_CPU_CAP_UART_FRAME) && variant != 2))
+        return EMUIF_UNSUPPORTED;
+    return EMUIF_OK;
+}
+emuif_status emusa80535_session_create_v1(const struct emuif_session_config *c,
+                                          struct emuif_session **out)
+{
+    struct emuif_session *s;
+    struct emuif_board_host h;
+    struct emuif_board_create b;
+    struct emuif_cpu_config cc;
+    struct emuif_cpu_hooks hooks;
+    struct json_document *d;
+    emuif_status e;
+    uint8_t random[16];
+    size_t i;
+    const uint8_t *config;
+    uint32_t n;
+    if (!out)
+        return EMUIF_INVALID;
+    *out = NULL;
+    e = PREFIX(c);
+    if (e)
+        return e;
+    if (c->reserved || !zeros(c->reserved_identity, sizeof c->reserved_identity) ||
+        c->variant > 2 || !c->oscillator_hz || c->oscillator_hz > 100000000 || !c->code ||
+        c->code_bytes != 65536 || c->board_config_bytes > 16384 ||
+        (!c->board_config_utf8 && c->board_config_bytes) || !hex_string(c->module_sha256, 64))
+        return EMUIF_INVALID;
+    e = PREFIX(c->cpu_api);
+    if (e)
+        return e;
+    if (!c->cpu_api->create || !c->cpu_api->destroy || !c->cpu_api->reset ||
+        !c->cpu_api->load_code || !c->cpu_api->apply_input || !c->cpu_api->cycle ||
+        !c->cpu_api->snapshot || !c->cpu_api->peek || !c->cpu_api->decode ||
+        !(c->cpu_api->capabilities & EMUIF_CPU_CAP_PORT_LATCH))
+        return EMUIF_INVALID;
+    e = board_table(c->board_api, c->cpu_api, c->variant);
+    if (e)
+        return e;
+    config = c->board_config_bytes ? c->board_config_utf8 : (const uint8_t *)"{}";
+    n = c->board_config_bytes ? c->board_config_bytes : 2;
+    d = malloc(sizeof *d);
+    if (!d)
+        return EMUIF_CAPACITY;
+    e = json_document_parse_multiline(d, (const char *)config, n) ? EMUIF_OK : EMUIF_INVALID;
+    free(d);
+    if (e)
+        return e;
+    if (getrandom(random, sizeof random, 0) != (ssize_t)sizeof random)
+        return EMUIF_IO;
+    s = calloc(1, sizeof *s);
+    if (!s)
+        return EMUIF_CAPACITY;
+    s->cpu_api = *c->cpu_api;
+    s->board_api = *c->board_api;
+    s->variant = c->variant;
+    s->oscillator = c->oscillator_hz;
+    s->generation = 1;
+    s->busy = true;
+    memcpy(s->code, c->code, 65536);
+    memcpy(s->config, config, n);
+    s->config_bytes = n;
+    memcpy(s->module_hash, c->module_sha256, 65);
+    sha256_hex(s->code, 65536, s->image_hash);
+    sha256_hex(s->config, n, s->config_hash);
+    for (i = 0; i < 16; i++)
+        snprintf(s->id + i * 2, 3, "%02x", random[i]);
+    INIT(h);
+    h.context = s;
+    h.schedule_input = schedule_input;
+    INIT(b);
+    b.variant = s->variant;
+    b.oscillator_hz = s->oscillator;
+    b.config_utf8 = s->config;
+    b.config_bytes = n;
+    e = normalize(s->board_api.create(&h, &b, &s->board));
+    if (e)
+        goto fail;
+    if (s->state == EMUIF_STATE_FAULTED)
+    {
+        e = s->cause;
+        goto fail;
+    }
+    if (!s->board)
+    {
+        e = EMUIF_FAULT;
+        goto fail;
+    }
+    INIT(cc);
+    cc.variant = s->variant;
+    cc.oscillator_hz = s->oscillator;
+    INIT(hooks);
+    hooks.context = s;
+    hooks.bus_access = bus;
+    hooks.port_output = port;
+    hooks.signal_output = signal_output;
+    e = s->cpu_api.create(&cc, &hooks, &s->cpu);
+    if (e)
+        goto fail;
+    e = reset_session(s, c->seed, c->entry, true);
+    if (e)
+        goto fail;
+    s->busy = false;
+    *out = s;
+    return EMUIF_OK;
+fail:
+    if (s->board)
+        s->board_api.destroy(s->board);
+    if (s->cpu)
+        s->cpu_api.destroy(s->cpu);
+    free(s);
+    return normalize(e);
+}
+void emusa80535_session_destroy_v1(struct emuif_session *s)
+{
+    if (!s)
+        return;
+    if (s->busy)
+    {
+        s->callback_violation = true;
+        fault(s, EMUIF_FAULT);
+        return;
+    }
+    s->busy = true;
+    s->state = EMUIF_STATE_TERMINATED;
+    s->board_api.destroy(s->board);
+    s->cpu_api.destroy(s->cpu);
+    free(s->used_clients);
+    free(s);
+}
+emuif_status emu_session_allow_fault_inspection(struct emuif_session *s, uint32_t allow)
+{
+    if (!s || allow > 1)
+        return EMUIF_INVALID;
+    if (s->busy)
+        return EMUIF_BUSY;
+    if (s->cycle || s->used_count || s->state != EMUIF_STATE_PAUSED)
+        return EMUIF_STATE;
+    if (allow && !(s->board_api.capabilities & EMUIF_BOARD_CAP_INSPECT))
+        return EMUIF_UNSUPPORTED;
+    s->fault_inspect = allow != 0;
+    return EMUIF_OK;
+}
+static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepping,
+                            struct emuif_progress *p)
+{
+    struct emuif_snapshot v;
+    struct emuif_cycle_result r;
+    uint64_t start, instructions;
+    emuif_status e = snapshot(s, &v);
+    uint32_t turns = 0;
+    if (e)
+        return e;
+    start = v.cycle;
+    instructions = v.instructions;
+    while (s->state == EMUIF_STATE_RUNNING)
+    {
+        bool safe = v.safe_boundary != 0;
+        if (safe)
+        {
+            if (s->suppress && v.instructions > s->suppress_instruction)
+                s->suppress = false;
+            if (emu_breakpoint_at(s->breakpoints, v.pc) && !(s->suppress && s->suppress_pc == v.pc))
+            {
+                e = stop(s, 4);
+                break;
+            }
+            if (stepping && v.instructions > instructions)
+            {
+                e = stop(s, 3);
+                break;
+            }
+            if (turns >= budget)
+            {
+                e = stepping ? stop(s, 7) : EMUIF_OK;
+                break;
+            }
+        }
+        if (turns >= budget + 16)
+        {
+            e = fault(s, EMUIF_FAULT);
+            break;
+        }
+        INIT(r);
+        e = s->cpu_api.cycle(s->cpu, &r);
+        if (e)
+        {
+            if (e == EMUIF_UNSUPPORTED)
+            {
+                struct emuif_snapshot pd;
+                if (!snapshot(s, &pd) && pd.power_down)
+                {
+                    e = stop(s, 8);
+                    break;
+                }
+            }
+            e = fault(s, e);
+            break;
+        }
+        if (!r.progressed || r.cycle != s->cycle + 1)
+        {
+            e = fault(s, EMUIF_FAULT);
+            break;
+        }
+        s->cycle = r.cycle;
+        turns++;
+        e = boundary(s);
+        if (e)
+            break;
+        e = snapshot(s, &v);
+        if (e)
+            break;
+    }
+    snapshot(s, &v);
+    p->cycles = v.cycle - start;
+    p->instructions = v.instructions - instructions;
+    p->state = s->state;
+    p->stop_reason = s->state == EMUIF_STATE_RUNNING ? 0 : s->reason;
+    return e;
+}
+emuif_status emusa80535_session_pump_v1(struct emuif_session *s, uint32_t budget,
+                                        struct emuif_progress *out)
+{
+    emuif_status e;
+    struct emuif_progress p;
+    if (!s)
+        return EMUIF_INVALID;
+    if (s->busy)
+        return EMUIF_BUSY;
+    e = PREFIX(out);
+    if (e)
+        return e;
+    if (!budget || budget > 100000)
+        return EMUIF_RANGE;
+    if (s->state != EMUIF_STATE_RUNNING)
+        return EMUIF_STATE;
+    INIT(p);
+    s->busy = true;
+    e = execute(s, budget, false, &p);
+    s->busy = false;
+    /* Even a fault supplies actual partial progress; never a fabricated success. */
+    *out = p;
+    return e;
+}
+
+static bool wire_null(const struct json_document *d, int t)
+{
+    return t >= 0 && t < d->count && d->tokens[t].type == JSON_PRIMITIVE &&
+           d->tokens[t].end - d->tokens[t].start == 4 &&
+           !memcmp(d->text + d->tokens[t].start, "null", 4);
+}
+static bool wire_string_is(const struct json_document *d, int t, const char *v)
+{
+    char b[128];
+    return json_string(d, t, b, sizeof b) && !strcmp(b, v);
+}
+static bool wire_equal(const struct json_document *d, int a, int b)
+{
+    char x[128], y[128];
+    int64_t n, m;
+    if (d->tokens[a].type == JSON_STRING)
+        return json_string(d, a, x, sizeof x) && json_string(d, b, y, sizeof y) && !strcmp(x, y);
+    return json_integer(d, a, 0, UINT32_MAX, &n) && json_integer(d, b, 0, UINT32_MAX, &m) && n == m;
+}
+#include "emu_wire_schema_internal.h"
+static struct client_state *client(struct emuif_session *s, uint64_t id)
+{
+    unsigned i;
+    for (i = 0; i < 8; i++)
+        if (s->clients[i].id == id)
+            return &s->clients[i];
+    return NULL;
+}
+emuif_status emusa80535_debug_open_v1(struct emuif_session *s, const struct emuif_client *c)
+{
+    emuif_status e;
+    size_t i;
+    unsigned slot;
+    uint64_t *used;
+    if (!s)
+        return EMUIF_INVALID;
+    if (s->busy)
+        return EMUIF_BUSY;
+    e = PREFIX(c);
+    if (e)
+        return e;
+    if (!c->connection_id || c->role > 1 || c->may_terminate > 1)
+        return EMUIF_INVALID;
+    if (s->state == EMUIF_STATE_TERMINATED)
+        return EMUIF_STATE;
+    for (i = 0; i < s->used_count; i++)
+        if (s->used_clients[i] == c->connection_id)
+            return EMUIF_STALE;
+    for (slot = 0; slot < 8; slot++)
+        if (!s->clients[slot].id)
+            break;
+    if (slot == 8)
+        return EMUIF_CAPACITY;
+    /* Bound lifetime identity retention without requiring increasing host IDs. */
+    if (s->used_count == 8192)
+        return EMUIF_CAPACITY;
+    used = realloc(s->used_clients, (s->used_count + 1) * sizeof(uint64_t));
+    if (!used)
+        return EMUIF_CAPACITY;
+    s->used_clients = used;
+    used[s->used_count++] = c->connection_id;
+    memset(&s->clients[slot], 0, sizeof s->clients[slot]);
+    s->clients[slot].id = c->connection_id;
+    s->clients[slot].maximum_role = c->role;
+    s->clients[slot].may_terminate = c->may_terminate;
+    return EMUIF_OK;
+}
+static void close_client(struct emuif_session *s, struct client_state *c)
+{
+    if (s->lease == c->id)
+        s->lease = 0;
+    memset(c, 0, sizeof *c);
+}
+emuif_status emusa80535_debug_close_v1(struct emuif_session *s, uint64_t id)
+{
+    struct client_state *c;
+    if (!s || !id)
+        return EMUIF_INVALID;
+    if (s->busy)
+        return EMUIF_BUSY;
+    c = client(s, id);
+    if (!c)
+        return EMUIF_NOT_FOUND;
+    close_client(s, c);
+    return EMUIF_OK;
+}
+static const char *status_name(emuif_status e)
+{
+    static const char *names[] = {"OK",       "INVALID",     "VERSION", "STATE", "RANGE",
+                                  "CAPACITY", "UNSUPPORTED", "BUSY",    "STALE", "DENIED",
+                                  "FAULT",    "EXHAUSTED",   "IO",      "HASH",  "NOT_FOUND"};
+    return names[normalize(e)];
+}
+static void snapshot_json(struct emuif_session *s, struct client_state *c, struct output *o)
+{
+    struct emuif_snapshot v;
+    unsigned i;
+    static const char *states[] = {"paused", "running", "faulted", "terminated"};
+    static const char *variants[] = {"8051", "8052", "sab80535"};
+    static const char *reasons[] = {"entry",     "entry",        "pause",
+                                    "step",      "breakpoint",   "watchpoint",
+                                    "exception", "cycle-budget", "power-down-unsupported",
+                                    "terminated"};
+    snapshot(s, &v);
+    output_format(
+        o,
+        "{\"sessionId\":\"%s\",\"generation\":\"%" PRIu64
+        "\",\"state\":\"%s\",\"variant\":\"%s\",\"cycle\":\"%" PRIu64
+        "\",\"instructions\":\"%" PRIu64
+        "\",\"pc\":%u,\"registers\":{\"a\":%u,\"b\":%u,\"psw\":%u,\"sp\":%u,\"dptr\":%u,\"r\":[",
+        s->id, s->generation, states[s->state], variants[s->variant], v.cycle, v.instructions, v.pc,
+        v.a, v.b, v.psw, v.sp, v.dptr);
+    for (i = 0; i < 8; i++)
+        output_format(o, "%s%u", i ? "," : "", v.r[i]);
+    output_format(o,
+                  "]},\"idle\":%s,\"powerDown\":%s,\"safeBoundary\":%s,\"stopRevision\":\"%" PRIu64
+                  "\",\"reason\":\"%s\",\"imageSha256\":\"%s\",\"moduleSha256\":\"%s\","
+                  "\"configSha256\":\"%s\",\"moduleId\":\"%s\",\"moduleVersion\":\"%s\","
+                  "\"controlRole\":\"%s\",\"canTerminate\":%s}",
+                  v.idle ? "true" : "false", v.power_down ? "true" : "false",
+                  v.safe_boundary ? "true" : "false", s->revision, reasons[s->reason],
+                  s->image_hash, s->module_hash, s->config_hash, s->board_api.module_id,
+                  s->board_api.module_version, c->role ? "controller" : "observer",
+                  c->role && c->may_terminate ? "true" : "false");
+}
+static bool capability(struct emuif_session *s, const char *v)
+{
+    if (!strcmp(v, "attachSession") || !strcmp(v, "status") || !strcmp(v, "control") ||
+        !strcmp(v, "codeBreakpoints") || !strcmp(v, "decodeCode") || !strcmp(v, "memoryRead"))
+        return true;
+    if (!strcmp(v, "boardInput"))
+        return (s->board_api.capabilities & EMUIF_BOARD_CAP_STIMULUS) != 0;
+    if (!strcmp(v, "boardInspect"))
+        return (s->board_api.capabilities & EMUIF_BOARD_CAP_INSPECT) != 0;
+    return !strcmp(v, "boardInspectFault") && s->fault_inspect;
+}
+static int64_t number(const struct json_document *d, int a, const char *key)
+{
+    int64_t v = 0;
+    json_integer(d, json_member(d, a, key), INT32_MIN, UINT32_MAX, &v);
+    return v;
+}
+static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
+                             const struct json_document *d, int a, const char *cmd,
+                             struct output *o, bool *close)
+{
+    char text[128];
+    int t;
+    uint64_t gen;
+    struct emuif_snapshot v;
+    emuif_status e;
+    if (!strcmp(cmd, "hello"))
+    {
+        static const char *caps[] = {"attachSession",   "status",       "control",
+                                     "codeBreakpoints", "decodeCode",   "memoryRead",
+                                     "boardInput",      "boardInspect", "boardInspectFault"};
+        unsigned i;
+        bool comma = false;
+        int protocol = json_member(d, a, "protocol"),
+            required = json_member(d, a, "requiredCapabilities");
+        if (c->hello)
+            return EMUIF_STATE;
+        if (number(d, protocol, "major") != 2 || number(d, protocol, "minor") != 1 ||
+            !wire_string_is(d, json_member(d, a, "contractVersion"), "0.2.0"))
+        {
+            *close = true;
+            return EMUIF_VERSION;
+        }
+        for (t = required + 1; t < d->count && d->tokens[t].start < d->tokens[required].end;
+             t = json_next(d, t))
+        {
+            json_string(d, t, text, sizeof text);
+            if (!capability(s, text))
+                return EMUIF_UNSUPPORTED;
+            if (!strcmp(text, "boardInspectFault"))
+            {
+                int k;
+                bool found = false;
+                for (k = required + 1; k < d->count && d->tokens[k].start < d->tokens[required].end;
+                     k = json_next(d, k))
+                    if (wire_string_is(d, k, "boardInspect"))
+                        found = true;
+                if (!found)
+                    return EMUIF_INVALID;
+            }
+        }
+        c->hello = true;
+        output_format(
+            o,
+            "{\"protocol\":{\"major\":2,\"minor\":1},\"contractVersion\":\"0.2.0\","
+            "\"runtimeCommit\":\"%s\",\"contractManifestSha256\":\"%s\",\"capabilities\":[",
+            EMU_RUNTIME_COMMIT, EMU_CONTRACT_MANIFEST_SHA256);
+        for (i = 0; i < sizeof caps / sizeof caps[0]; i++)
+            if (capability(s, caps[i]))
+            {
+                if (comma)
+                    output_raw(o, ",");
+                output_string(o, caps[i]);
+                comma = true;
+            }
+        output_raw(
+            o, "],\"limits\":{\"maxFrameBytes\":65536,\"maxConfigBytes\":16384,\"maxInputs\":1024,"
+               "\"maxPageRecords\":128,\"maxCycleBudget\":100000,\"maxSafeDrainCycles\":16,"
+               "\"maxClients\":8,\"maxPendingRequests\":32,\"maxBreakpoints\":1024,"
+               "\"maxMemoryBytes\":256,\"maxDecodeRecords\":256,\"maxBoardPayloadBytes\":4096}}");
+        return EMUIF_OK;
+    }
+    if (!c->hello)
+    {
+        *close = true;
+        return EMUIF_STATE;
+    }
+    t = json_member(d, a, "sessionId");
+    if (!(wire_null(d, t) && !strcmp(cmd, "attach")))
+    {
+        json_string(d, t, text, sizeof text);
+        if (strcmp(text, s->id))
+            return EMUIF_STALE;
+    }
+    if (!strcmp(cmd, "attach"))
+    {
+        uint32_t role = wire_string_is(d, json_member(d, a, "role"), "controller") ? 1 : 0;
+        if (c->attached)
+            return EMUIF_STATE;
+        if (role > c->maximum_role)
+            return EMUIF_DENIED;
+        if (role && s->lease)
+            return EMUIF_BUSY;
+        c->attached = true;
+        c->role = role;
+        if (role)
+            s->lease = c->id;
+        snapshot_json(s, c, o);
+        return EMUIF_OK;
+    }
+    if (!c->attached)
+        return EMUIF_STATE;
+    if (!strcmp(cmd, "status"))
+    {
+        snapshot_json(s, c, o);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "detach"))
+    {
+        output_format(o, "{\"sessionId\":\"%s\",\"detached\":true}", s->id);
+        if (s->lease == c->id)
+            s->lease = 0;
+        c->attached = false;
+        c->role = 0;
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "tracePage"))
+        return EMUIF_UNSUPPORTED;
+    json_u64(d, json_member(d, a, "generation"), &gen);
+    if (gen != s->generation)
+        return EMUIF_STALE;
+    if (s->state == EMUIF_STATE_TERMINATED)
+        return EMUIF_STATE;
+    if (!strcmp(cmd, "boardInspect"))
+    {
+        struct emuif_board_inspect request;
+        struct emuif_board_inspection response;
+        struct output payload = {0};
+        uint8_t bytes[4097];
+        struct json_document *inspection;
+        if (!capability(s, "boardInspect"))
+            return EMUIF_UNSUPPORTED;
+        if (s->state != EMUIF_STATE_PAUSED &&
+            !(s->state == EMUIF_STATE_FAULTED && s->fault_inspect))
+            return EMUIF_STATE;
+        json_compact(d, json_member(d, a, "payload"), &payload);
+        if (payload.failed || payload.length > 4096)
+            return EMUIF_CAPACITY;
+        INIT(request);
+        request.generation = s->generation;
+        json_string(d, json_member(d, a, "schema"), request.schema, sizeof request.schema);
+        request.request_utf8 = (uint8_t *)payload.data;
+        request.request_bytes = (uint32_t)payload.length;
+        INIT(response);
+        response.response_utf8 = bytes;
+        response.capacity = 4096;
+        {
+            s->callback_violation = false;
+            e = normalize(s->board_api.inspect(s->board, &request, &response));
+            if (s->callback_violation)
+                return s->cause;
+        }
+        if (e)
+            return e;
+        if (PREFIX(&response) || response.reserved || response.response_utf8 != bytes ||
+            response.capacity != 4096 || response.written > 4096 ||
+            response.required != response.written)
+            return fault(s, EMUIF_FAULT);
+        inspection = malloc(sizeof *inspection);
+        if (!inspection)
+            return EMUIF_CAPACITY;
+        if (!json_document_parse_multiline(inspection, (char *)bytes, response.written))
+        {
+            free(inspection);
+            return fault(s, EMUIF_FAULT);
+        }
+        {
+            int k;
+            for (k = 0; k < inspection->count; k++)
+            {
+                int parent = inspection->tokens[k].parent, depth = 1;
+                while (parent >= 0)
+                {
+                    depth++;
+                    parent = inspection->tokens[parent].parent;
+                }
+                if (depth > 14)
+                {
+                    free(inspection);
+                    return EMUIF_CAPACITY;
+                }
+            }
+        }
+        output_format(o, "{\"generation\":\"%" PRIu64 "\",\"schema\":", s->generation);
+        output_string(o, request.schema);
+        output_raw(o, ",\"payload\":");
+        json_compact(inspection, 0, o);
+        output_raw(o, "}");
+        free(inspection);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "decodeCode") || !strcmp(cmd, "readMemory"))
+    {
+        if (s->state != EMUIF_STATE_PAUSED)
+            return EMUIF_STATE;
+        if (!strcmp(cmd, "decodeCode"))
+        {
+            struct emuif_decode_request r;
+            struct emuif_decoded decoded[256];
+            uint32_t i;
+            INIT(r);
+            r.address = (uint16_t)number(d, a, "address");
+            r.byte_offset = (int32_t)number(d, a, "byteOffset");
+            r.instruction_offset = (int32_t)number(d, a, "instructionOffset");
+            r.count = (uint32_t)number(d, a, "count");
+            for (i = 0; i < r.count; i++)
+                INIT(decoded[i]);
+            e = s->cpu_api.decode(s->cpu, &r, decoded, sizeof decoded[0], r.count);
+            if (e)
+                return e;
+            output_raw(o, "{\"records\":[");
+            for (i = 0; i < r.count; i++)
+            {
+                output_format(
+                    o, "%s{\"address\":%u,\"size\":%u,\"valid\":%s,\"text\":", i ? "," : "",
+                    decoded[i].address, decoded[i].size, decoded[i].valid ? "true" : "false");
+                output_string(o, decoded[i].text);
+                output_format(o, ",\"reason\":\"%s\"}",
+                              decoded[i].valid ? "decoded" : "unknown-predecessor");
+            }
+            output_raw(o, "]}");
+            return EMUIF_OK;
+        }
+        else
+        {
+            struct emuif_memory_request r;
+            uint8_t bytes[256];
+            uint32_t i;
+            INIT(r);
+            r.address = (uint32_t)number(d, a, "address");
+            r.count = (uint32_t)number(d, a, "count");
+            t = json_member(d, a, "space");
+            r.space = wire_string_is(d, t, "CODE")   ? 0
+                      : wire_string_is(d, t, "IRAM") ? 1
+                      : wire_string_is(d, t, "SFR")  ? 2
+                                                     : 3;
+            if (r.space == 3)
+            {
+                if (!s->board_api.peek)
+                    return EMUIF_UNSUPPORTED;
+                if (r.address + r.count > 65536)
+                    return EMUIF_RANGE;
+                e = normalize(s->board_api.peek(s->board, &r, bytes, sizeof bytes));
+                if (s->state == EMUIF_STATE_FAULTED)
+                    return s->cause;
+            }
+            else
+                e = s->cpu_api.peek(s->cpu, &r, bytes, sizeof bytes);
+            if (e)
+                return e;
+            output_format(o, "{\"address\":%u,\"bytesHex\":\"", r.address);
+            for (i = 0; i < r.count; i++)
+                output_format(o, "%02x", bytes[i]);
+            output_raw(o, "\"}");
+            return EMUIF_OK;
+        }
+    }
+    if (c->role != EMUIF_ROLE_CONTROLLER || s->lease != c->id)
+        return EMUIF_DENIED;
+    if (!strcmp(cmd, "terminate"))
+    {
+        bool unsafe = s->state == EMUIF_STATE_FAULTED;
+        if (!c->may_terminate)
+            return EMUIF_DENIED;
+        e = stop(s, 9);
+        if (e)
+            return e;
+        if (unsafe)
+            return EMUIF_OK; /* No truthful conforming final snapshot exists. */
+        snapshot_json(s, c, o);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "reset"))
+    {
+        if (s->state != EMUIF_STATE_PAUSED && s->state != EMUIF_STATE_FAULTED)
+            return EMUIF_STATE;
+        e = reset_session(s, (uint32_t)number(d, a, "seed"), (uint16_t)number(d, a, "entry"),
+                          false);
+        if (e)
+            return e;
+        snapshot_json(s, c, o);
+        return EMUIF_OK;
+    }
+    if (s->state == EMUIF_STATE_FAULTED)
+        return EMUIF_STATE;
+    if (!strcmp(cmd, "boardInput"))
+    {
+        struct queued_input q;
+        struct output payload = {0};
+        uint64_t when;
+        if (!capability(s, "boardInput"))
+            return EMUIF_UNSUPPORTED;
+        t = json_member(d, a, "cycle");
+        if (wire_null(d, t))
+        {
+            if (s->cycle == UINT64_MAX)
+                return fault(s, EMUIF_EXHAUSTED);
+            when = s->cycle + 1;
+        }
+        else
+            json_u64(d, t, &when);
+        if (when <= s->cycle)
+            return EMUIF_RANGE;
+        if (s->queued == 1024)
+            return EMUIF_CAPACITY;
+        if (s->next_order == UINT64_MAX)
+            return fault(s, EMUIF_EXHAUSTED);
+        memset(&q, 0, sizeof q);
+        q.board = true;
+        INIT(q.stimulus);
+        q.stimulus.generation = s->generation;
+        q.stimulus.cycle = when;
+        q.stimulus.order = s->next_order + 1;
+        json_string(d, json_member(d, a, "schema"), q.stimulus.schema, sizeof q.stimulus.schema);
+        json_compact(d, json_member(d, a, "payload"), &payload);
+        if (payload.failed || payload.length > 4096)
+            return EMUIF_CAPACITY;
+        memcpy(q.payload, payload.data, payload.length);
+        q.stimulus.payload_utf8 = q.payload;
+        q.stimulus.payload_bytes = (uint32_t)payload.length;
+        e = normalize(s->board_api.validate_stimulus(s->board, &q.stimulus));
+        if (e)
+            return e;
+        if (s->state == EMUIF_STATE_FAULTED)
+            return s->cause;
+        s->next_order++;
+        insert(s, &q);
+        output_format(o,
+                      "{\"generation\":\"%" PRIu64 "\",\"cycle\":\"%" PRIu64
+                      "\",\"order\":\"%" PRIu64 "\"}",
+                      s->generation, when, s->next_order);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "pause"))
+    {
+        if (s->state == EMUIF_STATE_RUNNING)
+        {
+            e = stop(s, 2);
+            if (e)
+                return e;
+        }
+        snapshot_json(s, c, o);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "resume") || !strcmp(cmd, "step"))
+    {
+        bool stepping = !strcmp(cmd, "step");
+        if (stepping && s->state != EMUIF_STATE_PAUSED)
+            return EMUIF_STATE;
+        e = snapshot(s, &v);
+        if (e)
+            return e;
+        if (v.power_down)
+            return EMUIF_STATE;
+        if (s->state == EMUIF_STATE_PAUSED && s->reason == 4)
+        {
+            s->suppress = true;
+            s->suppress_pc = v.pc;
+            s->suppress_instruction = v.instructions;
+        }
+        s->state = EMUIF_STATE_RUNNING;
+        if (stepping)
+        {
+            struct emuif_progress progress;
+            INIT(progress);
+            e = execute(s, (uint32_t)number(d, a, "maxCycles"), true, &progress);
+            if (e)
+                return e;
+        }
+        snapshot_json(s, c, o);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "replaceCodeBreakpoints"))
+    {
+        uint16_t addresses[1024];
+        size_t count = 0;
+        int array = json_member(d, a, "addresses");
+        int64_t value;
+        if (s->state != EMUIF_STATE_PAUSED)
+            return EMUIF_STATE;
+        for (t = array + 1; t < d->count && d->tokens[t].start < d->tokens[array].end;
+             t = json_next(d, t))
+        {
+            json_integer(d, t, 0, 65535, &value);
+            addresses[count++] = (uint16_t)value;
+        }
+        if (!emu_breakpoint_replace(s->breakpoints, addresses, count))
+            return EMUIF_INVALID;
+        output_raw(o, "{\"addresses\":");
+        json_compact(d, array, o);
+        output_raw(o, "}");
+        return EMUIF_OK;
+    }
+    return EMUIF_UNSUPPORTED;
+}
+emuif_status emusa80535_debug_request_v1(struct emuif_session *s, uint64_t id,
+                                         const struct emuif_json_request *request,
+                                         struct emuif_json_response *response)
+{
+    struct client_state *c;
+    struct json_document *d;
+    struct output *body, *out;
+    emuif_status e;
+    int64_t rid = 0;
+    char cmd[64] = {0};
+    int a;
+    bool close = false, valid;
+    if (!s || !id)
+        return EMUIF_INVALID;
+    if (s->busy)
+        return EMUIF_BUSY;
+    e = PREFIX(request);
+    if (e)
+        return e;
+    e = PREFIX(response);
+    if (e)
+        return e;
+    if (request->reserved || response->reserved || !request->bytes || !request->byte_count ||
+        request->byte_count > 65535 || !response->bytes)
+        return EMUIF_INVALID;
+    if (response->capacity < 65536)
+    {
+        response->required = 65536;
+        response->written = 0;
+        return EMUIF_CAPACITY;
+    }
+    c = client(s, id);
+    if (!c)
+        return EMUIF_NOT_FOUND;
+    d = malloc(sizeof *d);
+    body = calloc(1, sizeof *body);
+    out = calloc(1, sizeof *out);
+    if (!d || !body || !out)
+    {
+        free(d);
+        free(body);
+        free(out);
+        return EMUIF_CAPACITY;
+    }
+    s->busy = true;
+    s->request_fault = false;
+    response->written = 0;
+    response->required = 0;
+    valid = json_document_parse(d, (const char *)request->bytes, request->byte_count, true);
+    if (!valid)
+    {
+        /* Recover only from a syntactically valid envelope, never guess IDs. */
+        if (!json_document_parse(d, (const char *)request->bytes, request->byte_count, false))
+        {
+            close_client(s, c);
+            goto done;
+        }
+    }
+    if (!json_integer(d, json_member(d, 0, "id"), 1, UINT32_MAX, &rid) ||
+        !json_string(d, json_member(d, 0, "command"), cmd, sizeof cmd) || !wire_command(cmd))
+    {
+        close_client(s, c);
+        goto done;
+    }
+    a = json_member(d, 0, "arguments");
+    if (!valid || d->tokens[0].size != 8 ||
+        !wire_string_is(d, json_member(d, 0, "type"), "request") || !wire_arguments(d, a, cmd))
+    {
+        e = EMUIF_INVALID;
+        close = true;
+    }
+    else if ((uint32_t)rid <= c->last_id || (!c->last_id && rid != 1))
+    {
+        e = EMUIF_INVALID;
+        close = true;
+    }
+    else
+    {
+        c->last_id = (uint32_t)rid;
+        e = dispatch(s, c, d, a, cmd, body, &close);
+    }
+    if (!e && !strcmp(cmd, "terminate") && !body->length)
+    {
+        unsigned i;
+        for (i = 0; i < 8; i++)
+            close_client(s, &s->clients[i]);
+        goto done;
+    }
+    if (body->failed || body->length > 64000)
+        e = EMUIF_CAPACITY;
+    output_format(out, "{\"type\":\"response\",\"id\":%" PRId64 ",\"command\":", rid);
+    output_string(out, cmd);
+    if (e)
+    {
+        output_format(
+            out,
+            ",\"success\":false,\"error\":{\"code\":\"%s\",\"message\":\"%s%s\",\"retryable\":%s}}",
+            status_name(s->request_fault ? EMUIF_FAULT : e),
+            s->request_fault ? "session fault: " : "request: ",
+            status_name(s->request_fault ? s->cause : e),
+            e == EMUIF_BUSY && !(s->request_fault) ? "true" : "false");
+    }
+    else
+    {
+        output_raw(out, ",\"success\":true,\"body\":");
+        body->data[body->length] = 0;
+        output_raw(out, body->data);
+        output_raw(out, "}");
+    }
+    if (!out->failed && out->length <= 65535)
+    {
+        memcpy(response->bytes, out->data, out->length);
+        response->written = (uint32_t)out->length;
+        response->required = response->written;
+    }
+    else
+    {
+        close = true;
+    }
+    if (!e && !strcmp(cmd, "terminate"))
+    {
+        unsigned i;
+        for (i = 0; i < 8; i++)
+            close_client(s, &s->clients[i]);
+    }
+    else if (close)
+        close_client(s, c);
+done:
+    s->busy = false;
+    free(d);
+    free(body);
+    free(out);
+    return EMUIF_OK;
+}

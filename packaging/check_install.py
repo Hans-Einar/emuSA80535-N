@@ -21,6 +21,11 @@ def main():
     library = root / args.libdir.lstrip("/")
     docs = prefix / "share/doc/emusa80535"
     executable = prefix / "bin/emu-debug"
+    runtime = prefix / "bin/emu-runtime"
+    assert (library / "libemusa80535_runtime.a").is_file()
+    for name in ("README.md", "script1.schema.json", "output1.schema.json", "example.ndjson"):
+        assert (docs / "runtime" / name).is_file()
+    subprocess.run([str(runtime), "--version"], check=True, timeout=10)
     assert (docs / "source-commit").read_text().strip() == args.commit
     assert (prefix / "share/licenses/emusa80535/LICENSE").is_file()
     env = os.environ.copy()
@@ -40,15 +45,17 @@ def main():
         subprocess.run([str(binary)], cwd=directory, check=True, timeout=10)
     with tempfile.TemporaryDirectory(prefix="emusa80535-cpu-consumer-") as directory:
         source = Path(directory) / "cpu.c"
-        source.write_text("#include <emusa80535/contracts/cpu.h>\n"
+        source.write_text("#include <emusa80535/contracts/debug.h>\n"
                           "#include <string.h>\n"
                           "int main(void) { struct emuif_cpu_api a; memset(&a,0,sizeof(a)); "
                           "a.struct_size=sizeof(a); a.api_version=1; "
-                          "return emusa80535_cpu_query_v1(&a) || !a.cycle || !a.decode; }\n")
+                          "emusa80535_session_destroy_v1(0); "
+                          "return emusa80535_cpu_query_v1(&a) || !a.cycle || !a.decode || "
+                          "emusa80535_debug_close_v1(0,1)!=EMUIF_INVALID; }\n")
         binary = Path(directory) / "cpu"
         subprocess.run(shlex.split(env.get("CC", "cc")) +
                        ["-std=c99", "-Wall", "-Wextra", "-Werror", "-I" + str(prefix / "include"),
-                        str(source), str(library / "libemusa80535_cpu.a"), "-o", str(binary)],
+                        str(source), str(library / "libemusa80535_runtime.a"), str(library / "libemusa80535_cpu.a"), "-o", str(binary)],
                        cwd=directory, check=True, env=env)
         subprocess.run([str(binary)], cwd=directory, check=True, timeout=10)
     subprocess.run([str(executable), "--version"], check=True, timeout=10)

@@ -43,3 +43,7 @@ emusa80535.pc
 ~*
 
 tests/cpu_facade_tests*
+
+# Local composed runtime build products
+/emu-runtime
+/tests/runtime_session_tests
