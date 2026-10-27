@@ -1,6 +1,6 @@
 # Development state and navigation
 
-Updated: 2026-10-26
+Updated: 2026-10-27
 
 Start with `Traceability/CurrentIndex.yaml` for the one active contract, then
 read its Sprint, iteration/slice contract and handoff. Completed handoffs
@@ -19,8 +19,11 @@ not override the current index or a later integration record.
 
 ## Current delivery and remaining boundaries
 
-SPR-010 / SLC-018 prepares AlmaLinux packaging and embedding delivery. Its
-handoff records the current verification and publication status.
+SPR-010 / SLC-018 produced reviewed AlmaLinux package prototypes, but publication
+is deferred. SPR-011 / SLC-019 establishes the reviewed modular runtime target:
+see `04--Architecture/EMU-RUNTIME-ARCH-003.md` and its Sprint handoff. No
+implementation Slice is active. Target requirements REQ-018..024 remain
+unimplemented, and exact interfaces must be frozen in the next contract.
 
 The next debugger feature work remains Gate B: canonical CPU producers and
 safe-boundary stop application, followed by the stable facade/paging and
@@ -28,9 +31,11 @@ versioned protocol extension. DAP Issue #6 in `emuSA80535-DAP` depends on that
 contract. REQ-015 capture/replay also remains planned.
 
 An external simulator can already instantiate a CPU and load a raw image.
-It owns board composition and stimuli through the generic CPU seams. Stock
-`emu-debug` currently owns a separate CPU; connecting its debugger to an
-external board-composed CPU requires a later generic integration contract.
+The selected target composition instead has a generic runtime own that CPU
+and load an external board module, with independently attachable debugging.
+Stock `emu-debug` currently owns its own CPU; implementing the new reusable
+debug-service/session boundary remains required. Legacy embedding remains a
+supported compatibility path.
 
 ## History and future migration
 

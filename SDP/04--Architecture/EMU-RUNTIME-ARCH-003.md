@@ -1,7 +1,7 @@
 # EMU-RUNTIME-ARCH-003 — Modular simulation runtime
 
 Architecture items: ARCH-011..ARCH-018
-Status: proposed target direction; implementation and interface freeze pending
+Status: accepted target direction; implementation and interface freeze pending
 Authority: SLC-019; REQ-018..REQ-024; informed by STU-004
 
 ## ARCH-011 — Build and ownership boundaries

@@ -1,6 +1,6 @@
 # ITR-019 / SLC-019 — Establish runtime architecture
 
-Status: active
+Status: complete; documentation-only SLC-019 accepted
 
 ## Worker contract
 
@@ -69,3 +69,10 @@ Independently review timing/ownership/reentrancy, ABI/wire boundaries,
 compatibility/lifecycle/security and work decomposition. Resolve findings.
 Verify traceability, paths, whitespace and no product change. Architectural
 direction may be accepted while exact interfaces remain explicitly unfrozen.
+
+## Result
+
+Worker proposal 6705bfd was independently reviewed. REV-SLC-019-F001 clarified
+graceful DAP disconnect versus runtime detach; correction e52f665 was approved.
+VER-SLC-019 verifies source claims, scope, references and traceability. Target
+requirements remain unimplemented; no successor implementation is activated.

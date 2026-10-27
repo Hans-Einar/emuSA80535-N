@@ -1,7 +1,7 @@
 # EMU-RUNTIME-STU-004 — Engine, host and transport source study
 
 Study ID: STU-004
-Status: source-grounded proposal; independent review pending
+Status: accepted source study through REV-SLC-019 / VER-SLC-019
 Date: 2026-10-27
 Authority: SLC-019; user's runtime architecture clarification
 

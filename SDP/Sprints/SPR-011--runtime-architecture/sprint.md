@@ -1,6 +1,6 @@
 # SPR-011 — Runtime, board-module and debugger architecture
 
-Status: active
+Status: complete (architecture documentation only)
 Sprint ID: SPR-011
 Started: 2026-10-27
 Authority: current user request to establish runtime/component boundaries,
@@ -29,3 +29,9 @@ extension, not a second implementation required now.
 Exit: source-grounded study, requirements/architecture/design, explicit
 implementation boundaries and compatibility gates, independent review and
 Master traceability/handoff. Package publication remains deferred.
+
+## Result
+
+REV-SLC-019 approved corrected candidate e52f665; VER-SLC-019 passed.
+The runtime direction and component/work boundaries are accepted as target
+architecture. No product implementation or exact interface freeze is claimed.

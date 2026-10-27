@@ -2,7 +2,7 @@
 
 Updated: 2026-10-27
 Disposition: package implementation/review and pre-publication verification
-complete; publication held for architecture clarification. SLC-018 is not
+complete; publication deferred pending integrated runtime delivery. SLC-018 is not
 accepted as a published delivery.
 
 ## Current checkpoint
@@ -16,8 +16,9 @@ published on Beinerud, and no host package installation was performed.
 
 The user subsequently questioned whether this partial runtime should be
 released and clarified the intended independent debugger attachment to the
-same CPU used for full machine simulation. Master holds publication while
-that architecture is reconciled; the package tests establish packaging
+same CPU used for full machine simulation. SLC-019 now records the accepted
+architecture; Master holds publication pending its implementation and integrated
+release gate. The package tests establish packaging
 readiness only, not that the desired integrated product is complete.
 
 Historical evidence now explicitly reconciled:
@@ -31,10 +32,10 @@ Historical evidence now explicitly reconciled:
 - The current opaque C debugger creates its own CPU. External-host/debug
   composition and an attach-capable scheduler/service are not implemented.
 
-The user's proposed alternative is a generic emulator host loading a board
-module and optionally exposing a debugger endpoint. A versioned board module
-API and Unix socket attachment are proposals to assess, not approved product
-contracts yet. Preserve the accepted CPU engine and debugger matcher. Do not
+SLC-019 accepts a generic emulator host loading a board module and optionally
+exposing a debugger endpoint over Unix sockets or protected TCP. Exact versioned
+board ABI and wire contracts still require a separate interface-freeze slice.
+Preserve the accepted CPU engine and debugger matcher. Do not
 start either plugin or attach implementation under the packaging slice.
 
 The user requested governance cleanup and delivery to the existing Beinerud
@@ -50,7 +51,7 @@ entry 0, stepped one instruction and then yielded after 10,000 more
 instructions on the unmodified baseline. This establishes load/execute
 readiness only; no board was attached. Detailed evidence belongs in VER-SLC-018.
 
-Next: reconcile runtime ownership, board-module/embedding API, independent
-debug-service lifecycle and DAP launch/attach semantics before deciding the
-release boundary. Existing packages and review remain usable development
+Next: implement the accepted runtime direction through separately contracted
+and reviewed slices, then verify REQ-024 and update the delivery contract.
+Existing packages and review remain usable development
 evidence. Public-repository verification is not run because publication is held.

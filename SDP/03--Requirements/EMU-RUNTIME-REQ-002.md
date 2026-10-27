@@ -1,7 +1,7 @@
 # EMU-RUNTIME-REQ-002 — Modular runtime requirements
 
 Requirement set: REQ-018..REQ-024
-Status: proposed target requirements; not implemented
+Status: accepted target requirements; not implemented
 Authority: user's 2026-10-27 architecture request; SLC-019
 
 - **REQ-018 — Component separation:** retain an independently buildable CPU

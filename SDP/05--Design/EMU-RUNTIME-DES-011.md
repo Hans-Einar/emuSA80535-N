@@ -1,7 +1,7 @@
 # EMU-RUNTIME-DES-011 — Runtime integration design constraints
 
 Design items: DES-101..DES-110
-Status: proposed target design; no concrete ABI/wire/CLI freeze
+Status: accepted target design constraints; no concrete ABI/wire/CLI freeze
 Authority: SLC-019; refines ARCH-011..ARCH-018 / REQ-018..REQ-024
 
 ## DES-101 — Session and CPU facade
