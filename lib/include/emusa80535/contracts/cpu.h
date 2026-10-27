@@ -1,5 +1,5 @@
 /* Copyright 2026 Hans-Einar. MIT; see LICENSE.
- * Contract bundle 0.1.0. TARGET DECLARATIONS ONLY; not implemented. */
+ * Contract bundle 0.2.0. CPU API1 implemented; session/debug/board loader remain targets. */
 #ifndef EMUSA80535_CONTRACTS_CPU_H
 #define EMUSA80535_CONTRACTS_CPU_H
 #include <stdint.h>

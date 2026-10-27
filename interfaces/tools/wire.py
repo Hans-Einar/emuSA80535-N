@@ -38,3 +38,7 @@ def validate(message, schema):
             raise ValueError("module payload byte limit")
     walk(message)
     validator.validate(message)
+    for body in (message.get("arguments", {}), message.get("body", {})):
+        caps = body.get("requiredCapabilities", body.get("capabilities", []))
+        if "boardInspectFault" in caps and "boardInspect" not in caps:
+            raise ValueError("boardInspectFault requires boardInspect")

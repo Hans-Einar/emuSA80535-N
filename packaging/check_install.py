@@ -38,6 +38,19 @@ def main():
                         "-o", str(binary)] + shlex.split(flags),
                        cwd=directory, check=True, env=env)
         subprocess.run([str(binary)], cwd=directory, check=True, timeout=10)
+    with tempfile.TemporaryDirectory(prefix="emusa80535-cpu-consumer-") as directory:
+        source = Path(directory) / "cpu.c"
+        source.write_text("#include <emusa80535/contracts/cpu.h>\n"
+                          "#include <string.h>\n"
+                          "int main(void) { struct emuif_cpu_api a; memset(&a,0,sizeof(a)); "
+                          "a.struct_size=sizeof(a); a.api_version=1; "
+                          "return emusa80535_cpu_query_v1(&a) || !a.cycle || !a.decode; }\n")
+        binary = Path(directory) / "cpu"
+        subprocess.run(shlex.split(env.get("CC", "cc")) +
+                       ["-std=c99", "-Wall", "-Wextra", "-Werror", "-I" + str(prefix / "include"),
+                        str(source), str(library / "libemusa80535_cpu.a"), "-o", str(binary)],
+                       cwd=directory, check=True, env=env)
+        subprocess.run([str(binary)], cwd=directory, check=True, timeout=10)
     subprocess.run([str(executable), "--version"], check=True, timeout=10)
     requests = [
         {"type": "request", "id": 1, "command": "hello",

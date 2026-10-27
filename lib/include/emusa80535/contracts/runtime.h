@@ -1,5 +1,5 @@
 /* Copyright 2026 Hans-Einar. MIT; see LICENSE.
- * Contract bundle 0.1.0. TARGET DECLARATIONS ONLY; not implemented. */
+ * Contract bundle 0.2.0. TARGET DECLARATIONS ONLY; not implemented. */
 #ifndef EMUSA80535_CONTRACTS_RUNTIME_H
 #define EMUSA80535_CONTRACTS_RUNTIME_H
 #include <stdint.h>

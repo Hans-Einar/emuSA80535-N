@@ -42,6 +42,7 @@ grep -Eq '^[0-9a-f]{40}$' SOURCE_COMMIT
 
 %check
 %set_build_flags
+# core-test includes the CPU API1 facade suite.
 %make_build core-test CFLAGS="$CFLAGS"
 %make_build debug-test CFLAGS="$CFLAGS" PYTHON=python3 DEBUG_COMMIT="$(cat SOURCE_COMMIT)"
 python3 packaging/check_install.py %{buildroot} --libdir %{_libdir} --commit "$(cat SOURCE_COMMIT)"
@@ -57,6 +58,7 @@ python3 packaging/check_install.py %{buildroot} --libdir %{_libdir} --commit "$(
 %files devel
 %{_includedir}/%{name}/
 %{_libdir}/libemusa80535.a
+%{_libdir}/libemusa80535_cpu.a
 %{_libdir}/pkgconfig/emusa80535.pc
 %doc %{_docdir}/%{name}/sdk_smoke.c
 %doc %{_docdir}/%{name}/interface-bundles/

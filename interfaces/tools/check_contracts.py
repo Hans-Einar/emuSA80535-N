@@ -33,7 +33,7 @@ def main():
     for ref in manifest["references"]:
         assert bundle.sha((ROOT / ref["path"]).read_bytes()) == ref["sha256"]
         assert re.fullmatch("[0-9a-f]{40}", ref["sourceCommit"])
-    for path in VERSION_ROOT.rglob("*.md"):
+    for path in [ROOT / "interfaces/README.md", *VERSION_ROOT.rglob("*.md")]:
         for target in re.findall(r"\]\(([^)]+)\)", path.read_text()):
             if "://" in target or target.startswith("#"):
                 continue
@@ -42,13 +42,20 @@ def main():
     @checker.checks("uint64")
     def uint64(value):
         return isinstance(value, str) and re.fullmatch(r"0|[1-9][0-9]*", value) is not None and int(value) <= 18446744073709551615
-    schema = json.loads((VERSION_ROOT / "schemas/runtime-2.0.schema.json").read_text())
+    schema = json.loads((VERSION_ROOT / "schemas/runtime-2.1.schema.json").read_text())
     jsonschema.Draft202012Validator.check_schema(schema)
     validator = jsonschema.Draft202012Validator(schema, format_checker=checker)
-    examples = [bundle.load_json(line) for line in (VERSION_ROOT / "examples/runtime-2.0.ndjson").read_bytes().splitlines()]
+    examples = [bundle.load_json(line) for line in (VERSION_ROOT / "examples/runtime-2.1.ndjson").read_bytes().splitlines()]
     for example in examples:
         wire.validate(example, schema)
         assert len(json.dumps(example, separators=(",", ":")).encode()) + 1 <= 65536
+    fault_caps = copy.deepcopy(examples[1])
+    fault_caps["body"]["capabilities"].append("boardInspectFault")
+    wire.validate(fault_caps, schema)
+    fault_caps["body"]["capabilities"].remove("boardInspect")
+    reject(lambda: wire.validate(fault_caps, schema), "fault inspection dependency")
+    bad = copy.deepcopy(examples[0]); bad["arguments"]["protocol"]["minor"] = 0
+    reject(lambda: validator.validate(bad), "wire minor")
     bad = copy.deepcopy(examples[0]); bad["arguments"]["protocol"]["major"] = 1
     reject(lambda: validator.validate(bad), "wire major")
     bad = copy.deepcopy(examples[3]); bad["body"]["generation"] = 1

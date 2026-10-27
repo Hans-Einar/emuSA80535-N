@@ -5,6 +5,7 @@
  */
 
 #include <emusa80535/emu_debug.h>
+#include "emu_decode_internal.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,8 +34,7 @@ struct em8051_debugger
     struct em8051 cpu;
     uint8_t code[CODE_SIZE];
     uint8_t image[CODE_SIZE];
-    uint16_t predecessor[CODE_SIZE];
-    uint8_t predecessor_known[CODE_SIZE];
+    struct emu_decode_cache decode_cache;
     uint8_t breakpoints[BREAKPOINT_BYTES];
     struct em8051_debug_snapshot boundary;
     uint16_t observed_pc;
@@ -236,15 +236,13 @@ static FILE *open_binary_utf8(const char *aPath)
 
 static void clear_predecessors(struct em8051_debugger *aDebugger)
 {
-    memset(aDebugger->predecessor_known, 0,
-           sizeof(aDebugger->predecessor_known));
+    emu_decode_clear(&aDebugger->decode_cache);
 }
 
 static uint8_t decode_at(struct em8051_debugger *aDebugger, uint16_t aAddress,
                          char *aText)
 {
-    uint8_t opcode = aDebugger->code[aAddress];
-    return aDebugger->cpu.dec[opcode](&aDebugger->cpu, aAddress, aText);
+    return emu_decode_at(&aDebugger->cpu, aAddress, aText);
 }
 
 static void observe_instruction(const struct em8051_trace_record *aRecord,
@@ -407,47 +405,11 @@ enum em8051_debug_status em8051_debugger_get_state(
     return EM8051_DEBUG_OK;
 }
 
-static enum em8051_debug_status decode_record(
-    struct em8051_debugger *aDebugger, uint32_t aAddress,
-    struct em8051_debug_decoded *aRecord)
-{
-    uint8_t size;
-    if (aAddress > 0xffffu)
-        return EM8051_DEBUG_RANGE;
-    memset(aRecord, 0, sizeof(*aRecord));
-    aRecord->address = (uint16_t)aAddress;
-    size = decode_at(aDebugger, (uint16_t)aAddress, aRecord->text);
-    if (size == 0u || aAddress + size > CODE_SIZE)
-        return EM8051_DEBUG_RANGE;
-    aRecord->size = size;
-    aRecord->valid = true;
-    return EM8051_DEBUG_OK;
-}
-
-static void invalid_record(uint16_t aAddress,
-                           struct em8051_debug_decoded *aRecord)
-{
-    memset(aRecord, 0, sizeof(*aRecord));
-    aRecord->address = aAddress;
-    aRecord->size = 1;
-    aRecord->valid = false;
-    memcpy(aRecord->text, "<invalid>", sizeof("<invalid>"));
-}
-
 enum em8051_debug_status em8051_debugger_decode_code(
     struct em8051_debugger *aDebugger, uint16_t aReference,
     int32_t aByteOffset, int32_t aInstructionOffset, size_t aCount,
     struct em8051_debug_decoded *aRecords)
 {
-    int64_t base;
-    uint32_t cursor;
-    size_t output = 0;
-    uint16_t staged_addresses[EM8051_DEBUG_MAX_DECODE_INSTRUCTIONS];
-    uint16_t staged_predecessors[EM8051_DEBUG_MAX_DECODE_INSTRUCTIONS];
-    size_t staged_count = 0;
-    int32_t step;
-    enum em8051_debug_status status;
-
     if (!aDebugger || !aRecords || aCount == 0u ||
         aCount > EM8051_DEBUG_MAX_DECODE_INSTRUCTIONS ||
         aByteOffset < -65536 || aByteOffset > 65536 ||
@@ -455,97 +417,9 @@ enum em8051_debug_status em8051_debugger_decode_code(
         return EM8051_DEBUG_INVALID_ARGUMENT;
     if (!aDebugger->loaded)
         return EM8051_DEBUG_INVALID_STATE;
-    base = (int64_t)aReference + aByteOffset;
-    if (base < 0 || base > 0xffff)
-        return EM8051_DEBUG_RANGE;
-
-    if (aInstructionOffset < 0)
-    {
-        size_t predecessor_count = (size_t)(-(int64_t)aInstructionOffset);
-        size_t temporary_count = predecessor_count < aCount ?
-                                 predecessor_count : aCount;
-        struct em8051_debug_decoded *temporary = NULL;
-        bool known = true;
-        cursor = (uint32_t)base;
-        if (temporary_count != 0u)
-        {
-            temporary = (struct em8051_debug_decoded *)calloc(
-                temporary_count, sizeof(*temporary));
-            if (!temporary)
-                return EM8051_DEBUG_INTERNAL;
-        }
-        for (step = 0; step < -aInstructionOffset; step++)
-        {
-            struct em8051_debug_decoded record;
-            if (known && aDebugger->predecessor_known[cursor])
-            {
-                cursor = aDebugger->predecessor[cursor];
-                status = decode_record(aDebugger, cursor, &record);
-                if (status != EM8051_DEBUG_OK)
-                {
-                    free(temporary);
-                    return status;
-                }
-            }
-            else
-            {
-                known = false;
-                if (cursor == 0u)
-                {
-                    free(temporary);
-                    return EM8051_DEBUG_RANGE;
-                }
-                cursor--;
-                invalid_record((uint16_t)cursor, &record);
-            }
-            if ((size_t)step >= predecessor_count - temporary_count)
-                temporary[predecessor_count - (size_t)step - 1u] = record;
-        }
-        for (output = 0; output < temporary_count; output++)
-            aRecords[output] = temporary[output];
-        free(temporary);
-        cursor = (uint32_t)base;
-    }
-    else
-    {
-        cursor = (uint32_t)base;
-        for (step = 0; step < aInstructionOffset; step++)
-        {
-            struct em8051_debug_decoded skipped;
-            status = decode_record(aDebugger, cursor, &skipped);
-            if (status != EM8051_DEBUG_OK)
-                return status;
-            cursor += skipped.size;
-            if (cursor > 0xffffu)
-                return EM8051_DEBUG_RANGE;
-        }
-    }
-
-    while (output < aCount)
-    {
-        uint32_t next;
-        status = decode_record(aDebugger, cursor, &aRecords[output]);
-        if (status != EM8051_DEBUG_OK)
-            return status;
-        next = cursor + aRecords[output].size;
-        if (next < CODE_SIZE)
-        {
-            staged_addresses[staged_count] = (uint16_t)next;
-            staged_predecessors[staged_count] = (uint16_t)cursor;
-            staged_count++;
-        }
-        cursor = next;
-        output++;
-        if (output < aCount && cursor > 0xffffu)
-            return EM8051_DEBUG_RANGE;
-    }
-    for (output = 0; output < staged_count; output++)
-    {
-        aDebugger->predecessor[staged_addresses[output]] =
-            staged_predecessors[output];
-        aDebugger->predecessor_known[staged_addresses[output]] = 1;
-    }
-    return EM8051_DEBUG_OK;
+    return emu_decode_window(&aDebugger->cpu, &aDebugger->decode_cache,
+                             aReference, aByteOffset, aInstructionOffset,
+                             aCount, aRecords);
 }
 
 enum em8051_debug_status em8051_debugger_replace_breakpoints(
@@ -591,13 +465,9 @@ static enum em8051_debug_status execute_one(
     if (aDebugger->cpu.mInstructionCount == before + 1u &&
         aDebugger->observed_instruction)
     {
-        uint32_t sequential = (uint32_t)aDebugger->observed_pc +
-                              aDebugger->observed_size;
-        if (sequential < CODE_SIZE && aDebugger->cpu.mPC == sequential)
-        {
-            aDebugger->predecessor[sequential] = aDebugger->observed_pc;
-            aDebugger->predecessor_known[sequential] = 1;
-        }
+        emu_decode_completed(&aDebugger->decode_cache,
+                             aDebugger->observed_pc, aDebugger->observed_size,
+                             aDebugger->cpu.mPC);
     }
     if (core_reason == EM8051_STOP_EXCEPTION)
     {

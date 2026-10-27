@@ -41,3 +41,5 @@ emusa80535.pc
 .\#*
 *~
 ~*
+
+tests/cpu_facade_tests*

@@ -10,7 +10,7 @@ import re
 import shutil
 import subprocess
 import tarfile
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 REPOSITORY = 'https://github.com/Hans-Einar/emuSA80535-N'
 PREFIX = 'emusa80535-interfaces-' + VERSION
 MANIFEST = 'interfaces/' + VERSION + '/manifest.json'

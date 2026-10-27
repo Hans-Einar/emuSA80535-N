@@ -242,6 +242,7 @@ static uint8_t inc_mem(struct em8051 *aCPU)
     uint8_t address = OPERAND1;
     uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value + 1);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 2;
     return 0;
 }
@@ -272,6 +273,7 @@ static uint8_t jbc_bitaddr_offset(struct em8051 *aCPU)
         if (value & bitmask)
         {
             em8051_sfr_write(aCPU, address, value & (uint8_t)~bitmask);
+            if (em8051_execution_aborted(aCPU)) return 0;
             PC += (signed char)OPERAND2 + 3;
         }
         else
@@ -342,6 +344,7 @@ static uint8_t dec_mem(struct em8051 *aCPU)
     uint8_t address = OPERAND1;
     uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value - 1);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 2;
     return 0;
 }
@@ -492,6 +495,7 @@ static uint8_t reti(struct em8051 *aCPU)
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535)
     {
         em8051_sab_irq_reti(aCPU, original_sp);
+        if (em8051_execution_aborted(aCPU)) return 0;
     }
     else if (aCPU->mInterruptActive)
     {
@@ -501,11 +505,14 @@ static uint8_t reti(struct em8051 *aCPU)
                 hi = 1;
             if (aCPU->int_a[hi] != aCPU->mSFR[REG_ACC])
                 em8051_raise_exception(aCPU, EXCEPTION_IRET_ACC_MISMATCH);
+            if (em8051_execution_aborted(aCPU)) return 0;
             if (aCPU->int_sp[hi] != original_sp)
                 em8051_raise_exception(aCPU, EXCEPTION_IRET_SP_MISMATCH);
+            if (em8051_execution_aborted(aCPU)) return 0;
             if ((aCPU->int_psw[hi] & (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 | PSWMASK_AC | PSWMASK_C)) !=                 
                 (aCPU->mSFR[REG_PSW] & (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 | PSWMASK_AC | PSWMASK_C)))
                 em8051_raise_exception(aCPU, EXCEPTION_IRET_PSW_MISMATCH);
+            if (em8051_execution_aborted(aCPU)) return 0;
         }
 
         if (aCPU->mInterruptActive & 2)
@@ -577,6 +584,7 @@ static uint8_t orl_mem_a(struct em8051 *aCPU)
     uint8_t address = OPERAND1;
     uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value | ACC);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 2;
     return 0;
 }
@@ -586,6 +594,7 @@ static uint8_t orl_mem_imm(struct em8051 *aCPU)
     uint8_t address = OPERAND1;
     uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value | OPERAND2);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 3;
     return 1;
 }
@@ -636,6 +645,7 @@ static uint8_t anl_mem_a(struct em8051 *aCPU)
     {
         em8051_sfr_write(aCPU, address,
                          aCPU->mSFR[address - 0x80] & ACC);
+        if (em8051_execution_aborted(aCPU)) return 0;
     }
     else
     {
@@ -650,6 +660,7 @@ static uint8_t anl_mem_imm(struct em8051 *aCPU)
     uint8_t address = OPERAND1;
     uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value & OPERAND2);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 3;
     return 1;
 }
@@ -699,6 +710,7 @@ static uint8_t xrl_mem_a(struct em8051 *aCPU)
     {
         em8051_sfr_write(aCPU, address,
                          aCPU->mSFR[address - 0x80] ^ ACC);
+        if (em8051_execution_aborted(aCPU)) return 0;
     }
     else
     {
@@ -713,6 +725,7 @@ static uint8_t xrl_mem_imm(struct em8051 *aCPU)
     uint8_t address = OPERAND1;
     uint8_t value = read_mem_rmw(aCPU, address);
     write_mem(aCPU, address, value ^ OPERAND2);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 3;
     return 1;
 }
@@ -801,6 +814,7 @@ static uint8_t mov_a_imm(struct em8051 *aCPU)
 static uint8_t mov_mem_imm(struct em8051 *aCPU)
 {
     write_mem(aCPU, OPERAND1, OPERAND2);
+    if (em8051_execution_aborted(aCPU)) return 0;
 
     PC += 3;
     return 1;
@@ -889,6 +903,7 @@ static uint8_t mov_mem_mem(struct em8051 *aCPU)
     uint8_t address_to = OPERAND2;
     uint8_t value = read_mem(aCPU, address_from);
     write_mem(aCPU, address_to, value);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 3;
     return 1;
 }
@@ -899,6 +914,7 @@ static uint8_t mov_mem_indir_rx(struct em8051 *aCPU)
     uint8_t address_to = INDIR_RX_ADDRESS;
     uint8_t value = read_mem_indir(aCPU, address_from);
     write_mem(aCPU, address_to, value);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 2;
     return 1;
 }
@@ -927,6 +943,7 @@ static uint8_t mov_bitaddr_c(struct em8051 *aCPU)
         em8051_sfr_write(aCPU, address,
                          (aCPU->mSFR[address - 0x80] & (uint8_t)~bitmask) |
                          (carry << bitaddr));
+        if (em8051_execution_aborted(aCPU)) return 0;
     }
     else
     {
@@ -1117,6 +1134,7 @@ static uint8_t cpl_bitaddr(struct em8051 *aCPU)
         address &= 0xf8;        
         em8051_sfr_write(aCPU, address,
                          aCPU->mSFR[address - 0x80] ^ bitmask);
+        if (em8051_execution_aborted(aCPU)) return 0;
     }
     else
     {
@@ -1234,6 +1252,7 @@ static uint8_t clr_bitaddr(struct em8051 *aCPU)
         address &= 0xf8;        
         em8051_sfr_write(aCPU, address,
                          aCPU->mSFR[address - 0x80] & (uint8_t)~bitmask);
+        if (em8051_execution_aborted(aCPU)) return 0;
     }
     else
     {
@@ -1266,6 +1285,7 @@ static uint8_t xch_a_mem(struct em8051 *aCPU)
     uint8_t address = OPERAND1;
     uint8_t value = read_mem(aCPU, address);
     write_mem(aCPU, address, ACC);
+    if (em8051_execution_aborted(aCPU)) return 0;
     ACC = value;
     PC += 2;
     return 0;
@@ -1289,6 +1309,7 @@ static uint8_t pop_mem(struct em8051 *aCPU)
     if (!pop_from_stack(aCPU, &value))
         return 1;
     write_mem(aCPU, address, value);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 2;
     return 1;
 }
@@ -1306,6 +1327,7 @@ static uint8_t setb_bitaddr(struct em8051 *aCPU)
         address &= 0xf8;        
         em8051_sfr_write(aCPU, address,
                          aCPU->mSFR[address - 0x80] | bitmask);
+        if (em8051_execution_aborted(aCPU)) return 0;
     }
     else
     {
@@ -1363,6 +1385,7 @@ static uint8_t djnz_mem_offset(struct em8051 *aCPU)
     uint8_t value = read_mem_rmw(aCPU, address);
     value --;
     write_mem(aCPU, address, value);
+    if (em8051_execution_aborted(aCPU)) return 0;
 
     if (value)
     {
@@ -1394,7 +1417,9 @@ static uint8_t movx_a_indir_dptr(struct em8051 *aCPU)
     bool supported = false;
     if (aCPU->xread)
     {
-        ACC = aCPU->xread(aCPU, dptr);
+        uint8_t result = aCPU->xread(aCPU, dptr);
+        if (em8051_execution_aborted(aCPU)) return 0;
+        ACC = result;
         supported = true;
     }
     else
@@ -1422,7 +1447,9 @@ static uint8_t movx_a_indir_rx(struct em8051 *aCPU)
     bool supported = false;
     if (aCPU->xread)
     {
-        ACC = aCPU->xread(aCPU, address);
+        uint8_t result = aCPU->xread(aCPU, address);
+        if (em8051_execution_aborted(aCPU)) return 0;
+        ACC = result;
         supported = true;
     }
     else
@@ -1457,6 +1484,7 @@ static uint8_t mov_a_mem(struct em8051 *aCPU)
     uint8_t value = read_mem(aCPU, address);
     if (REG_ACC == address - 0x80)
         em8051_raise_exception(aCPU, EXCEPTION_ACC_TO_A);
+    if (em8051_execution_aborted(aCPU)) return 0;
     ACC = value;
 
     PC += 2;
@@ -1481,6 +1509,7 @@ static uint8_t movx_indir_dptr_a(struct em8051 *aCPU)
     if (aCPU->xwrite)
     {
         aCPU->xwrite(aCPU, dptr, ACC);
+        if (em8051_execution_aborted(aCPU)) return 0;
         supported = true;
     }
     else
@@ -1511,6 +1540,7 @@ static uint8_t movx_indir_rx_a(struct em8051 *aCPU)
     if (aCPU->xwrite)
     {
         aCPU->xwrite(aCPU, address, ACC);
+        if (em8051_execution_aborted(aCPU)) return 0;
         supported = true;
     }
     else
@@ -1542,6 +1572,7 @@ static uint8_t mov_mem_a(struct em8051 *aCPU)
 {
     uint8_t address = OPERAND1;
     write_mem(aCPU, address, ACC);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 2;
     return 0;
 }
@@ -1558,6 +1589,7 @@ static uint8_t nop(struct em8051 *aCPU)
 {
     if (CODEMEM(PC) != 0)
         em8051_raise_exception(aCPU, EXCEPTION_ILLEGAL_OPCODE);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC++;
     return 0;
 }
@@ -1635,6 +1667,7 @@ static uint8_t mov_mem_rx(struct em8051 *aCPU)
     uint8_t rx = RX_ADDRESS;
     uint8_t address = OPERAND1;
     write_mem(aCPU, address, aCPU->mLowerData[rx]);
+    if (em8051_execution_aborted(aCPU)) return 0;
     PC += 2;
     return 1;
 }

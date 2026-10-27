@@ -380,6 +380,20 @@ int em8051_init_variant(struct em8051 *aCPU, enum em8051_variant aVariant)
     return 0;
 }
 
+void em8051_set_execution_abort(struct em8051 *aCPU,
+                                em8051executionabort aAbort, void *aUser)
+{
+    if (!aCPU) return;
+    aCPU->execution_abort = aAbort;
+    aCPU->execution_abort_user = aUser;
+}
+
+bool em8051_execution_aborted(const struct em8051 *aCPU)
+{
+    return aCPU && aCPU->execution_abort &&
+        aCPU->execution_abort(aCPU, aCPU->execution_abort_user);
+}
+
 void em8051_set_trace(struct em8051 *aCPU, em8051trace aTrace, void *aUser)
 {
     aCPU->trace = aTrace;
@@ -458,7 +472,7 @@ void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
                        uint16_t aAddress, uint8_t aValue)
 {
     struct em8051_trace_record record;
-    if (!aCPU->trace)
+    if (em8051_execution_aborted(aCPU) || !aCPU->trace)
         return;
 
     record.type = aType;
@@ -848,6 +862,7 @@ static void sab_uart_tx_boundary(struct em8051 *aCPU,
     sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_END,
                         aMachineCycle, aCPU->mSABUartTxData,
                         aCPU->mSABUartTxNinth, 10u, true);
+    if (em8051_execution_aborted(aCPU)) return;
     aCPU->mSABUartTxActive = false;
     if (aCPU->mSABUartTxPending)
         sab_uart_tx_start(aCPU, aMachineCycle);
@@ -906,6 +921,7 @@ static void sab_uart_timer1_overflow(struct em8051 *aCPU)
     completed_cycle = aCPU->mMachineCycleCount + 1u;
     if (sab_uart_divider_step(&aCPU->mSABUartDividerPhase, smod))
         sab_uart_tx_boundary(aCPU, completed_cycle);
+    if (em8051_execution_aborted(aCPU)) return;
     if (aCPU->mSABUartRxActive &&
         sab_uart_divider_step(&aCPU->mSABUartRxDividerPhase, smod))
     {
@@ -1155,6 +1171,7 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
         aCPU->mSFR[index] = aValue;
         if (aCPU->sfrwrite[index])
             aCPU->sfrwrite[index](aCPU, aAddress);
+        if (em8051_execution_aborted(aCPU)) return;
         aCPU->mSFR[index] = aCPU->mSABUartRxData;
         em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
         sab_adc_finish_sfr_transaction(aCPU);
@@ -1168,6 +1185,7 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     }
     if (aCPU->sfrwrite[index])
         aCPU->sfrwrite[index](aCPU, aAddress);
+    if (em8051_execution_aborted(aCPU)) return;
     if (sab_port_index(aCPU, aAddress) >= 0)
         sab_external_sample_port(aCPU, aAddress);
     em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
@@ -1304,6 +1322,7 @@ static void timer_overflow_emit(struct em8051 *aCPU,
          * remain independent views of the same completed timer overflow. */
         sab_uart_timer1_overflow(aCPU);
     }
+    if (em8051_execution_aborted(aCPU)) return;
     if (!aCPU->timer_overflow)
         return;
 
@@ -1484,6 +1503,8 @@ static void timer_tick(struct em8051 *aCPU)
         }
     }
 
+    if (em8051_execution_aborted(aCPU)) return;
+
     // TODO: External int 1 
 
     {   // Timer/counter 1 
@@ -1630,6 +1651,7 @@ static void sab_timer2_tick(struct em8051 *aCPU)
         aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)] |=
             SAB_IRCONMASK_TF2;
         timer_overflow_emit(aCPU, EM8051_TIMER2);
+        if (em8051_execution_aborted(aCPU)) return;
         sab_irq_sync(aCPU);
     }
 }
@@ -1779,8 +1801,10 @@ void em8051_sab_irq_reti(struct em8051 *aCPU, uint8_t aOriginalSP)
 
         if (aCPU->mSABIrqSavedACC[index] != aCPU->mSFR[REG_ACC])
             em8051_raise_exception(aCPU, EXCEPTION_IRET_ACC_MISMATCH);
+        if (em8051_execution_aborted(aCPU)) return;
         if (aCPU->mSABIrqSavedSP[index] != aOriginalSP)
             em8051_raise_exception(aCPU, EXCEPTION_IRET_SP_MISMATCH);
+        if (em8051_execution_aborted(aCPU)) return;
         if ((aCPU->mSABIrqSavedPSW[index] &
              (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 |
               PSWMASK_AC | PSWMASK_C)) !=
@@ -1789,6 +1813,7 @@ void em8051_sab_irq_reti(struct em8051 *aCPU, uint8_t aOriginalSP)
               PSWMASK_AC | PSWMASK_C)))
         {
             em8051_raise_exception(aCPU, EXCEPTION_IRET_PSW_MISMATCH);
+            if (em8051_execution_aborted(aCPU)) return;
         }
 
         aCPU->mSABIrqDepth = index;
@@ -1949,9 +1974,13 @@ static bool handle_interrupts(struct em8051 *aCPU)
 
 static void advance_machine_cycle(struct em8051 *aCPU)
 {
+    if (em8051_execution_aborted(aCPU)) return;
     timer_tick(aCPU);
+    if (em8051_execution_aborted(aCPU)) return;
     sab_timer2_tick(aCPU);
+    if (em8051_execution_aborted(aCPU)) return;
     sab_adc_tick(aCPU);
+    if (em8051_execution_aborted(aCPU)) return;
     aCPU->mMachineCycleCount++;
     sab_external_apply_scheduled(aCPU);
     sab_external_maintain_level_requests(aCPU);
@@ -1961,6 +1990,8 @@ bool tick(struct em8051 *aCPU)
 {
     uint8_t v;
     bool ticked = false;
+
+    if (em8051_execution_aborted(aCPU)) return false;
 
     /* A pending cycle belongs to the already-started instruction or interrupt
      * entry. It advances peripherals and virtual time, but must not also start
@@ -1989,6 +2020,7 @@ bool tick(struct em8051 *aCPU)
         advance_machine_cycle(aCPU);
         return false;
     }
+    if (em8051_execution_aborted(aCPU)) return false;
 
     if (aCPU->mTickDelay == 0)
     {
@@ -2003,8 +2035,13 @@ bool tick(struct em8051 *aCPU)
             aCPU->mInInstruction = true;
             em8051_trace_emit(aCPU, EM8051_TRACE_INSTRUCTION,
                               aCPU->mPC, opcode);
+            if (em8051_execution_aborted(aCPU)) {
+                aCPU->mInInstruction = false;
+                return false;
+            }
             aCPU->mTickDelay = aCPU->op[opcode](aCPU);
             aCPU->mInInstruction = false;
+            if (em8051_execution_aborted(aCPU)) return false;
             aCPU->mInstructionCount++;
             if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
                 aCPU->mSABIrqInhibitInstructions != 0)
@@ -2056,12 +2093,18 @@ static enum em8051_stop_reason run_control(struct em8051 *aCPU,
 
     while (true)
     {
-        /* Public run calls only return at a completed cycle boundary. This
+        /* Without an asserted abort, public run calls return at a completed
+         * cycle boundary. An abort deliberately preserves a partial boundary. This
          * also leaves an interrupt vector observable after its two entry
          * cycles and before execution of the vector opcode. */
-        while (aCPU->mTickDelay != 0)
+        while (aCPU->mTickDelay != 0 && !em8051_execution_aborted(aCPU))
             (void)tick(aCPU);
 
+        if (em8051_execution_aborted(aCPU))
+        {
+            reason = EM8051_STOP_ABORTED;
+            break;
+        }
         if (aCPU->mExceptionRaised)
         {
             reason = EM8051_STOP_EXCEPTION;

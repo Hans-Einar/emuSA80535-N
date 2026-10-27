@@ -1,0 +1,32 @@
+{
+  "bundleVersion": "0.2.0",
+  "lockConvention": "emusa80535-interface.lock.json at consumer project root",
+  "note": "Expected owners; no external copy/adoption asserted. Actual copies are tracked by consumer locks and producer export receipts. Board ABI1 layout is unchanged from0.1.0; an existing0.1 board-only consumer can interoperate, subject to capability validation. Legacy public CPU struct consumers must rebuild.",
+  "consumers": [
+    {
+      "component": "CPU and legacy debugger",
+      "repository": "emuSA80535-N",
+      "includeRoot": "lib/include",
+      "status": "cpu-api1-and-legacy-implemented-canonical-headers",
+      "lock": "Git commit and bundle manifest in this repository"
+    },
+    {
+      "component": "controller and attach service",
+      "repository": "emuSA80535-N",
+      "includeRoot": "lib/include",
+      "status": "target-not-implemented"
+    },
+    {
+      "component": "external board simulator",
+      "repository": "ponsse",
+      "suggestedCopyPath": "vendor/emusa80535-interfaces/0.2.0",
+      "status": "not-adopted-by-this-slice"
+    },
+    {
+      "component": "DAP adapter / debugger client",
+      "repository": "emuSA80535-DAP",
+      "suggestedCopyPath": "vendor/emusa80535-interfaces/0.2.0",
+      "status": "legacy-protocol1-consumer; target2-not-adopted-by-this-slice"
+    }
+  ]
+}

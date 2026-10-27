@@ -38,6 +38,11 @@ extern "C" {
 
 struct em8051;
 
+/* Optional pure abort predicate for checked execution. NULL preserves legacy
+ * tick behavior. It may only read caller-owned fault state; never reenter,
+ * mutate the CPU or perform I/O. Context survives reset and is caller-owned. */
+typedef bool (*em8051executionabort)(const struct em8051 *aCPU, void *aUser);
+
 // Operation: returns number of ticks the operation should take
 typedef uint8_t (*em8051operation)(struct em8051 *aCPU);
 
@@ -379,7 +384,8 @@ enum em8051_stop_reason
     EM8051_STOP_BREAKPOINT,
     EM8051_STOP_TARGET_PC,
     EM8051_STOP_EXCEPTION,
-    EM8051_STOP_HALT
+    EM8051_STOP_HALT,
+    EM8051_STOP_ABORTED /* Opt-in execution predicate requested stop; partial state. */
 };
 
 struct em8051_run_result
@@ -519,7 +525,15 @@ struct em8051
     uint8_t serial_out_idx;
     uint8_t serial_out_remaining_bits;
     bool serial_interrupt_trigger;
+
+    em8051executionabort execution_abort;
+    void *execution_abort_user;
 };
+
+/* Opt-in checked execution. The abort predicate remains installed over reset. */
+void em8051_set_execution_abort(struct em8051 *aCPU,
+                                em8051executionabort aAbort, void *aUser);
+bool em8051_execution_aborted(const struct em8051 *aCPU);
 
 /* Select a stable CPU variant and perform a deterministic cold reset. The
  * caller supplies CODE/XDATA buffers as with the upstream API before calling
