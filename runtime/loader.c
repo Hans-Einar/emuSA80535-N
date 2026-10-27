@@ -1,5 +1,11 @@
 /* Copyright 2026 Hans-Einar. MIT; see LICENSE. */
 #define _GNU_SOURCE
+/* ABI1 platform1 is a binary contract, not a module-supplied portability claim. */
+#if !defined(__linux__) || !defined(__x86_64__) || !defined(__SIZEOF_POINTER__) || \
+    __SIZEOF_POINTER__ != 8 || !defined(__BYTE_ORDER__) || !defined(__ORDER_LITTLE_ENDIAN__) || \
+    __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#error "emu-runtime board ABI1 requires Linux x86-64, little-endian, 64-bit pointers"
+#endif
 #include "loader.h"
 #include "emu_sha_internal.h"
 #include "emusa80535/contracts/cpu.h"
