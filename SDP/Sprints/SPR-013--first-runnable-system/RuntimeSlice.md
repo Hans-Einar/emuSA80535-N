@@ -101,3 +101,15 @@ reaction is t+2, not t+1. Track the active callback's timestamp independently
 from the last completed session cycle. Reject equal/past admission before queue
 or identity mutation. This resolves the unspecified signal-specific detail
 consistently with the existing feedback rule; no frozen table/layout is changed.
+
+## Implementation clarification — unsafe terminal acknowledgement
+
+Wire2.1 allows authorized termination after fault but only promises a final
+terminated snapshot "if possible". When the retained CPU boundary is unsafe,
+that acknowledgement cannot satisfy the general rule that an unsafe snapshot
+belongs to faulted state. Apply termination and close all clients, returning
+native OK with written=required=0; the owner then destroys the session. This is
+an explicit no-response closure case, like unknown-command closure, not a
+successful wire acknowledgement. Do not fabricate safeBoundary=true or emit a
+contradictory terminated snapshot. Normal safe termination retains its response.
+Tests verify terminal rejection of new clients/pump and no implicit retry.
