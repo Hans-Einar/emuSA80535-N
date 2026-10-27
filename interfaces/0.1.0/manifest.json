@@ -10,7 +10,7 @@
   "bundleVersion": "0.1.0",
   "files": {
     "LICENSE": "3c05d81f8d97faa7f8acc73af3e1a41491d9cea7f7ed01e5b03ec5c4e9566751",
-    "interfaces/0.1.0/README.md": "182668f3456f13217dd574c4b354336302e7218a5e3fc406327631be3688a1cf",
+    "interfaces/0.1.0/README.md": "48417d456d811027af64c3d94e901c19f781907021c5440e1b1c535824ad97ec",
     "interfaces/0.1.0/consumers.json": "d870546f0ec71a84b730cf62701916085c5912a26ef267310eb627185dfb223d",
     "interfaces/0.1.0/docs/01-overview.md": "c311896f463185450be406ffed40d381245a1b86cffc7f31c32e6556b6e39518",
     "interfaces/0.1.0/docs/02-cpu.md": "30d27ff6386932ce320ef71ae312c52d7bb0a7e598992e36d25f79ca2a25a87d",

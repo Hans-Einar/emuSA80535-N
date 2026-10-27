@@ -1,6 +1,7 @@
 # Interface bundle 0.1.0
 
-Status: initial engineering contract, subject to SLC-020 review. New runtime
+Status: initial engineering contract; acceptance is recorded by the producer
+SLC-020 review/verification records. New runtime
 interfaces are target declarations only; no shared-library loader, socket
 service or attach runtime is delivered by this bundle. This is a pre-1.0
 contract version, independent of product 1.0.0 and legacy wire protocol 1.0.
