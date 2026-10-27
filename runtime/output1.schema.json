@@ -1,0 +1,1110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One emu-runtime script1 output record",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "identity"
+        },
+        "format": {
+          "const": "emu-runtime-script"
+        },
+        "version": {
+          "const": 1
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtime"
+        },
+        "module": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,31}$"
+            },
+            "buildId": {
+              "type": "string",
+              "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "inspectFaultPromise": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "version",
+            "buildId",
+            "sha256",
+            "inspectFaultPromise"
+          ],
+          "additionalProperties": false
+        },
+        "imageSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "configSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "variant": {
+          "enum": [
+            "8051",
+            "8052",
+            "sab80535"
+          ]
+        },
+        "clockHz": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "entry": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "format",
+        "version",
+        "runtime",
+        "module",
+        "imageSha256",
+        "configSha256",
+        "variant",
+        "clockHz",
+        "seed",
+        "entry",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "state"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "state"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "pause"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "pause"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "run"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "cycles": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "outcome": {
+              "enum": [
+                "budget",
+                "stop"
+              ]
+            }
+          },
+          "required": [
+            "cycles",
+            "instructions",
+            "outcome"
+          ],
+          "additionalProperties": false
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "progress": {
+          "$ref": "#/$defs/progress"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot",
+        "progress"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "run"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "progress": {
+          "$ref": "#/$defs/progress"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot",
+        "progress"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "step"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "step"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "reset"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "reset"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "boardInput"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "order": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          },
+          "required": [
+            "generation",
+            "cycle",
+            "order"
+          ],
+          "additionalProperties": false
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "boardInput"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "boardInspect"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "payload": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "generation",
+            "schema",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "boardInspect"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "replaceCodeBreakpoints"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "addresses": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "maxItems": 1024,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "addresses"
+          ],
+          "additionalProperties": false
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "body",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "op": {
+          "const": "replaceCodeBreakpoints"
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/error"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "type",
+        "index",
+        "op",
+        "success",
+        "error",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "snapshot": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "state": {
+          "enum": [
+            "paused",
+            "running",
+            "faulted",
+            "terminated"
+          ]
+        },
+        "variant": {
+          "enum": [
+            "8051",
+            "8052",
+            "sab80535"
+          ]
+        },
+        "cycle": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "instructions": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "pc": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "registers": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "b": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "psw": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "sp": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "dptr": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "r": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "maxItems": 8,
+              "minItems": 8
+            }
+          },
+          "required": [
+            "a",
+            "b",
+            "psw",
+            "sp",
+            "dptr",
+            "r"
+          ],
+          "additionalProperties": false
+        },
+        "idle": {
+          "type": "boolean"
+        },
+        "powerDown": {
+          "type": "boolean"
+        },
+        "safeBoundary": {
+          "type": "boolean"
+        },
+        "stopRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "reason": {
+          "enum": [
+            "entry",
+            "pause",
+            "step",
+            "breakpoint",
+            "watchpoint",
+            "exception",
+            "cycle-budget",
+            "power-down-unsupported",
+            "terminated"
+          ]
+        },
+        "imageSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "moduleSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "configSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "moduleId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+        },
+        "moduleVersion": {
+          "type": "string",
+          "maxLength": 31
+        },
+        "controlRole": {
+          "enum": [
+            "observer",
+            "controller"
+          ]
+        },
+        "canTerminate": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "sessionId",
+        "generation",
+        "state",
+        "variant",
+        "cycle",
+        "instructions",
+        "pc",
+        "registers",
+        "idle",
+        "powerDown",
+        "safeBoundary",
+        "stopRevision",
+        "reason",
+        "imageSha256",
+        "moduleSha256",
+        "configSha256",
+        "moduleId",
+        "moduleVersion",
+        "controlRole",
+        "canTerminate"
+      ],
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "type": "object",
+          "properties": {
+            "major": {
+              "const": 2
+            },
+            "minor": {
+              "const": 1
+            }
+          },
+          "required": [
+            "major",
+            "minor"
+          ],
+          "additionalProperties": false
+        },
+        "contractVersion": {
+          "const": "0.2.0"
+        },
+        "runtimeCommit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "contractManifestSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "attachSession",
+              "status",
+              "control",
+              "codeBreakpoints",
+              "decodeCode",
+              "memoryRead",
+              "traceRead",
+              "boardInput",
+              "boardInspect",
+              "boardInspectFault"
+            ]
+          },
+          "maxItems": 10,
+          "uniqueItems": true,
+          "allOf": [
+            {
+              "if": {
+                "contains": {
+                  "const": "boardInspectFault"
+                }
+              },
+              "then": {
+                "contains": {
+                  "const": "boardInspect"
+                }
+              }
+            }
+          ]
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "maxFrameBytes": {
+              "const": 65536
+            },
+            "maxConfigBytes": {
+              "const": 16384
+            },
+            "maxInputs": {
+              "const": 1024
+            },
+            "maxPageRecords": {
+              "const": 128
+            },
+            "maxCycleBudget": {
+              "const": 100000
+            },
+            "maxSafeDrainCycles": {
+              "const": 16
+            },
+            "maxClients": {
+              "const": 8
+            },
+            "maxPendingRequests": {
+              "const": 32
+            },
+            "maxBreakpoints": {
+              "const": 1024
+            },
+            "maxMemoryBytes": {
+              "const": 256
+            },
+            "maxDecodeRecords": {
+              "const": 256
+            },
+            "maxBoardPayloadBytes": {
+              "const": 4096
+            }
+          },
+          "required": [
+            "maxFrameBytes",
+            "maxConfigBytes",
+            "maxInputs",
+            "maxPageRecords",
+            "maxCycleBudget",
+            "maxSafeDrainCycles",
+            "maxClients",
+            "maxPendingRequests",
+            "maxBreakpoints",
+            "maxMemoryBytes",
+            "maxDecodeRecords",
+            "maxBoardPayloadBytes"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocol",
+        "contractVersion",
+        "runtimeCommit",
+        "contractManifestSha256",
+        "capabilities",
+        "limits"
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "INVALID",
+            "VERSION",
+            "STATE",
+            "RANGE",
+            "CAPACITY",
+            "UNSUPPORTED",
+            "BUSY",
+            "STALE",
+            "DENIED",
+            "FAULT",
+            "EXHAUSTED",
+            "IO",
+            "HASH",
+            "NOT_FOUND"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "additionalProperties": false
+    },
+    "progress": {
+      "type": "object",
+      "properties": {
+        "cycles": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "instructions": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        }
+      },
+      "required": [
+        "cycles",
+        "instructions"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

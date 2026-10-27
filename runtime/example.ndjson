@@ -1,0 +1,7 @@
+{"format":"emu-runtime-script","version":1}
+{"op":"state"}
+{"op":"run","cycles":100}
+{"op":"pause"}
+{"op":"step","maxCycles":100}
+{"op":"reset","seed":0,"entry":0}
+{"op":"state"}
