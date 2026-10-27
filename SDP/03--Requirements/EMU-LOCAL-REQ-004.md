@@ -1,6 +1,6 @@
 # EMU-LOCAL-REQ-004 — First local composed runtime
 
-Status: active target; REQ-026
+Status: satisfied for the bounded local milestone; REQ-026
 Authority: user's direct instruction to collaborate until a system builds/runs
 
 REQ-026: provide a generic local executable/library that owns one CPU session,
@@ -12,3 +12,6 @@ outcomes. Preserve CPU/debug legacy behavior and permit external integration to
 pin exact source/SDK/module artifacts. No full machine boot equivalence follows
 from this local milestone. This is a subset milestone toward REQ-018..024;
 network/DAP/signal completion and integrated publication gates remain separate.
+
+Acceptance: SLC-022/023, VER-SLC-022/023 and REV-SLC-022/023. External domain
+results and exact runtime/build/launcher pins are in SLC-023-INTEGRATION.json.

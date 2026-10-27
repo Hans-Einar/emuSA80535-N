@@ -1,6 +1,6 @@
 # ITR-023 / SLC-023 — External composed-system verification
 
-Status: active ITR-023 / SLC-023; verification only
+Status: accepted; VER-SLC-023 passed, REV-SLC-023 approved at e59caa6
 Authority: direct user instruction to cooperate until a system builds and runs
 Prerequisite satisfied: accepted SLC-022 candidate a03504b; SLC-022-ARTIFACT.json
 
@@ -45,3 +45,13 @@ The first composed-system milestone is complete only after these concrete
 build/run trials exist. Network/DAP attachment, administrative signals, richer
 trace and signed RPM publication remain subsequent gates. SDP migration stays
 deferred. No user relay is required between the two owners.
+
+## Acceptance
+
+All five conditions above are satisfied. External product9f673bb and its fresh
+independent review/evidence are accepted in external Master commit4682bb8.
+VER-SLC-023 and SLC-023-INTEGRATION.json retain exact pins, commands, checks and
+durable evidence. REV-SLC-023 independently approves the final records, including
+integrity checks after daemon recovery. No product files changed in this Slice.
+The local first-build/run milestone is complete; no successor implementation is
+active. Future work needs its own recorded authorized contract.

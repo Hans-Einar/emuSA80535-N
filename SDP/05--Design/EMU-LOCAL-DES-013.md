@@ -1,6 +1,6 @@
 # EMU-LOCAL-DES-013 — Local runtime delivery
 
-Status: active implementation design; DES-115..DES-118
+Status: implemented and accepted for the local milestone; DES-115..DES-118
 Authority: REQ-026; SLC-022; bundle0.2.0
 
 ## DES-115 — Session and deterministic scheduler

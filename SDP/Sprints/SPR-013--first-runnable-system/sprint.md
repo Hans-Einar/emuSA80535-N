@@ -1,6 +1,6 @@
 # SPR-013 — First runnable composed system
 
-Status: active
+Status: complete; first local composed build/run accepted
 Started: 2026-10-27
 Authority: direct user instruction to continue collaborating with the Ponsse
 agent until a complete system can be built and run; choose pinned dependency
@@ -24,12 +24,20 @@ the same identity discipline. SDP migration and RPM publication remain deferred.
 
 ## Sequence
 
-1. ITR-021/SLC-021: CPU contract facade and synthetic callback conformance.
+1. Accepted ITR-021/SLC-021: CPU contract facade and synthetic callback conformance.
 2. Accepted ITR-022/SLC-022: session/scheduler, loader, local host controls and
    synthetic shared module; concrete runtime source/artifact/launch handoff.
-3. Active ITR-023/SLC-023 integration verification: independently reviewed Ponsse module + exact
+3. Accepted ITR-023/SLC-023 integration verification: independently reviewed Ponsse module + exact
    runtime/SDK/ROM/config pins, deterministic run/reset and unsupported evidence.
 
 Only one Slice is active. Every implementation gets a fresh Worker and separate
 fresh Reviewer. Master records successor contracts and cross-repo integration.
 Interface bundle0.1.0 remains immutable; changes require a new bundle version.
+
+## Completion
+
+REQ-026 is satisfied by the accepted runtime and externally owned pinned build,
+launcher and diagnostic trials. SLC-021, SLC-022 and SLC-023 each have independent
+review and verification. See Handoff.md and SLC-023-INTEGRATION.json. This is a
+bounded scripted local system, not full machine boot or remote debugger/DAP
+completion. Signed package publication and SDP migration remain deferred.

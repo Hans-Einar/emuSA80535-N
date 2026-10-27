@@ -1,6 +1,6 @@
 # Handoff — First runnable system
 
-Status: active SPR-013/ITR-023/SLC-023; SLC-021 and SLC-022 accepted
+Status: complete SPR-013; SLC-021, SLC-022 and SLC-023 accepted; no active successor
 
 The direct user authorizes continued cross-repo implementation to a buildable,
 runnable first system. Ponsse's agent owns SDK intake/board adapter/integration.
@@ -41,7 +41,7 @@ SDK0.1/ABI1.0; its artifact and companion manifest are external integration inpu
 and will be verified independently against the actual runtime. No external source
 is copied into this repository. Its full-system integration then awaited a runtime pin, now supplied below.
 
-## Accepted runtime and active external verification
+## Runtime acceptance checkpoint before external verification
 
 Runtime candidate a03504b is approved by REV-SLC-022/f999ce9. Exact source archive,
 SDK compatibility, build command and durable evidence are in SLC-022-ARTIFACT.json.
@@ -50,8 +50,46 @@ session/debug and wire2.1 messages are implemented locally; transport/DAP attach
 remain future. Immutable SDK target labels record publication history; actual
 availability comes from the pinned runtime and hello capabilities.
 
-SLC-023 now verifies the complete external build/launcher and board/ROM trials.
+SLC-023 subsequently verified the complete external build/launcher and board/ROM trials.
 Ponsse owns the integration code and its fresh Worker/Reviewer loop. No board or
 firmware code is imported here. Master has already reproduced an unsupported
 stop and reset/repeat with the exact external module; final external launcher
-acceptance is still required. Continue directly with that owner, no user relay.
+acceptance and local integration review are now recorded below.
+
+## Final handoff — first runnable local system
+
+The generic runtime source is a03504bd186efe3a8882bd3f1cdb5c4cf463f30d, reviewed
+at f999ce9; exact archive/hash are in SLC-022-ARTIFACT.json. Ponsse owns the full
+system bootstrap, module and launcher. Its product9f673bb is accepted with fresh
+review and evidence at4682bb89d075838bb8d836b165f1b2b2499e1dd2. Local VER-SLC-023
+passes and REV-SLC-023 approves at e59caa6. SLC-023-INTEGRATION.json provides
+machine-readable pins and durable verification/review evidence locations.
+
+Dependency delivery uses exact local source/SDK archives and SHA256 pins; no
+nested repository or duplicated CPU implementation is required. One process
+owns the CPU and loads the external board module. Old SDK0.1/ABI1.0 board modules
+remain compatible with the accepted runtime's SDK0.2/native wire2.1 profile.
+
+The persistent external `p1000/simulator/build-v0` is built and verify-build
+passes. From `/home/warloc/git/ponsse/p1000/simulator`, run:
+
+```sh
+python3 tools/v0.py verify-build
+python3 tools/v0.py run synthetic --output build-v0/try-synthetic
+python3 tools/v0.py run rom-trial --output build-v0/try-rom-trial
+```
+
+Each output directory must be new. RUN_V0.md in that external directory documents
+fresh offline bootstrap, the short image trial and custom single-session control
+scripts. All four scenarios, eight module/SDK tests and thirteen integration
+tests passed. Separate-process and reset replay are verified. The original
+firmware reaches a controlled unsupported board access; exact domain context
+belongs to the external verification evidence. Full boot is not established.
+
+Network/DAP attachment, administrative signals, richer trace, further board
+modeling and signed RPM publication remain separate future work. The existing
+legacy debugger workflow is preserved. SDP kanban/sessions migration remains
+deferred. No new implementation Slice is active; do not repeat historical next
+steps without a new authorized contract. The daemon interruption changed no
+reviewed product bytes; retained evidence and external acceptance were verified
+before closure, with execution/recovery authorship distinguished in the records.

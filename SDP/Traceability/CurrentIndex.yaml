@@ -2,9 +2,9 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-10-27
 
 active:
-  sprint: SPR-013
-  iteration: ITR-023
-  slice: SLC-023
+  sprint: null
+  iteration: null
+  slice: null
 
 merge_gate:
   status: MERGED
@@ -23,8 +23,10 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
-  ITR-023: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/IntegrationSlice.md}
-  SLC-023: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/IntegrationSlice.md}
+  REV-SLC-023: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-023.md}
+  VER-SLC-023: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-023.md}
+  ITR-023: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/IntegrationSlice.md}
+  SLC-023: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/IntegrationSlice.md}
   REV-SLC-022: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-022.md}
   VER-SLC-022: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-022.md}
   REV-SLC-022-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-022.md}
@@ -36,7 +38,7 @@ items:
   REV-SLC-022-F007: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-022.md}
   REV-SLC-022-F008: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-022.md}
   REV-SLC-022-F009: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-022.md}
-  REQ-026: {kind: requirement, status: implemented, state: integration-verification-pending, source: SDP/03--Requirements/EMU-LOCAL-REQ-004.md}
+  REQ-026: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-LOCAL-REQ-004.md}
   DES-115..DES-118: {kind: design-range, status: accepted, state: current, source: SDP/05--Design/EMU-LOCAL-DES-013.md}
   ITR-022: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/RuntimeSlice.md}
   SLC-022: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/RuntimeSlice.md}
@@ -49,7 +51,7 @@ items:
   REV-SLC-021-F004: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-021.md}
   REV-SLC-021-F005: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-021.md}
   REV-SLC-021-F006: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-021.md}
-  SPR-013: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/sprint.md}
+  SPR-013: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/sprint.md}
   ITR-021: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/ScrumIterations.md}
   SLC-021: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-013--first-runnable-system/ScrumIterations.md}
   REQ-025: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-INTERFACE-REQ-003.md}

@@ -21,12 +21,12 @@ not override the current index or a later integration record.
 
 SPR-010 / SLC-018 produced reviewed AlmaLinux package prototypes, but publication
 is deferred. SPR-011 / SLC-019 establishes the reviewed modular runtime target:
-see `04--Architecture/EMU-RUNTIME-ARCH-003.md` and its Sprint handoff. SPR-013 / SLC-023 is the active external integration verification contract. SPR-012 / SLC-020 delivers accepted contract
+see `04--Architecture/EMU-RUNTIME-ARCH-003.md` and its Sprint handoff. SPR-013 / SLC-023 completes the first local composed build/run milestone; no Slice is active. SPR-012 / SLC-020 delivers accepted contract
 bundle0.1.0 at `../interfaces/0.1.0/README.md` and canonical public headers at
 `../lib/include/emusa80535`. See VER-SLC-020 and SLC-020-ARTIFACT.json for review,
 verification and exact local export identity. REQ-025 is satisfied. SLC-021 implements CPU API1 and selects immutable bundle0.2.0;
 see VER-SLC-021 and SLC-021-ARTIFACT.json. SLC-022 implements the reviewed controller/loader/local host; see VER-SLC-022
-and SLC-022-ARTIFACT.json. External composed-system verification is active under REQ-026, while full REQ-018..024 completion, network/DAP and publication
+and SLC-022-ARTIFACT.json. External composed-system verification satisfies REQ-026 (VER-SLC-023 and SLC-023-INTEGRATION.json), while full REQ-018..024 completion, network/DAP and publication
 remain future. New work uses the selected immutable contracts and capability limits.
 
 The next debugger feature work remains Gate B: canonical CPU producers and
