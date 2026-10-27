@@ -17,3 +17,9 @@ These external plans are coordination facts, not accepted external product.
 First runnable gate can use a local CLI/harness; network and DAP are not required
 for this initial gate. No full machine boot claim without evidence. Do not
 publish RPMs or upgrade SDP. Preserve source-scoped DEBUG aliases and history.
+
+Implementation finding: core callbacks need an opt-in checked-execution abort
+predicate to propagate module failures before later effects. Master authorized
+this generic legacy-header addition under SLC-021, creating bundle0.2.0 while
+preserving0.1.0 and board ABI1.0. See the Slice amendment. Ponsse is notified that
+its ABI1 board adapter can continue against its accepted0.1.0 pin.
