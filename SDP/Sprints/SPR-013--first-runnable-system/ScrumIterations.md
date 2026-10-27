@@ -73,3 +73,20 @@ coverage becomes available; session/loader/wire2/DAP remain future. A single
 TARGET_IMPLEMENTED marker must not imply all runtime features exist. Record
 new bundle provenance, version selection and compatibility in new docs plus
 implementationNotes. Its payload freezes only after this Slice's review.
+
+## Consumer diagnostic amendment — bundle0.2.0 target wire2.1
+
+Ponsse identified that pure native board inspection remains useful after an
+UNSUPPORTED access, but wire2.0/facade state rules forbid it in faulted state.
+Define an explicit optional `boardInspectFault` capability in the new0.2.0
+bundle's target wire2.1 profile (major2/minor1). It depends on boardInspect and
+allows only pure bounded boardInspect in a nonexecuting faulted session, even
+when CPU safeBoundary=false. No CPU peek/decode/execution or mutation is thereby
+allowed. Module schema errors/STATE remain explicit; no retry or reset. Native
+board ABI1.0/layout is unchanged because inspect already promises pure/non-
+consuming behavior. Old0.1.0/wire2.0 bytes and restrictions remain untouched.
+
+Worker updates only the new bundle docs/schema/examples/version metadata and
+checks consistently. This is a target wire contract, not network implementation
+in SLC-021. The future local host may use the same service path for post-fault
+diagnostics; its own scriptable CLI is a separate product contract.
