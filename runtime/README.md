@@ -5,6 +5,13 @@ Build offline from a pinned clean source checkout/archive with `make emu-runtime
 Dependencies are a C99 compiler, GNU make, Linux x86-64 libc/libdl, Python3 for
 build identity, and the included source. `make install-runtime DESTDIR=...`
 installs the executable, CPU/session static libraries and these product docs.
+This runtime implements native API1 session create/destroy/pump and debug
+open/request/close, alongside CPU API1. Immutable SDK0.2.0 headers retain their
+historical publication labels (`TARGET` and `EMUIF_TARGET_IMPLEMENTED=0`);
+those frozen labels describe the bundle's publication, not this later runtime.
+The exact runtime source pin shown by `--version`, identity and capability hello
+is the implementation authority. Socket listeners and DAP attach remain absent.
+
 The source archive must carry its exact `SOURCE_COMMIT` (the repository's
 `packaging/make_source.py` generates it). Record and verify the archive SHA256
 before unpacking. No external board implementation is included.
