@@ -1,6 +1,6 @@
 # ITR-020 / SLC-020 — Shared interface contracts and SDK
 
-Status: active
+Status: complete; SLC-020 accepted
 
 ## Worker contract
 
@@ -50,3 +50,10 @@ Master owns sprint/handoff, index, relations and ledger. Separate fresh Reviewer
 must review contracts, headers, examples, provenance/export and compatibility;
 resolve findings before acceptance. Worker commits own changes and reports
 commands/results and residual implementation gaps.
+
+## Result
+
+Worker candidates ae7b874/24f1268/867e9ed were corrected through 7d924cc.
+Independent REV-SLC-020 approved; seven grouped findings resolved. VER-SLC-020
+records contract, regression, source-archive/install and reproducibility gates.
+No successor product implementation is activated.

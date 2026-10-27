@@ -1,6 +1,6 @@
 # EMU-INTERFACE-DES-012 — Shared interface authority and distribution
 
-Status: SLC-020 contract candidate
+Status: accepted and delivered contract/header bundle0.1.0
 Design IDs: DES-111..DES-114; realizes REQ-025
 
 ## DES-111 — One canonical include tree

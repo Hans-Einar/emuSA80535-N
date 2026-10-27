@@ -2,9 +2,9 @@ schema_version: emu-sab80535-current-index-v1
 updated: 2026-10-27
 
 active:
-  sprint: SPR-012
-  iteration: ITR-020
-  slice: SLC-020
+  sprint: null
+  iteration: null
+  slice: null
 
 merge_gate:
   status: MERGED
@@ -23,9 +23,21 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
-  SPR-012: {kind: sprint, status: active, state: current, source: SDP/Sprints/SPR-012--interface-contracts/sprint.md}
-  ITR-020: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-012--interface-contracts/ScrumIterations.md}
-  SLC-020: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-012--interface-contracts/ScrumIterations.md}
+  REQ-025: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-INTERFACE-REQ-003.md}
+  DES-111..DES-114: {kind: design-range, status: accepted, state: current, source: SDP/05--Design/EMU-INTERFACE-DES-012.md}
+  IFC-001: {kind: interface-bundle, version: 0.1.0, status: accepted-immutable, state: current, source: interfaces/0.1.0/manifest.json}
+  REV-SLC-020: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  VER-SLC-020: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-020.md}
+  REV-SLC-020-F001: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  REV-SLC-020-F002: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  REV-SLC-020-F003: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  REV-SLC-020-F004: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  REV-SLC-020-F005: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  REV-SLC-020-F006: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  REV-SLC-020-F007: {kind: finding, status: resolved, state: current, source: SDP/CodeReview/REV-SLC-020.md}
+  SPR-012: {kind: sprint, status: complete, state: current, source: SDP/Sprints/SPR-012--interface-contracts/sprint.md}
+  ITR-020: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-012--interface-contracts/ScrumIterations.md}
+  SLC-020: {kind: slice, status: accepted-contract-sdk, state: current, source: SDP/Sprints/SPR-012--interface-contracts/ScrumIterations.md}
   STU-004: {kind: study, status: accepted, state: current, source: SDP/02--Study/EMU-RUNTIME-STU-004.md}
   REQ-018..REQ-024: {kind: requirement-range, status: accepted, state: target, source: SDP/03--Requirements/EMU-RUNTIME-REQ-002.md}
   ARCH-011..ARCH-018: {kind: architecture-range, status: accepted, state: target, source: SDP/04--Architecture/EMU-RUNTIME-ARCH-003.md}

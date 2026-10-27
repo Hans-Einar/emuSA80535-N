@@ -1,6 +1,6 @@
 # EMU-INTERFACE-REQ-003 — Shared contract package
 
-Status: target contract; SLC-020 acceptance requires review/verification
+Status: REQ-025 satisfied by accepted bundle0.1.0 through REV/VER-SLC-020
 
 - **REQ-025 — Versioned shared interfaces:** publish within the repository a
   self-contained, versioned specification and canonical public header package

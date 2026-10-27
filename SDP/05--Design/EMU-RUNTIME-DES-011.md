@@ -1,7 +1,7 @@
 # EMU-RUNTIME-DES-011 — Runtime integration design constraints
 
 Design items: DES-101..DES-110
-Status: accepted target design constraints; no concrete ABI/wire/CLI freeze
+Status: accepted target constraints; refined by interfaces/0.1.0 API/ABI/wire contracts; runtime implementation pending
 Authority: SLC-019; refines ARCH-011..ARCH-018 / REQ-018..REQ-024
 
 ## DES-101 — Session and CPU facade
@@ -137,5 +137,5 @@ Acceptance includes variant regressions, synthetic timed bus/pin/IRQ fixtures,
 delay/IDLE/sleep-policy checks, replay equality, ABI rejection/cleanup, observer
 neutrality, one-CPU attach without reset, common CPU/board pause, repeated
 disconnect/reconnect, malformed/slow clients and signal bursts. Separate
-process board IPC and richer frontend features are later extensions. Existing
+board-process IPC is excluded; richer frontend features remain later work. Existing
 RPM prototypes can be reused once the integrated milestone is satisfied.

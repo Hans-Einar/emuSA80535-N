@@ -1,7 +1,7 @@
 # EMU-RUNTIME-ARCH-003 — Modular simulation runtime
 
 Architecture items: ARCH-011..ARCH-018
-Status: accepted target direction; implementation and interface freeze pending
+Status: accepted target direction; initial interface baseline in interfaces/0.1.0; runtime implementation pending
 Authority: SLC-019; REQ-018..REQ-024; informed by STU-004
 
 ## ARCH-011 — Build and ownership boundaries
@@ -35,12 +35,12 @@ second CPU engine. Independent compilation does not require separate processes.
 | Composition | Consequence |
 |---|---|
 | In-process module, selected baseline | Direct ordered transactions and straightforward common pause; native module faults affect the host |
-| Separate board process, future option | Failure isolation and independent deployment, but requires explicit request/response ordering, time barriers, failure recovery and serialization |
 
-A future IPC adapter may implement the board-facing contract, but is not part
-of the first delivery. This choice follows complexity and deterministic
-ordering, not an unmeasured throughput assumption. Loaded native code is a
-trusted component, not a sandbox.
+The user's subsequent confirmation excludes separate board processes from the
+selected architecture and bundle0.1.0. No board IPC contract or implementation
+is planned here. This choice follows complexity and deterministic ordering,
+not an unmeasured throughput assumption. Loaded native code is a trusted
+component, not a sandbox.
 
 ## ARCH-014 — One simulation execution owner
 

@@ -22,8 +22,12 @@ not override the current index or a later integration record.
 SPR-010 / SLC-018 produced reviewed AlmaLinux package prototypes, but publication
 is deferred. SPR-011 / SLC-019 establishes the reviewed modular runtime target:
 see `04--Architecture/EMU-RUNTIME-ARCH-003.md` and its Sprint handoff. No
-implementation Slice is active. Target requirements REQ-018..024 remain
-unimplemented, and exact interfaces must be frozen in the next contract.
+implementation Slice is active. SPR-012 / SLC-020 delivers accepted contract
+bundle0.1.0 at `../interfaces/0.1.0/README.md` and canonical public headers at
+`../lib/include/emusa80535`. See VER-SLC-020 and SLC-020-ARTIFACT.json for review,
+verification and exact local export identity. REQ-025 is satisfied; target
+runtime requirements REQ-018..024 remain unimplemented. New work must use the
+frozen bundle and its explicit implementation/capability boundaries.
 
 The next debugger feature work remains Gate B: canonical CPU producers and
 safe-boundary stop application, followed by the stable facade/paging and
