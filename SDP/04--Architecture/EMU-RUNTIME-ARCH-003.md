@@ -67,6 +67,12 @@ distinct. Existing NDJSON1.0 launch remains supported by a compatibility
 adapter. Attach/autonomous-run capabilities require new explicit negotiation,
 not changed meanings of old run/terminate commands.
 
+Low-level runtime detach preserves execution state. The DAP adapter translates
+graceful disconnect policy into authorized lifecycle operations: where DAP
+requires resuming the debuggee, resume must be applied and acknowledged before
+detaching. Negotiate and honor `supportSuspendDebuggee`; abrupt connection loss
+preserves state without silently replaying operations or terminating the runtime.
+
 ## ARCH-017 — Host administration
 
 OS signals, endpoint discovery, connection authentication and diagnostics

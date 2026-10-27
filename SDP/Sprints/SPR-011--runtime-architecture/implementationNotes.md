@@ -29,3 +29,16 @@ ID coverage); no product regression rerun is needed for these prose-only edits.
 
 Fresh review and Master acceptance/traceability remain pending. No board code,
 network endpoint, release upload or runtime behavior was changed.
+
+## Review correction R1
+
+ARCH-016 and DES-106 now distinguish runtime detach from graceful DAP
+disconnect. The adapter maps the pinned DAP default resume policy and
+negotiated `supportSuspendDebuggee` behavior into authorized transitions,
+acknowledged after application and before relinquishing control. Abrupt loss
+still preserves execution state without replay or termination. This corrects
+the documented adapter mapping without freezing wire names or changing code.
+Evidence: pinned `@vscode/debugprotocol` 1.68.0 declaration,
+`debugProtocol.d.ts` lines 631–654, inspected in the existing SLC-018 DAP
+validation checkout. Validation: scoped prose diff and `git diff --check`;
+independent re-review remains pending.

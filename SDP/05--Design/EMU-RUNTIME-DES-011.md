@@ -71,6 +71,18 @@ reconnect revalidates session/generation and cannot silently replay commands.
 Termination is an explicit authorized operation. Launch-owned stdio retains
 its accepted EOF/terminate cleanup through its compatibility policy.
 
+DAP graceful disconnect from an attached runtime is a separate adapter policy.
+Under the pinned `@vscode/debugprotocol` 1.68.0 contract, omitted or false
+`suspendDebuggee` defaults to resume. Where required,
+the authorized controller requests resume, waits for acknowledgement that the
+transition was applied, then detaches and relinquishes control. Advertise
+`supportSuspendDebuggee` only when supported; when negotiated and requested,
+apply and acknowledge suspension before detach. A failed or unacknowledged
+transition must not be reported as a successful policy application. Abrupt
+connection loss follows the runtime state-preserving rule above, with no
+implicit terminate or silent replay after reconnect. This mapping fixes no
+wire command names and does not change low-level detach semantics.
+
 Bound command work, response queues and trace retention. Slow readers receive
 explicit expiry/loss or disconnect; they cannot block the execution owner on
 unbounded writes. Maintain frozen cursor/loss semantics. Pause/step/status use
