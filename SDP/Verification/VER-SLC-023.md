@@ -69,11 +69,14 @@ Each of its six source-file digests matches both the exact commit and current
 external product files. A hash-addressed snapshot is retained with recovery
 evidence, so this verification does not depend on a mutable external draft.
 
-At capture, the external passed verification and complete Master report existed
-but their bookkeeping was not yet committed following the daemon restart. This
-record asserts the actual independent approval and verified product identity;
-it does not invent an external acceptance commit. Local fresh review determines
-acceptance under IntegrationSlice.md item5; Master owns final traceability.
+At initial recovery capture the external approval existed without its bookkeeping
+commit. The external Master subsequently committed the approved review, passed
+verification and completion record as
+`4682bb89d075838bb8d836b165f1b2b2499e1dd2`. Recovery verification confirmed that
+its review content matches the retained snapshot and all six frozen product
+files remain byte-identical to9f673bb. Both the independent approval and external
+Master acceptance are therefore present. Local fresh review determines Slice
+acceptance; Master here owns final traceability.
 
 ## Limits
 

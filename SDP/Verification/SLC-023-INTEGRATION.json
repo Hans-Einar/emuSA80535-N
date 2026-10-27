@@ -24,9 +24,10 @@
       "path": "/home/warloc/git/ponsse/SDP/CodeReview/REV-PERIPH-RUN-001.md",
       "sha256": "27cf6e6bbfb71c07c8f89c7bae19b67fd566fda92af8f44fea2c5a2555ea53b0",
       "retained_snapshot": "/home/warloc/git/emuSA80535-N-artifacts/integration/SLC-023/9f673bb3660cb1a957a95110a69283a55ad990ba/verification-recovery/REV-PERIPH-RUN-001.md",
-      "record_commit": null
+      "record_commit": "4682bb89d075838bb8d836b165f1b2b2499e1dd2"
     },
-    "master_finalization": "Approved review and passed verification/complete Master report exist; external bookkeeping was uncommitted when captured after daemon recovery."
+    "master_finalization": "Accepted and committed after recovery; reviewed product bytes unchanged.",
+    "acceptance_commit": "4682bb89d075838bb8d836b165f1b2b2499e1dd2"
   },
   "artifact_sha256": {
     "module/p1000-board.build-identity.json": "94984489876107bd74c9179c359755ac1420dfec3835aed356ce87807776bc53",
