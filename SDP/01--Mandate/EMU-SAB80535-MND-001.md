@@ -44,3 +44,20 @@ classic upstream behavior and ancestry.
 MND-001 is informed by STU-001 and STU-002, realized through REQ-001..REQ-016 and
 constrained by ARCH-001..ARCH-010.
 
+## Runtime architecture addendum — 2026-10-27
+
+The user's architecture clarification adds generic orchestration, external
+board-module loading and independently attachable debugging to the target
+program. These are separate components/build targets in this repository;
+the CPU engine retains its portable boundary. Board implementations remain
+in their owning external projects.
+
+Optional Unix/TCP debug-control transports and host administrative signals
+are authorized target capabilities, not physical machine-I/O backends.
+Simulation remains deterministic and virtual by default; no listener opens
+implicitly. Remote debugger access requires explicit configuration and
+authentication/protection. SLC-019 establishes design only, through STU-004,
+REQ-018..REQ-024, ARCH-011..ARCH-018 and DES-101..DES-110. Existing protocol1.0,
+CPU acceptance and historical authorities remain intact; implementation and
+package publication require their recorded successor gates.
+
