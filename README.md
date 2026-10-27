@@ -342,15 +342,33 @@ Arguments to functions are prefixed with "a", such as in
 
 Local variables are using standard [snake case](https://wikipedia.org/wiki/Snake_case).
 
+## Composed local runtime
+
+`make emu-runtime` builds the generic Linux x86-64 host. One process owns the CPU
+and loads an independently built board `.so`; the local script supports bounded
+run, pause, step, state, input, inspection, breakpoints and reset. See
+[runtime invocation, script schemas and limits](runtime/README.md). `make cpu-sdk`
+and `make runtime-sdk` build the separate static libraries. `make install-runtime`
+installs the host, canonical headers, libraries, licenses and documentation.
+
+The external simulator project owns its board, firmware and complete-system
+launcher, using exact runtime/SDK artifacts and hashes. This repository contains
+no machine-specific implementation. Network/DAP attachment and administrative
+signals remain future work; the existing `emu-debug` protocol1.0 workflow is
+separate. RPM publication remains deferred.
+
 ## Shared interface contracts
 
-[Interface bundle 0.1.0](interfaces/0.1.0/README.md) defines CPU/controller,
-loadable board, debugger transport and DAP contracts with availability labels.
-Canonical headers live in `lib/include/emusa80535`; all new consumers include
-`<emusa80535/...>` with `-Ilib/include` (or installed pkg-config flags).
-Target runtime declarations are not implemented library functions yet.
+[Interface bundle 0.2.0](interfaces/0.2.0/README.md) is the selected immutable
+contract, preserving [0.1.0](interfaces/0.1.0/README.md) for existing consumers.
+Canonical headers live in `lib/include/emusa80535`; consumers include
+`<emusa80535/...>` with `-Ilib/include` or the installed include path.
+CPU API1 and native session/debug API1 are implemented by the reviewed local
+runtime. Frozen SDK target labels describe their publication-time availability;
+the pinned runtime's documentation and hello capabilities define actual support.
+Board ABI1.0 remains compatible with the earlier SDK.
 
-Run `make interface-check` (C/C++ compilers, Python3 and Python jsonschema), then
-export an exact clean committed revision with
-`python3 interfaces/tools/bundle.py export --output /tmp/emusa80535-interfaces-0.1.0.tar.gz`.
-See the bundle's versioning document for hashes, consumer locks and verification.
+Run `make interface-check` (C/C++ compilers, Python3 and Python jsonschema).
+Use the accepted versioned artifacts in
+[the delivery record](SDP/Verification/SLC-022-ARTIFACT.json); export/release
+instructions and consumer-lock rules are in the bundle's versioning document.

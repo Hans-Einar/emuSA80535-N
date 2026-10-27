@@ -35,11 +35,11 @@ versioned protocol extension. DAP Issue #6 in `emuSA80535-DAP` depends on that
 contract. REQ-015 capture/replay also remains planned.
 
 An external simulator can already instantiate a CPU and load a raw image.
-The selected target composition instead has a generic runtime own that CPU
-and load an external board module, with independently attachable debugging.
-Stock `emu-debug` currently owns its own CPU; implementing the new reusable
-debug-service/session boundary remains required. Legacy embedding remains a
-supported compatibility path.
+The accepted local composition has a generic runtime own that CPU and load an
+external board module. The native reusable debug-service/session boundary is
+implemented; network transports and independently attaching debugger/DAP clients
+remain future work. Stock `emu-debug` still owns its own CPU and preserves its
+protocol1.0 workflow. Legacy embedding remains a supported compatibility path.
 
 ## History and future migration
 
