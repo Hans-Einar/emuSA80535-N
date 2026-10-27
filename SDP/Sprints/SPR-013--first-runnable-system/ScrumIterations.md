@@ -1,6 +1,6 @@
 # ITR-021 / SLC-021 — Implement CPU contract facade
 
-Status: active
+Status: complete; SLC-021 accepted through REV/VER-SLC-021
 
 ## Worker contract
 
@@ -90,3 +90,9 @@ Worker updates only the new bundle docs/schema/examples/version metadata and
 checks consistently. This is a target wire contract, not network implementation
 in SLC-021. The future local host may use the same service path for post-fault
 diagnostics; its own scriptable CLI is a separate product contract.
+
+## Accepted result
+
+Candidate0a77c2d, review f9266f3, six findings resolved. Bundle0.2.0 and CPU API1
+are accepted; exact artifact identity is in SLC-021-ARTIFACT.json. The active
+successor contract is RuntimeSlice.md (ITR-022/SLC-022).

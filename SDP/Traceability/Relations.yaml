@@ -4,6 +4,29 @@ updated: 2026-10-27
 identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 
 relations:
+  - {from: SLC-021, type: delivers, to: IFC-002}
+  - {from: IFC-002, type: supersedes, to: IFC-001}
+  - {from: REV-SLC-021, type: reviews, to: SLC-021}
+  - {from: VER-SLC-021, type: verifies, to: SLC-021}
+  - {from: ITR-021, type: belongs_to, to: SPR-013}
+  - {from: SLC-021, type: belongs_to, to: ITR-021}
+  - {from: REQ-026, type: derives_from, to: MND-001}
+  - {from: DES-115..DES-118, type: realizes, to: REQ-026}
+  - {from: SPR-013, type: schedules, to: REQ-026}
+  - {from: ITR-022, type: belongs_to, to: SPR-013}
+  - {from: SLC-022, type: belongs_to, to: ITR-022}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F001}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F001}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F002}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F002}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F003}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F003}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F004}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F004}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F005}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F005}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F006}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F006}
   - {from: REQ-025, type: derives_from, to: MND-001}
   - {from: REQ-025, type: refines, to: REQ-018..REQ-024}
   - {from: DES-111..DES-114, type: realizes, to: REQ-025}

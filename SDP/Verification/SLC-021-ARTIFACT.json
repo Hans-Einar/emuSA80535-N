@@ -1,0 +1,29 @@
+{
+  "archiveSha256": "5abd71f52925c8fcf299b8b8ed417279a1bc20f2a5f004425bc083f87e9cf91d",
+  "bundleVersion": "0.2.0",
+  "exportPath": "/home/warloc/git/emuSA80535-N-artifacts/interfaces/0.2.0/emusa80535-interfaces-0.2.0.tar.gz",
+  "implemented": "CPU API1 only",
+  "manifestSha256": "7be6be79dac99753c051b9b1a257e0774a14bf1115d70553e1371a513e583e72",
+  "networkPublication": false,
+  "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+  "review": "REV-SLC-021",
+  "reviewCommit": "f9266f3af61409d69775e177599ca8117a42b992",
+  "sourceCommit": "0a77c2d0da22ecb0bd37781b430e30444f779e39",
+  "verification": "VER-SLC-021",
+  "versions": {
+    "boardAbi": {
+      "major": 1,
+      "minor": 0,
+      "platform": "linux-x86_64-sysv-le"
+    },
+    "legacyWire": {
+      "major": 1,
+      "minor": 0
+    },
+    "nativeApi": 1,
+    "runtimeWire": {
+      "major": 2,
+      "minor": 1
+    }
+  }
+}

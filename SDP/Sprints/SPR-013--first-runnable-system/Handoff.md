@@ -1,6 +1,6 @@
 # Handoff — First runnable system
 
-Status: active SPR-013/ITR-021/SLC-021
+Status: active SPR-013/ITR-022/SLC-022; SLC-021 accepted
 
 The direct user authorizes continued cross-repo implementation to a buildable,
 runnable first system. Ponsse's agent owns SDK intake/board adapter/integration.
@@ -23,3 +23,20 @@ predicate to propagate module failures before later effects. Master authorized
 this generic legacy-header addition under SLC-021, creating bundle0.2.0 while
 preserving0.1.0 and board ABI1.0. See the Slice amendment. Ponsse is notified that
 its ABI1 board adapter can continue against its accepted0.1.0 pin.
+
+## Current accepted CPU and active runtime
+
+CPU API1 candidate0a77c2d is approved by REV-SLC-021/f9266f3 and VER-SLC-021.
+Bundle0.2.0 is immutable; exact export is in SLC-021-ARTIFACT.json. BoardABI1.0
+remains compatible with the external0.1 consumer; raw legacy CPU users rebuild.
+Input ordering is per(cycle,admission ID), with controller owning identity and
+generation. UART_FRAME applies only to SAB80535 mode3; effective-pin output is
+not advertised. Pure post-fault board inspection is target wire2.1 capability.
+
+RuntimeSlice.md is now the one active contract, with two disjoint fresh Worker
+areas (session/debug, host/loader) and one fresh Reviewer. REQ-026/DES-115..118
+define this local milestone without asserting full REQ-024 completion.
+Ponsse reports its native board module accepted at source305cd0b, built against
+SDK0.1/ABI1.0; its artifact and companion manifest are external integration inputs
+and will be verified independently against the actual runtime. No external source
+is copied into this repository. Its full-system integration awaits a runtime pin.
