@@ -1,7 +1,8 @@
+.DEFAULT_GOAL := all
 ifeq ($(origin CC),default)
 CC := gcc
 endif
-CPPFLAGS += -I../lib/include
+override CPPFLAGS += -I../lib/include
 CFLAGS ?= -O2 -g
 CFLAGS += -std=c99 -Wall -Wextra -Wno-unused-parameter -Wshadow
 

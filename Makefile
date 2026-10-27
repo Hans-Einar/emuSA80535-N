@@ -16,7 +16,7 @@ DEBUG_BIN := emu-debug
 CLEAN_CMD = rm -f $(BIN) $(DEBUG_BIN) $(OBJ) $(SDK_OBJ) $(SDK_LIB) emusa80535.pc
 endif
 
-DEBUG_COMMIT := $(shell git rev-parse --verify HEAD 2>/dev/null || echo unknown)
+DEBUG_COMMIT := $(shell if test -f SOURCE_COMMIT; then cat SOURCE_COMMIT; else git rev-parse --verify HEAD 2>/dev/null || echo unknown; fi)
 DEBUG_SRC := emu_debug_server.c emu_debug.c core.c opcodes.c disasm.c binary_loader.c
 DAP_ROOT ?= ../emuSA80535-DAP
 
@@ -25,7 +25,7 @@ SDK_SRC := core.c opcodes.c disasm.c binary_loader.c emu_debug.c \
 	emu_debug_event.c emu_debug_trace.c emu_debug_runtime.c
 SDK_OBJ := $(SDK_SRC:.c=.sdk.o)
 SDK_HEADERS := $(wildcard lib/include/emusa80535/*.h lib/include/emusa80535/contracts/*.h)
-CPPFLAGS += -Ilib/include
+override CPPFLAGS += -Ilib/include
 PYTHON ?= python3
 CONTRACT_VERSION := 0.1.0
 VERSION := 1.0.0
