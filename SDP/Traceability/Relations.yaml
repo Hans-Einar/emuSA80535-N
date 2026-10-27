@@ -1,9 +1,14 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-10-27
+updated: 2026-10-28
 
 identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 
 relations:
+  - {from: ITR-024, type: belongs_to, to: SPR-014}
+  - {from: SLC-024, type: belongs_to, to: ITR-024}
+  - {from: REQ-027..REQ-029, type: derives_from, to: MND-001}
+  - {from: DES-119..DES-124, type: realizes, to: REQ-027..REQ-029}
+  - {from: SLC-024, type: specifies, to: DES-119..DES-124}
   - {from: REV-SLC-023, type: reviews, to: SLC-023}
   - {from: VER-SLC-023, type: verifies, to: SLC-023}
   - {from: SLC-023, type: satisfies, to: REQ-026}
