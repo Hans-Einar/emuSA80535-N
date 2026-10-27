@@ -1,8 +1,8 @@
 # ITR-023 / SLC-023 — External composed-system verification
 
-Status: planned; not active, no implementation authority yet
+Status: active ITR-023 / SLC-023; verification only
 Authority: direct user instruction to cooperate until a system builds and runs
-Prerequisite: accepted SLC-022 runtime candidate and exact source artifact
+Prerequisite satisfied: accepted SLC-022 candidate a03504b; SLC-022-ARTIFACT.json
 
 The external simulator repository owns its integration Worker/Reviewer loop,
 SDK/runtime locks, offline bootstrap, build orchestration, launcher, firmware

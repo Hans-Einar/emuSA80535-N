@@ -1,0 +1,53 @@
+{
+  "schema": "emusa80535-runtime-source-artifact-v1",
+  "status": "accepted-local-runtime",
+  "source_commit": "a03504bd186efe3a8882bd3f1cdb5c4cf463f30d",
+  "review_commit": "f999ce982a82e3fd45fbe869fffa5249171b2619",
+  "archive_name": "emusa80535-1.0.0.tar.gz",
+  "archive_path": "/home/warloc/git/emuSA80535-N-artifacts/runtime/a03504bd186efe3a8882bd3f1cdb5c4cf463f30d/emusa80535-1.0.0.tar.gz",
+  "archive_sha256": "1157a016d23462df28b078b53ce82bd5ffa4667e55a1b46033e46f21ed2d8757",
+  "sdk_version": "0.2.0",
+  "sdk_manifest_sha256": "7be6be79dac99753c051b9b1a257e0774a14bf1115d70553e1371a513e583e72",
+  "cpu_api": 1,
+  "board_abi": "1.0",
+  "native_debug_wire": "2.1",
+  "local_script": 1,
+  "build_command": "make emu-runtime",
+  "source_identity_file": "SOURCE_COMMIT",
+  "external_board_sdk_compatibility": [
+    "0.1.0",
+    "0.2.0"
+  ],
+  "review_findings_resolved": [
+    "REV-SLC-022-F001",
+    "REV-SLC-022-F002",
+    "REV-SLC-022-F003",
+    "REV-SLC-022-F004",
+    "REV-SLC-022-F005",
+    "REV-SLC-022-F006",
+    "REV-SLC-022-F007",
+    "REV-SLC-022-F008",
+    "REV-SLC-022-F009"
+  ],
+  "evidence": {
+    "REV-SLC-022.md": "b2f49de69dad3377c98268fc577b82b85b808695b97077eeeb512aa0109b48cf",
+    "corrected-build-tests.log": "75815451bc050cac369caa778f657e36420936c22137f78c94c82041d9723532",
+    "slc022-review-build.log": "9c2b54b01594e1435e25088873c695ecbd36bf1b222d51f8b4be34a46a354724",
+    "slc022-review-core.log": "a0d8eedf3afefd33f8ec26bedef3d2ca33045ff8d1b56377a2f43be554f83437",
+    "slc022-review-correction.log": "a1f65fd1be687ccc773ee83d866cc853695ed9a1ea18dce72f57176e49e8bdd6",
+    "slc022-review-export-c.log": "c2fec1f962bc445e347a097079bed0033988e2903621bd9942717704467476c9",
+    "slc022-review-export.log": "c252fd24c8ee031d761b8bfd9df0b9c2f747c9daa71424d79054fcfcb3c3e55e",
+    "slc022-review-external.ndjson": "f7f4439cd0517f74e93f3be1b1ccb713dfb811ca8b9b78bf14f63a692d298ed0",
+    "slc022-review-gates.log": "08ada9b5c9a9388d0554d03c47643b5a462b70f25167c51cc7577b605a922e45",
+    "slc022-review-install-final.log": "c027291bf439c07d835a47198cd4e775b699bbe1c8db8712ee294c7931994a71",
+    "slc022-review-install.log": "5637200ec096324e6fc9ad2055d74802f239f3631f5a68d211b9a38d85d70fad",
+    "slc022-review-probe.c": "3e06bcb51f4e8ef22995916d65725b13c5a45209a0a2d0e5a0ae707e63cc7e57",
+    "summary.json": "7735407421c7e9cb01c8c4d74bf3d54017a04a0c2f325e7e13a89b8c940cea1c"
+  },
+  "limits": [
+    "Linux x86-64 local script host",
+    "No remote/debugger/DAP listener or administrative signals",
+    "No full machine boot claim",
+    "No RPM release/publication"
+  ]
+}

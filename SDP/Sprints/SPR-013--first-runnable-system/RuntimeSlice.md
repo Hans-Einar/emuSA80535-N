@@ -1,6 +1,6 @@
 # ITR-022 / SLC-022 — Session, module loader and local host
 
-Status: active
+Status: accepted at product a03504b; review f999ce9; VER-SLC-022
 Authority: direct user first-runnable-system request, REQ-026, DES-115..118
 Baseline: accepted CPU0a77c2d and immutable SDK0.2.0
 

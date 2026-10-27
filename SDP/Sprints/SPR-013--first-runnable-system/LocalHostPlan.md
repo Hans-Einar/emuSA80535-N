@@ -1,6 +1,6 @@
 # Local first-runtime host contract plan
 
-Status: planned implementation contract for successor SLC-022; not implemented
+Status: implemented and accepted by SLC-022; exact product contract is runtime/README.md
 Authority: direct user runnable-system instruction and agreed Ponsse integration
 ownership. This product-level script interface is distinct from the native SDK
 and future socket wire protocol; runtime release artifacts carry its docs/schema.

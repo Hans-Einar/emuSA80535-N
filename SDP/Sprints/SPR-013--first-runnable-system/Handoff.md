@@ -1,6 +1,6 @@
 # Handoff — First runnable system
 
-Status: active SPR-013/ITR-022/SLC-022; SLC-021 accepted
+Status: active SPR-013/ITR-023/SLC-023; SLC-021 and SLC-022 accepted
 
 The direct user authorizes continued cross-repo implementation to a buildable,
 runnable first system. Ponsse's agent owns SDK intake/board adapter/integration.
@@ -40,3 +40,18 @@ Ponsse reports its native board module accepted at source305cd0b, built against
 SDK0.1/ABI1.0; its artifact and companion manifest are external integration inputs
 and will be verified independently against the actual runtime. No external source
 is copied into this repository. Its full-system integration awaits a runtime pin.
+
+## Accepted runtime and active external verification
+
+Runtime candidate a03504b is approved by REV-SLC-022/f999ce9. Exact source archive,
+SDK compatibility, build command and durable evidence are in SLC-022-ARTIFACT.json.
+Local script1 contracts live in runtime/README.md and its schemas. Native API1
+session/debug and wire2.1 messages are implemented locally; transport/DAP attach
+remain future. Immutable SDK target labels record publication history; actual
+availability comes from the pinned runtime and hello capabilities.
+
+SLC-023 now verifies the complete external build/launcher and board/ROM trials.
+Ponsse owns the integration code and its fresh Worker/Reviewer loop. No board or
+firmware code is imported here. Master has already reproduced an unsupported
+stop and reset/repeat with the exact external module; final external launcher
+acceptance is still required. Continue directly with that owner, no user relay.

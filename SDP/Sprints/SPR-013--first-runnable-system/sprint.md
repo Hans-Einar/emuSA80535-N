@@ -25,9 +25,9 @@ the same identity discipline. SDP migration and RPM publication remain deferred.
 ## Sequence
 
 1. ITR-021/SLC-021: CPU contract facade and synthetic callback conformance.
-2. Planned ITR-022/SLC-022: session/scheduler, loader, local host controls and
+2. Accepted ITR-022/SLC-022: session/scheduler, loader, local host controls and
    synthetic shared module; concrete runtime source/artifact/launch handoff.
-3. Planned integration Slice: independently reviewed Ponsse module + exact
+3. Active ITR-023/SLC-023 integration verification: independently reviewed Ponsse module + exact
    runtime/SDK/ROM/config pins, deterministic run/reset and unsupported evidence.
 
 Only one Slice is active. Every implementation gets a fresh Worker and separate
