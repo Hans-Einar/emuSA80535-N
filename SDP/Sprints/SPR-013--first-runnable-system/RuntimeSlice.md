@@ -90,3 +90,14 @@ INSPECT is insufficient. This helper is an internal host policy, not a new publi
 SDK ABI. The external accepted board has supplied that promise; its launcher can
 select the option. Tests cover default rejection, valid opt-in and late/invalid
 policy changes. No immutable bundle is modified.
+
+## Implementation clarification — signal callback scheduling
+
+ABI1 excludes zero-delay feedback from synchronous board callbacks. Apply the
+strictly-future scheduling floor to the supplied event cycle for signal_output
+as well as boundary/access/port/stimulus callbacks. UART_FRAME can report
+completion at t+1 while the CPU cycle(t) call is still returning; its earliest
+reaction is t+2, not t+1. Track the active callback's timestamp independently
+from the last completed session cycle. Reject equal/past admission before queue
+or identity mutation. This resolves the unspecified signal-specific detail
+consistently with the existing feedback rule; no frozen table/layout is changed.
