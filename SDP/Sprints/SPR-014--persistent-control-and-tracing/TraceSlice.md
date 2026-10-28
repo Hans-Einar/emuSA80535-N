@@ -80,3 +80,29 @@ installed trace configuration/capture/file operations and validate resulting
 JSONL. Hand off exact source/review/archive/capability inventory to external
 coordinator. Preserve V0/029/026 artifacts. Continue028 immediately after gate.
 No board protocol, physical IO, TCP/DAP implementation, RPM or SDP migration.
+
+## Implementation policy decisions
+
+Partial access selection: allow explicitly bounded XDATA READ/WRITE and SFR
+address0x99 WRITE/RMW predicates. Access-kind4/5 or address/space/access predicates
+require those supported space/range constraints; other access requirements return
+UNSUPPORTED atomically. General mask0 or PC-only tracing may include actual
+partial access facts, while full ACCESS coverage remains absent. IRAM boundary
+matching is verified with synthetic engine events; public IRAM watches remain
+unsupported until production coverage exists. This is documented runtime policy,
+not a new numeric wire capability or an assertion of complete CPU access tracing.
+
+Frozen stop reasons have no capture-limit/ring-full enumerator. A capture limit
+with stopCpu uses budget plus paused state; ring stopOnFull uses pause. Preserve
+actual triggering source and instruction identity and only real matched watches.
+Reason priority is fault, power-down, CODE breakpoint, watch, trace stop, then
+step/budget. The first source requesting a stop retains its identity and actual
+watch evidence survives a later fault. Ordinary advance budget alone remains
+running; captureStatus/page counters distinguish the explicit trace stop policy.
+
+The private file provider is agreed in emu_trace_file_internal.h. The host owns
+file storage insertion identities/loss because queue admission determines actual
+insertion; file epoch/storage sequence and operation IDs persist across reopen.
+Only per-open IO byte/record/loss counters reset. Configuration and canonical
+source sequence remain session-owned. Startup --trace-file TOKEN=/absolute/stem
+registers up to8 mappings without adding a wire path or public ABI field.
