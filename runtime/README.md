@@ -169,8 +169,9 @@ all successful timing cycles; failed attempts remain distinguishable from
 completed instructions. The native observation binding currently rejects other
 CPU variants. Explicit MOVX and SBUF access facts are produced, but implicit
 register, stack and peripheral accesses are not completely instrumented, so
-full `access` coverage is not advertised. Trace configuration, general trace
-paging, capture A/B and file commands remain UNSUPPORTED.
+full `access` coverage is not advertised. Trace configuration, trace paging, persistent capture A and bounded file sinks
+are available; invocation capture B remains UNSUPPORTED until its scope tracker
+is integrated. File sinks require the optional startup mappings below.
 
 `outcomePage` and the native trace table's `outcomes` function read the same
 fixed1024-record operational ring, independently of user tracing. It retains
@@ -216,3 +217,76 @@ become emulated interrupts. Terminate or shutdown removes only the created
 socket inode. Replacing that path does not authorize deleting the replacement.
 Native callback hangs/crashes remain host failures; control cannot interrupt a
 hung trusted module.
+
+
+Persistent trace files are opt-in startup mappings:
+
+```sh
+mkdir -m 700 /absolute/private/capture-directory
+emu-runtime ... --trace-file trace=/absolute/private/capture-directory/run
+```
+
+Repeat `--trace-file TOKEN=/absolute/private/stem` at most8 times. Tokens contain
+1..64 ASCII letters, digits, dots, underscores or hyphens; wire/native `sinkOpen`
+receives only the token. The parent directory must already exist, belong to the
+host UID and have mode0700. Ancestor symlinks and dot/dotdot path components are
+rejected. The host pins that directory before loading a module. Segments use
+`stem.0000.jsonl` through `stem.0015.jsonl`, exclusive creation and mode0600;
+existing files, symlinks and FIFOs are never overwritten or followed. Use a new
+registered stem when reopening after a successful capture. Mappings cannot be
+changed through the control connection, and are unavailable in script1 mode.
+
+File capability is advertised only when a provider is registered. Configure a
+file destination with capacity256, then call `sinkOpen` with its token and
+bounds. Open returns a pending operation before the worker opens the file or
+writes its header. Poll `sinkStatus` until its completed operation ID catches up;
+state1 is pending, state0 is ready, and state4 reports failure. An existing-file
+error therefore appears asynchronously as IO/partialOutput with no truncation.
+Preheader views count as loss. Every segment repeats the opening configuration,
+its canonical SHA256 and immutable runtime, contract, image, module and board
+configuration identity. See [the frozen file contract](../interfaces/0.3.0/docs/05-files.md)
+for exact JSONL fields, limits and semantics.
+
+A host worker writes records outside the CPU/session owner. Its bounded256-record
+queue drops excess incoming views with explicit count/source-range loss records;
+virtual CPU timing does not wait for disk. Flush snapshots accepted records and
+pending loss at the request boundary, then fsyncs that prefix. Later records
+cannot delay completion. Close additionally stops admission, writes a footer,
+fsyncs and closes. Only one operation per destination may be pending. Segment
+and total-record limits close with a complete CAPACITY footer; storage failure
+disables only the destination and reports partial output. Neither case invents
+a CPU hardware fault. Eight sinks may be active, with64 destination identities
+retained for the session. Reopen preserves storage/operation identity sequences
+and resets per-open counters; disconnect and CPU reset preserve open files.
+Configuration replacement is BUSY while any sink is active.
+
+Terminate returns BUSY while asynchronous closes remain pending. SIGINT/SIGTERM
+request closure and allow at most2000ms for host sink cleanup. Failed output or a
+blocked writer produces a partial-output diagnostic and nonzero exit; no claim
+of a complete footer is made. Missing/truncated footers remain evidence of
+partial capture. `make file-sink-test runtime-trace-file-test` checks deterministic
+queue/barrier/error paths and actual Unix commands/JSONL against the frozen
+schema. `RUNTIME_BIN` and `SDK_INCLUDE` select installed artifacts for the latter;
+`FILE_SINK_REPORT` and `TRACE_FILE_REPORT` retain validation evidence.
+
+
+`tracePage` reads ring destinations only; files return UNSUPPORTED, and clearing
+a file destination returns INVALID. Coverage125 has incomplete ACCESS
+instrumentation: explicit XDATA reads/writes and SFR99 writes/RMW can be selected
+or watched, but broad access completeness is not advertised. Access predicates
+must name a supported space/range/mask. Broad selectors (matchMask0 or PC-only)
+can include available facts without asserting completeness. Instruction-begin
+facts can contain only the fetched opcode and empty text; retired instructions
+carry complete captured bytes/disassembly. A failed MOVX attempt never becomes
+a retired instruction.
+
+Capture A persists across calls, pauses, disconnects and resets, retaining
+cumulative cycles and reporting the current generation. Its maxCycles interval
+is half-open: `[start, start+limit)` excludes the exact deadline event. The view
+that reaches maxRecords is included; capture counts precede sink delivery and
+therefore include dropped views. A capture limit with stopCpu pauses at a budget
+stop; ring stopOnFull pauses with pause reason. Simultaneous stop precedence is
+fault, power-down, CODE breakpoint, watch, trace, then step. A silent IDLE
+deadline has zero event/instruction identity; an event cutoff retains the actual
+identity. Terminate pauses execution before asynchronous BUSY, and resume, step
+or advance are refused until termination completes.

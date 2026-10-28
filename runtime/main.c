@@ -4,6 +4,7 @@
 #include "emu_sha_internal.h"
 #include "emusa80535/contracts/debug.h"
 #include "control.h"
+#include "file_sink.h"
 #include "loader.h"
 #include <emusa80535/contracts/control3.h>
 #include <inttypes.h>
@@ -425,6 +426,8 @@ static void help(void)
          "Control3 is wire3.0 / bundle0.3.0; script1 uses wire2.1 / bundle0.2.0.\n"
          "Unix control requires an owned 0700 directory and same-UID clients. No listener opens\n"
          "without --control-unix. External mode advances only through step/advance.\n"
+         "Optional --trace-file TOKEN=/absolute/private/stem (repeat up to8) enables file sinks.\n"
+         "Files use new .0000.jsonl segments; control commands accept tokens, never paths.\n"
          "--help and --version exit without loading inputs. No physical I/O.");
 }
 int main(int argc, char **argv)
@@ -433,6 +436,10 @@ int main(int argc, char **argv)
                            "--image",        "--image-sha256",   "--board",       "--board-sha256",
                            "--board-config", "--script",         "--control-unix", "--execution-mode"};
     const char *values[12] = {0};
+    const char *trace_specs[8] = {0};
+    size_t trace_count = 0;
+    struct runtime_files *files = NULL;
+    struct emu_trace_file_provider file_provider;
     struct runtime_endpoint endpoint = {.directory = -1};
     uint32_t execution_mode = EMUIF_EXECUTION_EXTERNALLY_DRIVEN;
     int opt, i, inspect_fault = 0, rc = 2;
@@ -462,6 +469,13 @@ int main(int argc, char **argv)
     }
     for (i = 1; i < argc; i++)
     {
+        if (!strcmp(argv[i], "--trace-file"))
+        {
+            if (trace_count == 8 || i + 1 == argc)
+                goto cleanup;
+            trace_specs[trace_count++] = argv[++i];
+            continue;
+        }
         if (!strcmp(argv[i], "--board-inspect-fault"))
         {
             if (inspect_fault)
@@ -481,7 +495,7 @@ int main(int argc, char **argv)
             goto cleanup;
     if (values[9])
     {
-        if (values[10] || values[11])
+        if (values[10] || values[11] || trace_count)
             goto cleanup;
     }
     else
@@ -519,6 +533,8 @@ int main(int argc, char **argv)
     if (!json_document_parse_multiline(&doc, (char *)config, config_n) ||
         doc.tokens[0].type != JSON_OBJECT)
         goto cleanup;
+    if (trace_count && !runtime_files_create(trace_specs, trace_count, &files))
+        goto cleanup;
     INIT(cpu);
     if (emusa80535_cpu_query_v1(&cpu) != EMUIF_OK ||
         !runtime_module_open(&module, values[6], values[7], &cpu, variant))
@@ -541,6 +557,12 @@ int main(int argc, char **argv)
         goto cleanup;
     if (emu_session_allow_fault_inspection(h.session, (uint32_t)inspect_fault) != EMUIF_OK)
         goto cleanup;
+    if (files)
+    {
+        runtime_files_provider(files, &file_provider);
+        if (emu_session_set_file_provider(h.session, &file_provider) != EMUIF_OK)
+            goto cleanup;
+    }
     if (values[10])
     {
         if (emu_session_set_execution_mode(h.session, execution_mode) != EMUIF_OK)
@@ -610,10 +632,17 @@ cleanup:
     if (rc == 2)
         fprintf(stderr, "emu-runtime: startup validation failed (arguments, script, hashes, "
                         "configuration or module/API); no CPU execution\n");
+    if (h.session && files)
+        emu_session_close_file_sinks(h.session);
     if (h.session)
     {
         emusa80535_debug_close_v1(h.session, 1);
         emusa80535_session_destroy_v1(h.session);
+    }
+    if (files && !runtime_files_destroy(files, 2000))
+    {
+        fprintf(stderr, "emu-runtime: trace sink shutdown has partial output or failed footer\n");
+        if (rc != 2) rc = 3;
     }
     runtime_module_close(&module);
     runtime_endpoint_release(&endpoint);
