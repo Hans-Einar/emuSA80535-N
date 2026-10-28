@@ -1,6 +1,6 @@
 # SLC-026 — Canonical CPU production and operational outcomes
 
-Status: active. Sprint SPR-014; Iteration ITR-026.
+Status: accepted with explicit coverage125; ACCESS withheld. Sprint SPR-014; Iteration ITR-026.
 Authority: explicit continued producer Master execution, reconfirmed by the
 coordinator after successful composed verification of the corrected runtime.
 Baseline: 2b8603a5e0dbf62c27777c999836bf7d62ce6e27 (product d247e7f).
@@ -103,3 +103,6 @@ storage slots include typed loss summaries, reserving space for summary+event on
 overwrite. Overwritten counts all evicted storage records, including summaries;
 eviction of a loss marker must not recursively create another marker. Dropped
 is0, cursor gaps are exact, and reset preserves history/epoch.
+
+Accepted source af73adf974731afe32fdb2be806e1557a0804f7c after REV-SLC-026
+and VER-SLC-026. Proceed with separately activated027, then028.

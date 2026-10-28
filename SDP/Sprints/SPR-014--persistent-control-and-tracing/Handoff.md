@@ -77,3 +77,10 @@ reports successful composed receive/reply using unchanged firmware and module
 with the corrected029 archive. This is externally reported integration evidence;
 producer generic regression evidence remains VER-SLC-029. Continue outcome and
 trace implementation under the existing authority.
+
+SLC-026 accepted: source af73adf974731afe32fdb2be806e1557a0804f7c, review
+cfa586dc9e9dd51d775076d5f06701cc817cb6fd, VER-SLC-026 and artifact record.
+SAB observation coverage125 and independent uartOutcomes are available. Full
+ACCESS and all general trace/capture/file capabilities remain unavailable.
+Proceed immediately to027 under existing authority; TracePlan.md records its
+implementation boundary and future028 context recovery obligations.

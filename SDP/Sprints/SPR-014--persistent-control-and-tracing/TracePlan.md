@@ -69,3 +69,8 @@ B-next-call can then bind that actual invocation. Never permit active-context
 binding before such observed entry, infer entry from PC/SP, or mark the old
 unknown scope complete. This requires a fresh bounded CPU/context change and
 independent review in028, not a new026 capability claim.
+
+The frozen selector/watch IRAM space1 covers the entire0..255 address range;
+the legacy engine distinguishes lower and upper IRAM.027 must extend canonical
+matching inside the existing engine so a single watch crossing0x7f/0x80 retains
+one watch identity. Do not map only the lower half or duplicate same-ID watches.

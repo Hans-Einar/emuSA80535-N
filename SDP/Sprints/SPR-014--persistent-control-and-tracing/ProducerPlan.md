@@ -1,6 +1,6 @@
 # Planned remaining producer implementation boundaries
 
-Status: SLC-026 active through ObservationSlice.md; SLC-027/028 planned.
+Status: SLC-026 accepted within coverage125; SLC-027/028 planned.
 Authority: continued Master execution instruction2026-10-28. These notes prepare
 later bounded contracts; they do not activate concurrent product work.
 
