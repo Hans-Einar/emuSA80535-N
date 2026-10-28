@@ -82,3 +82,14 @@ all accepted artifacts and pins; communicate exact review/source/archive/caps
 through shared artifact and explicitly authorized existing coordinator thread.
 No claim of whole-machine/DAP/physical correctness. Continue composed virtual
 consumer intake after the reviewed capability handoff.
+
+## Binding sequence clarification
+
+Frozen04 binds mode1 only after successful CALL retirement. Its startSequence is
+that retirement sequence and its cycle timer starts at that boundary; included
+staged CALL records can have an earlier source sequence. This is the binding
+fact, not a promise that startSequence is the first retained record. Mode2 uses
+the last processed canonical source at explicit known-context binding, without
+inventing a source. Staged B record views count exactly once after successful
+binding and may immediately reach the record limit; A counters/gates retain
+original source-time evaluation. Terminal RET retirement routes before closure.
