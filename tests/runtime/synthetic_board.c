@@ -88,7 +88,7 @@ static emuif_status signal_output(void *v, const struct emuif_signal_output *p)
 static emuif_status validate(const void *v, const struct emuif_board_stimulus *s)
 {
     (void)v;
-    return strcmp(s->schema, "synthetic.inputs.v1") ? EMUIF_UNSUPPORTED : EMUIF_OK;
+    return strcmp(s->schema, "synthetic.inputs.v1") && strcmp(s->schema, "synthetic.uart.v1") ? EMUIF_UNSUPPORTED : EMUIF_OK;
 }
 static emuif_status apply(void *v, const struct emuif_board_stimulus *s)
 {
@@ -104,6 +104,9 @@ static emuif_status apply(void *v, const struct emuif_board_stimulus *s)
     in.mask = 255;
     in.value = 0x5a;
     in.cycle = s->cycle + 1;
+    if (!strcmp(s->schema, "synthetic.uart.v1")) {
+        in.kind = EMUIF_INPUT_UART_RX; in.index = 0; in.mask = 511; in.value = 0x155;
+    }
     return b->host.schedule_input(b->host.context, &in);
 }
 static emuif_status inspect(const void *v, const struct emuif_board_inspect *q,

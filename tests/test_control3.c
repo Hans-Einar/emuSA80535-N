@@ -3,6 +3,7 @@
 #include "test_runtime_session.c"
 #undef main
 #include <emusa80535/contracts/control3.h>
+#include <emusa80535/contracts/trace.h>
 static struct emuif_control3_api control;
 static uint64_t lease;
 static uint32_t ids[16];
@@ -250,7 +251,7 @@ static void errors3(void)
          "\"destinationId\":0,\"epoch\":\"1\",\"afterRecordSequence\":\"0\",\"maxRecords\":16");
     error_is("UNSUPPORTED");
     cmd3(1, "outcomePage", "\"epoch\":\"1\",\"afterRecordSequence\":\"0\",\"maxRecords\":16");
-    error_is("UNSUPPORTED");
+    assert(successful());
     open3(2, 0);
     attach3(2, false);
     strcpy(sid, "ffffffffffffffffffffffffffffffff");
@@ -506,6 +507,7 @@ static void stop_priority3(void)
     mut3(1, "step", "\"maxCycles\":1");
     assert(successful());
     assert(field64("cycle") == 5);
+    cmd3(1,"stopDetail",NULL);assert(successful() && field64("sourceSequence")>0 && field64("instructionId")>0);
     emusa80535_session_destroy_v1(session);
     memset(code, 0, sizeof code);
     code[0] = 0xe0;
@@ -514,6 +516,7 @@ static void stop_priority3(void)
     mut3(1, "resume", NULL);
     native_advance(1, &p);
     assert(p.state == EMUIF_STATE_FAULTED);
+    cmd3(1,"stopDetail",NULL);assert(successful() && field64("sourceSequence")>0 && field64("instructionId")>0);
     mut3(1, "terminate", NULL);
     assert(response_bytes[0] == 0 && !emu_session_client_open(session, 1) &&
            emu_session_state(session) == EMUIF_STATE_TERMINATED);
@@ -544,6 +547,122 @@ static void prefixes3(void)
     x.api.struct_size = 8;
     assert(emusa80535_control_query_v3(&x.api) == EMUIF_INVALID);
 }
+static unsigned outcome_rx_count;
+static emuif_status apply_uart_outcome(void *p, const struct emuif_board_stimulus *r)
+{
+    struct board *b=p;
+    struct emuif_input in;
+    unsigned n;
+    b->stimuli++;
+    for(n=0;n<outcome_rx_count;n++) {
+        INIT(in);in.kind=EMUIF_INPUT_UART_RX;in.mask=511;in.value=0x155+n;in.cycle=r->cycle+1+n;
+        if(b->host.schedule_input(b->host.context,&in)) return EMUIF_FAULT;
+    }
+    return EMUIF_OK;
+}
+static void page3(void)
+{
+    cmd3(1,"outcomePage","\"epoch\":\"1\",\"afterRecordSequence\":\"0\",\"maxRecords\":16");
+    assert(successful());
+}
+static unsigned page_event_count(uint32_t kind)
+{
+    int records=json_member(&document,body(),"records"),t;
+    unsigned n=0;
+    for(t=records+1;t<document.count && document.tokens[t].start<document.tokens[records].end;t=json_next(&document,t)) {
+        int event=json_member(&document,t,"event");
+        { int64_t value=0; if(event>=0 && json_integer(&document,json_member(&document,event,"kind"),0,28,&value) && value==(int64_t)kind)n++; }
+    }
+    return n;
+}
+static void outcomes3(void)
+{
+    struct emuif_control_progress progress;
+    struct emuif_trace_api trace;
+    struct emuif_trace_page_request request;
+    struct emuif_trace_page page;
+    struct emuif_trace_record records[16];
+    uint64_t parent;
+    unsigned i;
+    INIT(trace);assert(!emusa80535_trace_query_v1(&trace));
+    assert(trace.replace && trace.page && trace.outcomes && trace.capture_start && trace.sink_open);
+    assert(trace.replace(NULL,NULL,NULL)==EMUIF_UNSUPPORTED);
+    memset(code,0,sizeof code); create3(0);
+    page3();assert(field64("oldest")==0 && field64("newest")==0);
+    mut3(1,"boardInput","\"cycle\":\"1\",\"schema\":\"fixture.v1\",\"payload\":{}");
+    assert(successful()); parent=field64("parentStimulusId");assert(parent==1);
+    mut3(1,"resume",NULL);native_advance(3,&progress);
+    page3();assert(page_event_count(EMUIF_OBS_INPUT_ADMITTED)==2 && page_event_count(EMUIF_OBS_INPUT_DELIVERED)==2);
+    INIT(request);INIT(page);memcpy(request.session_id,sid,33);request.epoch=1;request.max_records=16;
+    for(i=0;i<16;i++){INIT(records[i]);INIT(records[i].event);INIT(records[i].event.old_value);INIT(records[i].event.new_value);}
+    page.records=records;page.capacity=16;page.element_size=sizeof records[0];
+    assert(!trace.outcomes(session,&request,&page));assert(page.written==4);
+    assert(records[0].event.input_stage==0 && records[0].event.parent_stimulus_id==parent && !records[0].event.cpu_input_order);
+    assert(records[1].event.input_stage==1 && records[1].event.parent_stimulus_id==parent && records[1].event.cpu_input_order==2);
+    assert(records[2].event.input_stage==0 && records[3].event.input_stage==1);
+    assert(records[3].event.sequence>records[3].record_sequence);
+    cmd3(1,"outcomePage","\"epoch\":\"2\",\"afterRecordSequence\":\"0\",\"maxRecords\":16");assert(successful() && strstr(response_bytes,"wrong-epoch"));
+    send3(1,"outcomePage","{\"sessionId\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"epoch\":\"1\",\"afterRecordSequence\":\"0\",\"maxRecords\":16}");assert(successful() && strstr(response_bytes,"wrong-session"));
+    cmd3(1,"outcomePage","\"epoch\":\"1\",\"afterRecordSequence\":\"999\",\"maxRecords\":16");assert(successful() && strstr(response_bytes,"ahead"));
+    emusa80535_session_destroy_v1(session);
+
+    /* Due board failure is independently visible even without a CPU input. */
+    create3(0);stimulus_fault=true;
+    mut3(1,"boardInput","\"cycle\":\"1\",\"schema\":\"fixture.v1\",\"payload\":{}");
+    mut3(1,"resume",NULL);native_advance(3,&progress);assert(progress.state==EMUIF_STATE_FAULTED);
+    page3();assert(page_event_count(EMUIF_OBS_INPUT_FAILED)==1 && strstr(response_bytes,"\"status\":\"FAULT\""));
+    emusa80535_session_destroy_v1(session);stimulus_fault=false;
+
+    /* Reset cancels global orders, not the due-cycle sorting order. */
+    schedule_test=true;create3(0);schedule_test=false;
+    mut3(1,"boardInput","\"cycle\":\"50\",\"schema\":\"fixture.v1\",\"payload\":{}");
+    mut3(1,"reset","\"seed\":0,\"entry\":0");assert(successful());generation=field64("generation");
+    page3();assert(page_event_count(EMUIF_OBS_INPUT_CANCELLED)==3 && field64("epoch")==1);
+    memcpy(request.session_id,sid,33);assert(!trace.outcomes(session,&request,&page));
+    assert(page.written==6 && records[3].event.cpu_input_order==1 && records[4].event.cpu_input_order==2 && records[5].event.input_stage==0);
+    assert(records[3].generation==1);
+    emusa80535_session_destroy_v1(session);
+
+    /* Actual UART hardware outcomes remain available with no trace config. */
+    api.apply_stimulus=apply_uart_outcome;
+    memset(code,0,sizeof code);memcpy(code,(unsigned char[]){0x75,0x89,0x20,0x75,0x8d,0xff,0x75,0x8b,0xff,0x75,0x98,0xd8,0x75,0x87,0x80,0x75,0x88,0x40,0x80,0xfe},20);
+    outcome_rx_count=1;create3(0);
+    mut3(1,"boardInput","\"cycle\":\"20\",\"schema\":\"fixture.v1\",\"payload\":{}");
+    mut3(1,"resume",NULL);native_advance(1000,&progress);assert(progress.state==EMUIF_STATE_RUNNING);
+    page3();assert(page_event_count(EMUIF_OBS_RX_START)==1 && page_event_count(EMUIF_OBS_RX_ACCEPT)==1 && page_event_count(EMUIF_OBS_RX_END)==1);
+    emusa80535_session_destroy_v1(session);
+    /* Rejected busy start has its own frame and failed CPU delivery; no retry. */
+    outcome_rx_count=2;create3(0);
+    mut3(1,"boardInput","\"cycle\":\"20\",\"schema\":\"fixture.v1\",\"payload\":{}");
+    mut3(1,"resume",NULL);native_advance(40,&progress);assert(progress.state==EMUIF_STATE_FAULTED);
+    page3();assert(page_event_count(EMUIF_OBS_RX_START)==1 && page_event_count(EMUIF_OBS_RX_DROP)==1 && page_event_count(EMUIF_OBS_INPUT_FAILED)==1 && strstr(response_bytes,"\"status\":\"BUSY\""));
+    emusa80535_session_destroy_v1(session);
+    code[11]=0xc8;outcome_rx_count=1;create3(0);
+    mut3(1,"boardInput","\"cycle\":\"20\",\"schema\":\"fixture.v1\",\"payload\":{}");
+    mut3(1,"resume",NULL);native_advance(40,&progress);assert(progress.state==EMUIF_STATE_FAULTED);
+    page3();assert(page_event_count(EMUIF_OBS_RX_START)==0 && page_event_count(EMUIF_OBS_RX_DROP)==1 && page_event_count(EMUIF_OBS_RX_END)==1);
+    emusa80535_session_destroy_v1(session);api.apply_stimulus=apply;
+    /* Scheduling from a peripheral callback retains its in-flight instruction,
+     * actual callback cycle and autonomous parent0, without callback peeks. */
+    memset(code,0xa4,sizeof code);
+    memcpy(code,(unsigned char[]){0x75,0x89,0x20,0x75,0x8d,0xff,0x75,0x8b,0xff,0x75,0x98,0xd8,0x75,0x87,0x80,0x75,0x88,0x40,0x75,0x99,0x55},21);
+    signal_schedule=true;create3(0);
+    mut3(1,"resume",NULL);native_advance(1000,&progress);assert(progress.state==EMUIF_STATE_RUNNING);
+    page3();assert(page_event_count(EMUIF_OBS_INPUT_ADMITTED)==1);
+    memcpy(request.session_id,sid,33);assert(!trace.outcomes(session,&request,&page));
+    {
+        const struct emuif_observation *admitted=NULL,*ended=NULL;
+        for(i=0;i<page.written;i++) {
+            if(records[i].event.kind==EMUIF_OBS_INPUT_ADMITTED)admitted=&records[i].event;
+            if(records[i].event.kind==EMUIF_OBS_TX_END)ended=&records[i].event;
+        }
+        assert(admitted && ended && admitted->instruction_id && !admitted->parent_stimulus_id);
+        assert(admitted->instruction_id==ended->instruction_id && admitted->begin_cycle==ended->begin_cycle);
+        assert(admitted->cycle==ended->cycle && admitted->scheduled_cycle==admitted->cycle+1);
+    }
+    emusa80535_session_destroy_v1(session);signal_schedule=false;
+}
+
 int main(void)
 {
     setup();
@@ -559,6 +678,7 @@ int main(void)
     buffers3();
     unavailable3();
     stop_priority3();
+    outcomes3();
     puts("control3 native tests passed");
     return 0;
 }

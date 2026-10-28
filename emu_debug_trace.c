@@ -61,7 +61,10 @@ static void saturated_increment(uint64_t *value)
 
 static bool selector_valid(const struct em8051_debug_trace_selector *s)
 {
-    return s->match_kind <= 1u && s->match_pc <= 1u &&
+    return s->match_observation_kind <= 1u && s->match_access <= 1u &&
+           (!s->match_observation_kind || (s->observation_kind >= 1u && s->observation_kind <= 28u)) &&
+           (!s->match_access || (s->access_mask && !(s->access_mask & ~15u))) &&
+           s->match_kind <= 1u && s->match_pc <= 1u &&
            s->match_address <= 1u && s->match_address_space <= 1u &&
            (!s->match_kind || s->kind <= EM8051_DEBUG_EVENT_WATCH_MATCH) &&
            (!s->match_address_space ||
@@ -74,7 +77,12 @@ static bool selector_valid(const struct em8051_debug_trace_selector *s)
 static bool selector_match(const struct em8051_debug_trace_selector *s,
                            const struct em8051_debug_event *e)
 {
-    return (!s->match_kind || s->kind == e->kind) &&
+    return (!s->match_observation_kind || s->observation_kind == e->observation.kind) &&
+           (!s->match_access || (s->access_mask & e->access)) &&
+           (!e->observation.kind || !s->match_pc || (e->observation.known & EMUIF_OBS_KNOWN_PC)) &&
+           (!e->observation.kind || !(s->match_address || s->match_address_space || s->match_access) ||
+            e->observation.kind == EMUIF_OBS_ACCESS_ATTEMPT || e->observation.kind == EMUIF_OBS_ACCESS_RESULT) &&
+           (!s->match_kind || s->kind == e->kind) &&
            (!s->match_address_space ||
             s->address_space == e->address_space) &&
            (!s->match_pc || (e->pc >= s->pc_first && e->pc <= s->pc_last)) &&

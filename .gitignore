@@ -53,3 +53,6 @@ tests/cpu_facade_tests*
 /tests/control3_cpp_tests
 /tests/__pycache__/
 /interfaces/tools/__pycache__/
+
+/tests/outcome_tests
+/tests/cpu_observation_tests

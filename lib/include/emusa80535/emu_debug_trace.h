@@ -53,6 +53,10 @@ struct em8051_debug_trace_selector {
     uint8_t match_address;
     uint8_t address_space;
     uint8_t match_address_space;
+    uint8_t observation_kind;
+    uint8_t match_observation_kind;
+    uint8_t access_mask;
+    uint8_t match_access;
 };
 
 struct em8051_debug_trace_session {

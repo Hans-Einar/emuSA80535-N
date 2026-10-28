@@ -11,7 +11,7 @@
 
 static bool value_width_valid(uint8_t aWidth)
 {
-    return aWidth == 8u || aWidth == 16u || aWidth == 32u || aWidth == 64u;
+    return aWidth == 1u || aWidth == 8u || aWidth == 16u || aWidth == 32u || aWidth == 64u;
 }
 
 static uint64_t width_mask(uint8_t aWidth)
@@ -248,6 +248,10 @@ enum em8051_debug_event_status em8051_debug_event_bus_emit(
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
     event = *aEvent;
     event.sequence = aBus->next_sequence++;
+    if (event.observation.kind) {
+        event.observation.sequence = event.sequence;
+        event.observation.generation = event.generation;
+    }
     aBus->dispatching = 1u;
     for (i = 0u; i < aBus->observer_count; ++i)
     {
@@ -311,7 +315,10 @@ enum em8051_debug_event_status em8051_debug_watch_table_match(
     if (aTable == NULL || aEvent == NULL || aRequired == NULL ||
         (aCapacity != 0u && aResults == NULL))
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
-    if (aEvent->kind == EM8051_DEBUG_EVENT_WATCH_MATCH)
+    if (aEvent->kind == EM8051_DEBUG_EVENT_WATCH_MATCH ||
+        (aEvent->observation.kind &&
+         (aEvent->observation.kind != EMUIF_OBS_ACCESS_RESULT ||
+          aEvent->observation.status != EMUIF_OK)))
     {
         *aRequired = 0u;
         return EM8051_DEBUG_EVENT_OK;

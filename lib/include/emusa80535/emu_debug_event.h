@@ -14,6 +14,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "contracts/observation.h"
 
 #define EM8051_DEBUG_EVENT_MAX_OBSERVERS 8u
 #define EM8051_DEBUG_WATCH_MAX_WATCHES 64u
@@ -85,7 +86,7 @@ struct em8051_debug_event
     uint64_t sequence;
     uint64_t instruction_count;
     uint64_t machine_cycle_count;
-    uint32_t generation;
+    uint64_t generation;
     uint16_t pc;
     uint16_t address;
     uint8_t phase;
@@ -94,6 +95,8 @@ struct em8051_debug_event
     uint8_t access;
     struct em8051_debug_value old_value;
     struct em8051_debug_value new_value;
+    /* Same-build extension: zero kind for legacy events, exact canonical facts otherwise. */
+    struct emuif_observation observation;
 };
 
 typedef void (*em8051_debug_event_observer)(

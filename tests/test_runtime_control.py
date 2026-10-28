@@ -98,8 +98,9 @@ def main():
             assert hello['executionMode'] == 'externally-driven'
             assert hello['protocol'] == {'major': 3, 'minor': 0}
             assert hello['contractManifestSha256'] == digest(ROOT / 'interfaces/0.3.0/manifest.json')
-            assert hello['observationCoverage'] == [] and 'advance' in hello['capabilities']
-            assert not set(hello['capabilities']) & {'observations', 'tracePage', 'captureA', 'captureB', 'uartOutcomes', 'traceFile'}
+            assert {'instruction','control','irq','lifecycle','input','uart'} == set(hello['observationCoverage']) and 'advance' in hello['capabilities']
+            assert 'uartOutcomes' in hello['capabilities']
+            assert not set(hello['capabilities']) & {'tracePage', 'captureA', 'captureB', 'traceFile'}
             initial = c.attach(); assert initial['cycle'] == '0'
             sid = initial['sessionId']; first_lease = c.lease
             observer = Client(endpoint); observer.hello(); observer.attach('observer')

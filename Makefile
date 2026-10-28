@@ -52,7 +52,7 @@ LDLIBS += -lcurses
 # Rules
 #####################################################################
 HEADERS := $(wildcard *.h) $(SDK_HEADERS)
-SRC := $(filter-out emu_debug_server.c emu_debug.c emu_session.c emu_json_internal.c,$(wildcard *.c))
+SRC := $(filter-out emu_debug_server.c emu_debug.c emu_session.c emu_outcome_internal.c emu_json_internal.c,$(wildcard *.c))
 OBJ := $(SRC:.c=.o)
 
 %.o: %.c $(HEADERS)
@@ -160,7 +160,7 @@ cpu-link-test: cpu-sdk
 .PHONY: cpu-link-test
 
 # Native session/debug controller, separately linkable from the CPU engine.
-RUNTIME_OBJ := emu_session.sdk.o emu_json_internal.sdk.o emu_sha_internal.sdk.o
+RUNTIME_OBJ := emu_session.sdk.o emu_json_internal.sdk.o emu_sha_internal.sdk.o emu_outcome_internal.sdk.o emu_debug_event.sdk.o emu_debug_trace.sdk.o emu_debug_runtime.sdk.o
 CONTRACT_MANIFEST_SHA256 := $(shell sha256sum interfaces/$(CONTRACT_VERSION)/manifest.json | cut -d ' ' -f 1)
 CONTROL3_MANIFEST_SHA256 := $(shell sha256sum interfaces/0.3.0/manifest.json | cut -d ' ' -f 1)
 RUNTIME_CPPFLAGS := -DEMU_CONTROL3_MANIFEST_SHA256=\"$(CONTROL3_MANIFEST_SHA256)\" -DEMU_RUNTIME_COMMIT=\"$(DEBUG_COMMIT)\" -DEMU_CONTRACT_MANIFEST_SHA256=\"$(CONTRACT_MANIFEST_SHA256)\"
@@ -184,3 +184,11 @@ interface-target-export:
 control3-test: runtime-sdk
 	$(MAKE) -C tests control3-test
 .PHONY: control3-test
+
+outcome-test: runtime-sdk
+	$(MAKE) -C tests outcome-test
+.PHONY: outcome-test
+
+cpu-observation-test:
+	$(MAKE) -C tests cpu-observation-test
+.PHONY: cpu-observation-test

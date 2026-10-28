@@ -23,7 +23,7 @@ struct em8051_debug_runtime_status {
     uint64_t derived_events;
     uint64_t pending_overflows;
     uint64_t console_matches;
-    uint32_t generation;
+    uint64_t generation;
     uint32_t interrupt_depth;
     uint8_t trace_count;
     uint8_t destination_count;
