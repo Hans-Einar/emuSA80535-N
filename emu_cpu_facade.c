@@ -350,6 +350,13 @@ static void obs_reset(struct emuif_cpu *cpu) {
     struct cpu_observation_state *o = &cpu->observation;
     uint64_t cycle = cpu->core.mMachineCycleCount;
     if (o->bound) {
+        if (o->pending) {
+            struct emuif_observation e;
+            obs_init(cpu, &e, EMUIF_OBS_INSTRUCTION_ABORT, EMUIF_OBS_PHASE_BOUNDARY, cycle);
+            e.status = EMUIF_STATE; e.reason = EMUIF_OBS_REASON_RESET; e.partial_effects = 1;
+            if (o->opcode_done) { e.next_pc = o->next_pc; e.known |= EMUIF_OBS_KNOWN_NEXT_PC; }
+            obs_bytes(cpu, &e); obs_emit(cpu, &e); o->pending = false;
+        }
         obs_uart_event(cpu, &o->rx, EMUIF_OBS_RX_END, EMUIF_OBS_REASON_RESET, cycle, 0);
         obs_uart_event(cpu, &o->tx, EMUIF_OBS_TX_END, EMUIF_OBS_REASON_RESET, cycle, 0);
         obs_uart_event(cpu, &o->hold, EMUIF_OBS_TX_END, EMUIF_OBS_REASON_RESET, cycle, 0);

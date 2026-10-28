@@ -203,6 +203,11 @@ static void test_reset(void) {
     last=last_kind(&f,24)->frame_id; INIT(r); assert(api.reset(f.cpu,&r)==0);
     assert(last_kind(&f,27)->frame_id==last && last_kind(&f,27)->reason==EMUIF_OBS_REASON_RESET);
     finish(&f);
+    /* API1 reset can abandon a pending tail; close the actual attempt once. */
+    const uint8_t pending[]={0x90,0x12,0x34}; start(&f,pending,sizeof(pending),2,1);
+    assert(cycle(&f)==0 && !snapshot(&f).safe_boundary); INIT(r); assert(api.reset(f.cpu,&r)==0);
+    assert(count_kind(&f,2)==0 && count_kind(&f,3)==1);
+    assert(last_kind(&f,3)->reason==EMUIF_OBS_REASON_RESET); finish(&f);
 }
 static void test_irq_and_gap(void) {
     struct fixture f;
