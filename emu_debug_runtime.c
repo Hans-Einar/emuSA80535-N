@@ -34,6 +34,8 @@ struct em8051_debug_runtime {
     uint64_t generation;
     emu_debug_observation_fn observation_fn;
     void *observation_context;
+    emu_debug_observation_fn after_observation_fn;
+    void *after_observation_context;
     enum em8051_debug_event_status dispatch_status;
     uint8_t phase;
     uint8_t busy;
@@ -645,6 +647,14 @@ enum em8051_debug_event_status emu_debug_runtime_observer(
     r->observation_context = context;
     return EM8051_DEBUG_EVENT_OK;
 }
+enum em8051_debug_event_status emu_debug_runtime_after_observation(
+    struct em8051_debug_runtime *r, emu_debug_observation_fn fn, void *context)
+{
+    if (!r) return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    r->after_observation_fn = fn; r->after_observation_context = context;
+    return EM8051_DEBUG_EVENT_OK;
+}
 enum em8051_debug_event_status emu_debug_runtime_observation(
     struct em8051_debug_runtime *r, const struct emuif_observation *o, uint64_t *sequence)
 {
@@ -705,6 +715,8 @@ enum em8051_debug_event_status emu_debug_runtime_observation(
     if (o->kind == EMUIF_OBS_RETI && !r->router.interrupt_depth)
         e.kind = EM8051_DEBUG_EVENT_CONTROL_RETURN;
     status = runtime_ingest(r, &e, sequence, true);
+    if (status == EM8051_DEBUG_EVENT_OK && r->after_observation_fn)
+        r->after_observation_fn(r->after_observation_context, &r->source_event.observation);
     if (status != EM8051_DEBUG_EVENT_OK) {
         r->generation = old_generation;
         r->router.interrupt_depth = old_depth;
@@ -751,3 +763,15 @@ size_t emu_debug_runtime_pending_summaries(const struct em8051_debug_runtime *r,
 extern enum em8051_debug_event_status emu_debug_trace_flush_selected(struct em8051_debug_trace_router *, uint32_t, uint32_t);
 enum em8051_debug_event_status emu_debug_runtime_flush_selected(struct em8051_debug_runtime *r, uint32_t destination_id, uint32_t trace_id)
 { return !r || r->busy ? EM8051_DEBUG_EVENT_BUSY : emu_debug_trace_flush_selected(&r->router,destination_id,trace_id); }
+
+/* Failed provisional B routes never become retained suppression summaries. */
+enum em8051_debug_event_status emu_debug_runtime_discard_suppression(
+    struct em8051_debug_runtime *r, uint32_t trace_id)
+{
+    size_t i;
+    if (!r || r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    for (i = 0; i < r->router.config.trace_count; i++)
+        if (r->router.config.traces[i].trace_id == trace_id)
+            memset(&r->router.suppression[i], 0, sizeof r->router.suppression[i]);
+    return EM8051_DEBUG_EVENT_OK;
+}

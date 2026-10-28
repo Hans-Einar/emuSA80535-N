@@ -30,3 +30,7 @@ runtime-trace-file-test: $(RUNTIME_BIN)
 	$(PYTHON) tests/test_runtime_trace_file.py
 
 .PHONY: file-sink-test runtime-trace-file-test
+
+runtime-invocation-test: $(RUNTIME_BIN)
+	$(PYTHON) tests/test_runtime_invocation.py
+.PHONY: runtime-invocation-test

@@ -32,6 +32,21 @@ struct capture
     struct emuif_capture_status value;
     uint64_t max_records, max_cycles, last_cycle, last_generation;
     uint32_t stop_cpu;
+    uint16_t entry_pc;
+    uint64_t candidate_instruction, candidate_context, candidate_sequence;
+    uint64_t closing_instruction;
+    uint32_t candidate_failed, candidate_limit, pending_reason;
+};
+struct scope_frame
+{
+    uint64_t id, parent, instruction, sequence;
+    uint16_t return_pc;
+    uint8_t sp_before, sp_after, kind, committed;
+};
+struct scope_stage
+{
+    struct emuif_trace_record records[256];
+    uint32_t active, count;
 };
 struct stop_match
 {
@@ -49,6 +64,11 @@ struct emu_trace_state
     uint64_t revision, coverage, generation, cycle, sequence, current_instruction;
     struct capture captures[64];
     uint32_t capture_count;
+    uint64_t next_invocation;
+    struct scope_frame frames[64];
+    uint32_t depth;
+    uint64_t closing_instruction, closing_context;
+    struct scope_stage stages[8];
     struct stop_match pending_matches[64], applied_matches[64];
     uint32_t pending_count, applied_count;
     uint64_t pending_source, pending_instruction, applied_source, applied_instruction;
@@ -450,7 +470,7 @@ static void request_stop(struct emu_trace_state *s, uint32_t reason, uint64_t se
 }
 static void capture_complete(struct emu_trace_state *s, struct capture *c)
 {
-    c->value.state = EMUIF_SCOPE_COMPLETE;
+    c->value.state = c->value.mode ? EMUIF_SCOPE_INCOMPLETE : EMUIF_SCOPE_COMPLETE;
     c->value.reason = EMUIF_SCOPE_LIMIT;
     c->value.end_sequence = s->sequence;
     if (c->stop_cpu)
@@ -502,10 +522,12 @@ static int ring_store(struct emu_trace_state *s, unsigned di, struct emuif_trace
     struct trace_ring *r = &s->rings[di];
     const struct emuif_trace_destination *d = &s->config.destinations[di];
     unsigned needed = r->count == r->capacity && !d->stop_on_full ? 2 : 1;
+    uint64_t source = v->kind == EMUIF_RECORD_EVENT ? v->event.sequence : s->sequence;
+    uint64_t instruction = v->kind == EMUIF_RECORD_EVENT ? v->event.instruction_id : s->current_instruction;
     if (!r->next || UINT64_MAX - r->next < needed - 1)
     {
         storage_exhausted(s, d->destination_id);
-        request_stop(s, 2, s->sequence, s->current_instruction);
+        request_stop(s, 2, source, instruction);
         return 0;
     }
     if (r->count == r->capacity)
@@ -513,7 +535,7 @@ static int ring_store(struct emu_trace_state *s, unsigned di, struct emuif_trace
         if (d->stop_on_full)
         {
             saturate(&r->dropped, 1);
-            request_stop(s, 2, s->sequence, s->current_instruction);
+            request_stop(s, 2, source, instruction);
             return 0;
         }
         struct emuif_trace_record loss;
@@ -555,12 +577,83 @@ static int ring_store(struct emu_trace_state *s, unsigned di, struct emuif_trace
     ring_insert(r, v);
     return 1;
 }
+static int stage_pending(const struct emu_trace_state *s)
+{
+    unsigned i;
+    for (i = 0; i < 8; i++) if (s->stages[i].active) return 1;
+    return 0;
+}
+static void store_record(struct emu_trace_state *s, unsigned di, struct emuif_trace_record *r)
+{
+    if (!r->route_count) return;
+    if (s->config.destinations[di].kind == EMUIF_DEST_FILE)
+    {
+        if (s->provider.enqueue && s->provider.enqueue(s->provider.context, r) == EMUIF_EXHAUSTED)
+            storage_exhausted(s, r->destination_id);
+    }
+    else ring_store(s, di, r);
+}
+static void strip_failed_candidates(struct emu_trace_state *s, struct emuif_trace_record *r)
+{
+    unsigned i, n = 0;
+    for (i = 0; i < r->route_count; i++) {
+        unsigned j;
+        int failed = 0;
+        for (j = 0; j < s->capture_count; j++) {
+            const struct capture *c = &s->captures[j];
+            if (c->value.trace_id == r->trace_ids[i] && c->candidate_instruction &&
+                c->candidate_failed) failed = 1;
+        }
+        if (!failed) r->trace_ids[n++] = r->trace_ids[i];
+    }
+    memset(r->trace_ids + n, 0, (16 - n) * sizeof r->trace_ids[0]);
+    r->route_count = n;
+}
+static void stage_commit(struct emu_trace_state *s, unsigned di)
+{
+    struct scope_stage *stage = &s->stages[di];
+    unsigned i;
+    stage->active = 0;
+    for (i = 0; i < stage->count; i++) {
+        strip_failed_candidates(s, &stage->records[i]);
+        store_record(s, di, &stage->records[i]);
+    }
+    stage->count = 0;
+}
+static void scope_end(struct emu_trace_state *s, struct capture *c, uint32_t reason,
+                      uint64_t sequence)
+{
+    if (c->value.state > EMUIF_SCOPE_BOUND) return;
+    c->value.state = reason == EMUIF_SCOPE_RETURN ? EMUIF_SCOPE_COMPLETE : EMUIF_SCOPE_INCOMPLETE;
+    c->value.reason = reason;
+    c->value.end_sequence = sequence;
+    if (c->candidate_instruction && c->value.invocation_id == 0) {
+        c->candidate_failed = 1;
+        c->value.records = 0;
+    }
+    if (c->stop_cpu) request_stop(s, 7, sequence, s->current_instruction);
+}
+static void stage_overflow(struct emu_trace_state *s, unsigned di)
+{
+    unsigned i;
+    for (i = 0; i < s->capture_count; i++) {
+        struct capture *c = &s->captures[i];
+        int ti = trace_index(&s->config, c->value.trace_id);
+        if (c->candidate_instruction && ti >= 0 &&
+            s->config.traces[ti].destination_id == s->config.destinations[di].destination_id) {
+            scope_end(s, c, EMUIF_SCOPE_OVERFLOW, s->sequence);
+            c->candidate_failed = 1;
+        }
+    }
+    stage_commit(s, di);
+}
 static bool route_eligible(void *context, uint32_t id, const struct em8051_debug_event *e)
 {
     struct emu_trace_state *s = context;
     struct capture *c = capture_for(s, id);
     (void)e;
-    return !c || c->value.state == EMUIF_SCOPE_BOUND;
+    return !c || c->value.state == EMUIF_SCOPE_BOUND ||
+        (c->value.state == EMUIF_SCOPE_ARMED && c->candidate_instruction && !c->candidate_limit);
 }
 static void routed(void *context, const struct em8051_debug_trace_record *source)
 {
@@ -568,39 +661,31 @@ static void routed(void *context, const struct em8051_debug_trace_record *source
     struct emuif_trace_record r;
     uint32_t i;
     int di = dest_index(&s->config, source->destination_id);
-    if (di < 0)
-        return;
-    INIT(r);
-    INIT(r.event);
-    INIT(r.event.old_value);
-    INIT(r.event.new_value);
+    if (di < 0) return;
+    INIT(r); INIT(r.event); INIT(r.event.old_value); INIT(r.event.new_value);
     r.event.old_value.width = r.event.new_value.width = 8;
     r.generation = s->generation;
     r.destination_id = source->destination_id;
     r.route_count = source->trace_id_count;
     memcpy(r.trace_ids, source->trace_ids, r.route_count * sizeof(uint32_t));
-    if (source->kind == EM8051_DEBUG_TRACE_RECORD_EVENT)
-    {
+    if (source->kind == EM8051_DEBUG_TRACE_RECORD_EVENT) {
         r.kind = EMUIF_RECORD_EVENT;
         r.event = source->event.observation;
         r.generation = r.event.generation;
-        for (i = 0; i < r.route_count; i++)
-        {
+        for (i = 0; i < r.route_count; i++) {
             struct capture *c = capture_for(s, r.trace_ids[i]);
-            if (c && c->value.state == EMUIF_SCOPE_BOUND)
-            {
+            if (c && (c->value.state == EMUIF_SCOPE_BOUND ||
+                      (c->value.state == EMUIF_SCOPE_ARMED && c->candidate_instruction))) {
                 c->value.records++;
-                if (c->value.records >= c->max_records)
-                {
-                    s->event_tick = 1;
-                    capture_complete(s, c);
-                    s->event_tick = 0;
+                if (c->value.records >= c->max_records) {
+                    if (c->value.state == EMUIF_SCOPE_ARMED) c->candidate_limit = 1;
+                    else {
+                        s->event_tick = 1; capture_complete(s, c); s->event_tick = 0;
+                    }
                 }
             }
         }
-    }
-    else
-    {
+    } else {
         r.kind = EMUIF_RECORD_SUPPRESSION;
         r.trace_id = source->suppression.trace_id;
         r.interrupt_policy = source->suppression.interrupt_policy;
@@ -610,14 +695,17 @@ static void routed(void *context, const struct em8051_debug_trace_record *source
         r.last_source_sequence = source->suppression.last_sequence;
         r.count = source->suppression.count;
     }
-    if (s->config.destinations[di].kind == EMUIF_DEST_FILE)
-    {
-        if (s->provider.enqueue && s->provider.enqueue(s->provider.context, &r) == EMUIF_EXHAUSTED)
-            storage_exhausted(s, r.destination_id);
+    if (s->stages[di].active) {
+        if (s->stages[di].count < 256) {
+            s->stages[di].records[s->stages[di].count++] = r;
+            return;
+        }
+        stage_overflow(s, (unsigned)di);
     }
-    else
-        ring_store(s, (unsigned)di, &r);
+    strip_failed_candidates(s, &r);
+    store_record(s, (unsigned)di, &r);
 }
+static void after_observation(void *, const struct emuif_observation *);
 struct emu_trace_state *emu_trace_create(struct em8051_debug_runtime *runtime,
                                          const struct emu_trace_metadata *metadata,
                                          uint64_t coverage)
@@ -629,7 +717,9 @@ struct emu_trace_state *emu_trace_create(struct em8051_debug_runtime *runtime,
     s->metadata = *metadata;
     s->coverage = coverage;
     s->generation = 1;
-    if (emu_debug_runtime_delivery(runtime, s, routed, route_eligible))
+    s->next_invocation = 1;
+    if (emu_debug_runtime_delivery(runtime, s, routed, route_eligible) ||
+        emu_debug_runtime_after_observation(runtime, after_observation, s))
     {
         free(s);
         return NULL;
@@ -641,6 +731,8 @@ void emu_trace_destroy(struct emu_trace_state *s)
     unsigned i;
     if (!s)
         return;
+    emu_debug_runtime_after_observation(s->runtime, NULL, NULL);
+    emu_debug_runtime_delivery(s->runtime, NULL, NULL, NULL);
     for (i = 0; i < 8; i++)
         free(s->rings[i].records);
     free(s);
@@ -653,6 +745,7 @@ void emu_trace_set_provider(struct emu_trace_state *s, const struct emu_trace_fi
 int emu_trace_has_provider(const struct emu_trace_state *s) { return s && s->provider.open; }
 emuif_status emu_trace_close_files(struct emu_trace_state *s)
 {
+    if (s && stage_pending(s)) return EMUIF_BUSY;
     if (!s || !s->provider.close_all)
         return EMUIF_OK;
     emu_debug_runtime_flush(s->runtime);
@@ -669,9 +762,10 @@ void emu_trace_tick(struct emu_trace_state *s, uint64_t generation, uint64_t cyc
     for (i = 0; i < s->capture_count; i++)
     {
         struct capture *c = &s->captures[i];
-        if (c->value.state != EMUIF_SCOPE_BOUND)
+        if (c->value.state != EMUIF_SCOPE_BOUND ||
+            (c->value.mode && generation != c->value.generation))
             continue;
-        c->value.generation = generation;
+        if (!c->value.mode) c->value.generation = generation;
         if (generation == c->last_generation && cycle >= c->last_cycle)
         {
             uint64_t add = cycle - c->last_cycle;
@@ -686,6 +780,163 @@ void emu_trace_tick(struct emu_trace_state *s, uint64_t generation, uint64_t cyc
             capture_complete(s, c);
     }
 }
+/* Context tracking consumes every canonical fact, independently of routing. */
+static void lose_context(struct emu_trace_state *s, uint32_t reason)
+{
+    unsigned i;
+    for (i = 0; i < s->capture_count; i++) {
+        struct capture *c = &s->captures[i];
+        if (c->value.mode && c->value.state <= EMUIF_SCOPE_BOUND &&
+            (c->value.state == EMUIF_SCOPE_BOUND || c->candidate_instruction))
+            c->pending_reason = reason + 1;
+    }
+    s->depth = 0; s->closing_instruction = s->closing_context = 0;
+}
+static int context_known(const struct emuif_observation *o)
+{
+    return (o->known & (EMUIF_OBS_KNOWN_CONTEXT | EMUIF_OBS_KNOWN_TARGET)) ==
+        (EMUIF_OBS_KNOWN_CONTEXT | EMUIF_OBS_KNOWN_TARGET) && o->context_id && !o->reason;
+}
+static void scope_before(struct emu_trace_state *s, const struct emuif_observation *o)
+{
+    unsigned i;
+    if (o->kind == EMUIF_OBS_CALL || o->kind == EMUIF_OBS_IRQ_ENTER) {
+        if (!context_known(o) || s->depth == 64) {
+            lose_context(s, o->reason == EMUIF_OBS_REASON_EXHAUSTED || s->depth == 64 ?
+                         EMUIF_SCOPE_OVERFLOW : EMUIF_SCOPE_UNKNOWN);
+        } else {
+            if (s->depth && s->frames[s->depth - 1].id != o->parent_context_id)
+                lose_context(s, EMUIF_SCOPE_UNKNOWN);
+            /* An observed entry with unknown parent is a new known island. */
+            s->frames[s->depth++] = (struct scope_frame){o->context_id, o->parent_context_id,
+                o->instruction_id, o->sequence, o->return_pc, o->sp_before, o->sp_after,
+                (uint8_t)o->frame_kind, o->kind == EMUIF_OBS_IRQ_ENTER};
+        }
+        if (o->kind == EMUIF_OBS_CALL) for (i = 0; i < s->capture_count; i++) {
+            struct capture *c = &s->captures[i];
+            int ti, di;
+            if (c->value.mode != EMUIF_SCOPE_NEXT_CALL ||
+                c->value.state != EMUIF_SCOPE_ARMED || c->candidate_instruction ||
+                !(o->known & EMUIF_OBS_KNOWN_TARGET) || o->target != c->entry_pc) continue;
+            if (!context_known(o)) {
+                c->pending_reason = (o->reason == EMUIF_OBS_REASON_EXHAUSTED ?
+                                    EMUIF_SCOPE_OVERFLOW : EMUIF_SCOPE_UNKNOWN) + 1;
+                continue;
+            }
+            c->candidate_instruction = o->instruction_id;
+            c->candidate_context = o->context_id;
+            c->candidate_sequence = o->sequence;
+            ti = trace_index(&s->config, c->value.trace_id);
+            di = ti < 0 ? -1 : dest_index(&s->config, s->config.traces[ti].destination_id);
+            if (di >= 0) s->stages[di].active = 1;
+        }
+    } else if (o->kind == EMUIF_OBS_RET || o->kind == EMUIF_OBS_RETI) {
+        struct scope_frame *f = s->depth ? &s->frames[s->depth - 1] : NULL;
+        if (!context_known(o) || !f || !f->committed || f->id != o->context_id ||
+            f->kind != o->frame_kind || f->return_pc != o->return_pc ||
+            f->sp_after != o->sp_before || f->sp_before != o->sp_after) {
+            lose_context(s, f ? EMUIF_SCOPE_MISMATCH : EMUIF_SCOPE_UNKNOWN);
+        } else {
+            s->closing_instruction = o->instruction_id; s->closing_context = o->context_id;
+            for (i = 0; i < s->capture_count; i++) {
+                struct capture *c = &s->captures[i];
+                if (c->value.mode && c->value.state == EMUIF_SCOPE_BOUND &&
+                    c->value.context_id == o->context_id)
+                    c->closing_instruction = o->instruction_id;
+            }
+        }
+    }
+}
+static void after_observation(void *context, const struct emuif_observation *o)
+{
+    struct emu_trace_state *s = context;
+    unsigned i, old_count = s->capture_count;
+    int terminal = o->kind == EMUIF_OBS_INSTRUCTION_RETIRE ||
+                   o->kind == EMUIF_OBS_INSTRUCTION_ABORT;
+    for (i = 0; i < old_count; i++) {
+        struct capture *c = &s->captures[i];
+        if (!c->value.mode) continue;
+        if (c->pending_reason) {
+            scope_end(s, c, c->pending_reason - 1, o->sequence);
+            c->pending_reason = 0;
+        }
+        if (c->value.state <= EMUIF_SCOPE_BOUND &&
+            (o->kind == EMUIF_OBS_FAULT || o->kind == EMUIF_OBS_INSTRUCTION_ABORT))
+            scope_end(s, c, EMUIF_SCOPE_FAULT, o->sequence);
+        if (c->candidate_instruction == o->instruction_id && terminal &&
+            c->value.state == EMUIF_SCOPE_ARMED) {
+            if (!s->next_invocation) scope_end(s, c, EMUIF_SCOPE_OVERFLOW, o->sequence);
+            else {
+                c->value.state = EMUIF_SCOPE_BOUND;
+                c->value.context_id = c->candidate_context;
+                c->value.invocation_id = s->next_invocation++;
+                c->value.start_sequence = o->sequence;
+                c->value.generation = o->generation;
+                c->last_cycle = o->cycle; c->last_generation = o->generation;
+                if (c->candidate_limit) {
+                    s->event_tick = 1; capture_complete(s, c); s->event_tick = 0;
+                }
+            }
+        }
+        if (c->closing_instruction == o->instruction_id &&
+            o->kind == EMUIF_OBS_INSTRUCTION_RETIRE)
+            scope_end(s, c, EMUIF_SCOPE_RETURN, o->sequence);
+        if ((o->kind == EMUIF_OBS_RESET || o->kind == EMUIF_OBS_LOAD) &&
+            c->value.state <= EMUIF_SCOPE_BOUND) {
+            scope_end(s, c, o->kind == EMUIF_OBS_RESET ? EMUIF_SCOPE_RESET : EMUIF_SCOPE_LOAD,
+                      o->sequence);
+            if (o->kind == EMUIF_OBS_RESET && c->value.rearm_on_reset) {
+                if (s->capture_count == 64) c->value.rearm_status = EMUIF_EXHAUSTED;
+                else {
+                    struct capture *n = &s->captures[s->capture_count++];
+                    memset(n, 0, sizeof *n); INIT(n->value);
+                    n->value.capture_id = s->capture_count;
+                    n->value.trace_id = c->value.trace_id;
+                    n->value.mode = EMUIF_SCOPE_NEXT_CALL;
+                    n->value.state = EMUIF_SCOPE_ARMED;
+                    n->value.rearm_on_reset = 1;
+                    n->value.generation = o->generation;
+                    n->max_records = c->max_records; n->max_cycles = c->max_cycles;
+                    n->entry_pc = c->entry_pc; n->stop_cpu = c->stop_cpu;
+                    n->last_cycle = o->cycle; n->last_generation = o->generation;
+                    c->value.successor_capture_id = n->value.capture_id;
+                }
+            }
+        }
+    }
+    for (i = 0; i < old_count; i++) {
+        struct capture *c = &s->captures[i];
+        if (!c->value.mode) continue;
+        if (c->candidate_failed)
+            emu_debug_runtime_discard_suppression(s->runtime, c->value.trace_id);
+        else if (c->value.state > EMUIF_SCOPE_BOUND && c->value.end_sequence == o->sequence)
+            emu_debug_runtime_flush_selected(s->runtime, 0, c->value.trace_id);
+    }
+    if (terminal || o->kind == EMUIF_OBS_FAULT || o->kind == EMUIF_OBS_RESET ||
+        o->kind == EMUIF_OBS_LOAD) {
+        for (i = 0; i < 8; i++) if (s->stages[i].active) stage_commit(s, i);
+        for (i = 0; i < s->capture_count; i++) {
+            struct capture *c = &s->captures[i];
+            if (c->candidate_instruction) {
+                if (c->candidate_failed) c->value.records = 0;
+                c->candidate_instruction = c->candidate_context = c->candidate_sequence = 0;
+                c->candidate_failed = c->candidate_limit = 0;
+            }
+        }
+    }
+    if (o->kind == EMUIF_OBS_INSTRUCTION_RETIRE) {
+        for (i = 0; i < s->depth; i++)
+            if (s->frames[i].instruction == o->instruction_id) s->frames[i].committed = 1;
+        if (s->closing_instruction == o->instruction_id && s->depth &&
+            s->frames[s->depth - 1].id == s->closing_context) s->depth--;
+        if (s->closing_instruction == o->instruction_id)
+            s->closing_instruction = s->closing_context = 0;
+    }
+    if (o->kind == EMUIF_OBS_INSTRUCTION_ABORT || o->kind == EMUIF_OBS_FAULT ||
+        o->kind == EMUIF_OBS_RESET || o->kind == EMUIF_OBS_LOAD) {
+        s->depth = 0; s->closing_instruction = s->closing_context = 0;
+    }
+}
 void emu_trace_observe(struct emu_trace_state *s, const struct emuif_observation *o)
 {
     unsigned i;
@@ -696,6 +947,7 @@ void emu_trace_observe(struct emu_trace_state *s, const struct emuif_observation
     s->event_tick = 1;
     emu_trace_tick(s, o->generation, o->cycle);
     s->event_tick = 0;
+    scope_before(s, o);
     if (o->kind == EMUIF_OBS_WATCH)
     {
         for (i = 0; i < s->config.nw; i++)
@@ -790,6 +1042,7 @@ emuif_status emu_trace_replace(struct emu_trace_state *s, const struct emuif_tra
         return e;
     if (q->generation != s->generation || q->expected_revision != s->revision)
         return EMUIF_STALE;
+    if (stage_pending(s)) return EMUIF_BUSY;
     if (s->revision == UINT64_MAX)
         return EMUIF_EXHAUSTED;
     if (s->provider.active && s->provider.active(s->provider.context))
@@ -1061,10 +1314,17 @@ emuif_status emu_trace_capture(struct emu_trace_state *s, const struct emuif_cap
     if (q->reserved || q->stop_cpu > 1 || q->rearm_on_reset > 1 || q->mode > 2 || !q->max_records ||
         !q->max_cycles)
         return EMUIF_INVALID;
-    if (q->mode)
-        return EMUIF_UNSUPPORTED;
-    if (q->context_id || q->entry_pc || q->rearm_on_reset)
-        return EMUIF_INVALID;
+    if ((q->mode == EMUIF_SCOPE_PERSISTENT && (q->context_id || q->entry_pc || q->rearm_on_reset)) ||
+        (q->mode == EMUIF_SCOPE_NEXT_CALL && q->context_id) ||
+        (q->mode == EMUIF_SCOPE_ACTIVE_CONTEXT &&
+         (!q->context_id || q->entry_pc || q->rearm_on_reset))) return EMUIF_INVALID;
+    if (q->mode && (s->coverage & 13u) != 13u) return EMUIF_UNSUPPORTED;
+    if (stage_pending(s)) return EMUIF_BUSY;
+    if (q->mode == EMUIF_SCOPE_ACTIVE_CONTEXT &&
+        (!s->depth || s->frames[s->depth - 1].id != q->context_id ||
+         s->frames[s->depth - 1].kind != 1 || !s->frames[s->depth - 1].committed))
+        return EMUIF_STATE;
+    if (q->mode == EMUIF_SCOPE_ACTIVE_CONTEXT && !s->next_invocation) return EMUIF_EXHAUSTED;
     if (trace_index(&s->config, q->trace_id) < 0)
         return EMUIF_NOT_FOUND;
     c = capture_for(s, q->trace_id);
@@ -1072,14 +1332,26 @@ emuif_status emu_trace_capture(struct emu_trace_state *s, const struct emuif_cap
         return EMUIF_BUSY;
     if (s->capture_count == 64)
         return EMUIF_EXHAUSTED;
+    /* Preserve earlier ordinary/scope suppression before candidate-only state
+     * can later be discarded on an unsuccessful CALL. All validation above is
+     * complete, so failed starts cannot mutate retained history. */
+    if (emu_debug_runtime_flush_selected(s->runtime, 0, q->trace_id) != EM8051_DEBUG_EVENT_OK)
+        return EMUIF_BUSY;
     c = &s->captures[s->capture_count++];
     memset(c, 0, sizeof *c);
     INIT(c->value);
     c->value.capture_id = s->capture_count;
     c->value.generation = s->generation;
     c->value.trace_id = q->trace_id;
-    c->value.state = EMUIF_SCOPE_BOUND;
-    c->value.start_sequence = s->sequence;
+    c->value.mode = q->mode;
+    c->value.state = q->mode == EMUIF_SCOPE_NEXT_CALL ? EMUIF_SCOPE_ARMED : EMUIF_SCOPE_BOUND;
+    c->value.start_sequence = q->mode == EMUIF_SCOPE_NEXT_CALL ? 0 : s->sequence;
+    c->value.rearm_on_reset = q->rearm_on_reset;
+    c->entry_pc = q->entry_pc;
+    if (q->mode == EMUIF_SCOPE_ACTIVE_CONTEXT) {
+        c->value.context_id = q->context_id;
+        c->value.invocation_id = s->next_invocation++;
+    }
     c->max_records = q->max_records;
     c->max_cycles = q->max_cycles;
     c->last_cycle = s->cycle;
@@ -1389,6 +1661,7 @@ emuif_status emu_trace_command(struct emu_trace_state *s, const char *cmd,
         struct trace_ring *r;
         if (di < 0)
             return EMUIF_NOT_FOUND;
+        if (s->stages[di].active) return EMUIF_BUSY;
         if (s->config.destinations[di].kind)
             return EMUIF_INVALID;
         r = &s->rings[di];
@@ -1429,6 +1702,7 @@ emuif_status emu_trace_command(struct emu_trace_state *s, const char *cmd,
         if (!id || id > s->capture_count)
             return EMUIF_NOT_FOUND;
         c = &s->captures[id - 1];
+        if (!strcmp(cmd, "captureStop") && stage_pending(s)) return EMUIF_BUSY;
         if (!strcmp(cmd, "captureStop") && c->value.state <= 1)
         {
             emu_debug_runtime_flush_selected(s->runtime, 0, c->value.trace_id);
@@ -1471,6 +1745,8 @@ emuif_status emu_trace_command(struct emu_trace_state *s, const char *cmd,
             e = s->provider.status(s->provider.context, id, &v);
         else
         {
+            int di = dest_index(&s->config, id);
+            if (di >= 0 && s->stages[di].active) return EMUIF_BUSY;
             emu_debug_runtime_flush_selected(s->runtime, id, 0);
             e = s->provider.operation(s->provider.context, id, !strcmp(cmd, "sinkClose"),
                                       s->generation, &v);

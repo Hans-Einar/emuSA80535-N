@@ -61,7 +61,7 @@ def host(program=None,config_data=b'{}'):
             deadline=time.monotonic()+5
             while not endpoint.exists() and proc.poll() is None and time.monotonic()<deadline:time.sleep(.01)
             assert proc.poll() is None and endpoint.exists()
-            client=TraceClient(endpoint);client.endpoint=endpoint;hello=client.hello();assert {'traceConfig','tracePage','captureA'}<=set(hello['capabilities']);assert not {'captureB','traceFile'}&set(hello['capabilities']);client.attach();yield client
+            client=TraceClient(endpoint);client.endpoint=endpoint;hello=client.hello();assert {'traceConfig','tracePage','captureA','captureB'}<=set(hello['capabilities']);assert not {'traceFile'}&set(hello['capabilities']);client.attach();yield client
         finally:
             if client:client.close()
             if proc.poll() is None:proc.terminate()
@@ -80,7 +80,7 @@ def persistent():
         before=c.capture(b);c.reset();c.run(40);c.pause();after=c.capture(b)
         assert int(after['cycles'])>=int(before['cycles'])+40 and after['generation']=='2' and after['state']==1
         c.call('captureStop',c.args(captureId=b['captureId']));count=len(c.records());c.run(20);c.pause();assert len(c.records())==count
-        c.call('captureStart',c.args(traceId=1,mode=1,contextId='0',entryPc=16,maxRecords='100',maxCycles='100',rearmOnReset=False,stopCpu=False),'UNSUPPORTED')
+        c.call('captureStart',c.args(traceId=1,mode=1,contextId='0',entryPc=16,maxRecords='100',maxCycles='100',rearmOnReset=False,stopCpu=False))
         c.config(cfg,revision='0',error='STALE')
         bad=json.loads(json.dumps(cfg));bad['points'][0]['selector']['matchMask']=8;bad['points'][0]['selector']['space']=1;c.config(bad,error='UNSUPPORTED')
         wrong=c.page(sessionId='f'*32);assert wrong['cursorState']=='wrong-session' and not wrong['records']

@@ -1536,7 +1536,8 @@ static emuif_status control3_advance(struct emuif_session *s, const struct emuif
 static bool capability3(struct emuif_session *s, const char *name)
 {
     return capability(s, name) ||
-           (s->trace && (!strcmp(name,"traceConfig") || !strcmp(name,"tracePage") || !strcmp(name,"captureA"))) ||
+           (s->trace && (!strcmp(name,"traceConfig") || !strcmp(name,"tracePage") || !strcmp(name,"captureA") ||
+                         (!strcmp(name,"captureB") && (s->observation_coverage & 13u) == 13u))) ||
            (!strcmp(name,"traceFile") && emu_trace_has_provider(s->trace)) ||
            (!strcmp(name, "observations") && s->observation_coverage != 0) ||
            (!strcmp(name, "uartOutcomes") && (s->observation_coverage & 112u) == 112u) ||
@@ -1574,7 +1575,7 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
     {
         static const char *caps[] = {
             "attachSession", "status",     "control",      "codeBreakpoints",   "decodeCode",
-            "memoryRead",    "boardInput", "boardInspect", "boardInspectFault", "advance", "observations", "uartOutcomes", "traceConfig", "tracePage", "captureA", "traceFile"};
+            "memoryRead",    "boardInput", "boardInspect", "boardInspectFault", "advance", "observations", "uartOutcomes", "traceConfig", "tracePage", "captureA", "captureB", "traceFile"};
         unsigned i;
         bool comma = false;
         int protocol = json_member(d, a, "protocol"),

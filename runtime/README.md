@@ -169,9 +169,10 @@ all successful timing cycles; failed attempts remain distinguishable from
 completed instructions. The native observation binding currently rejects other
 CPU variants. Explicit MOVX and SBUF access facts are produced, but implicit
 register, stack and peripheral accesses are not completely instrumented, so
-full `access` coverage is not advertised. Trace configuration, trace paging, persistent capture A and bounded file sinks
-are available; invocation capture B remains UNSUPPORTED until its scope tracker
-is integrated. File sinks require the optional startup mappings below.
+full `access` coverage is not advertised. Trace configuration, trace paging,
+persistent capture A, invocation capture B and bounded file sinks are available
+on the canonical SAB80535 binding. File sinks require the optional startup
+mappings below.
 
 `outcomePage` and the native trace table's `outcomes` function read the same
 fixed1024-record operational ring, independently of user tracing. It retains
@@ -290,3 +291,47 @@ fault, power-down, CODE breakpoint, watch, trace, then step. A silent IDLE
 deadline has zero event/instruction identity; an event cutoff retains the actual
 identity. Terminate pauses execution before asynchronous BUSY, and resume, step
 or advance are refused until termination completes.
+
+
+Invocation capture B is available with instruction/control/IRQ coverage. Mode1
+arms for the next fully observed successful CALL to entryPc; binding occurs only
+after CALL retirement. Its startSequence is that retirement fact, although the
+staged CALL event precedes it in output. Armed time does not count toward its
+cycle limit. Mode2 binds only a fully observed, already retired entry whose CALL
+context is the current top frame; a CODE breakpoint at entry supports this mode.
+Its startSequence is the latest canonical source at the explicit bind. A matching
+PC or stack pointer alone never establishes context. No new architectural event
+is invented for either command.
+
+CALL, IRQ, RET and RETI context tracking runs with tracing disabled or filtered.
+Nested/reentrant calls and IRQ work belong to the root extent. A successful root
+RET and its retirement are included; caller continuation is excluded. Mismatch,
+unknown ancestry, stack overflow, failed retirement, reset/load and limits close
+B incomplete. A newly fully observed child above unknown ancestry can be captured
+with parent0; returning it never establishes the older unknown parent. Mode2
+rejects unobserved, provisional, IRQ and non-top contexts.
+
+Next-call output is staged per affected destination for at most256 records,
+including A/other traces sharing it. Original route sets, gates, counts and source
+ordering are retained. Successful binding commits each coalesced view once;
+failed CALL removes only candidate B routes and commits other traces once.
+Storage IDs are allocated at commit. Candidate overflow closes incomplete before
+binding. Provisional B record limits are applied at original routing time, so
+maxRecords1 includes only the CALL B view: successful retirement binds and closes
+incomplete/limit, while other traces still retain their own retirement views.
+Failed provisional suppression is discarded only for the affected B trace.
+Flush/close and configuration mutation return BUSY during an unresolved stage.
+
+Reset ends old B status in its old generation. Explicit mode1 rearmOnReset creates
+a new armed captureId and exposes successorCaptureId; allocation exhaustion is
+rearmStatus EXHAUSTED without CPU fault or implicit retry. There are64 retained
+capture statuses, never silently discarded. With stopCpu, successful return or an incomplete B terminal requests a safe
+budget/paused stop; captureStatus distinguishes the cause. Actual faults,
+power-down, CODE breaks and watch stops retain their higher priority. Reset
+retains entry/paused and consumes any pending scope stop.
+Capture B completion does not change trace enabled state; its terminal route filter stays until another capture starts.
+A/configuration/file sinks and independent UART outcome history remain persistent.
+
+`make runtime-invocation-test` exercises actual CPU/Unix capture and shared A+B
+JSONL. RUNTIME_BIN/SDK_INCLUDE select an installed executable and installed-header
+board fixture; INVOCATION_REPORT retains all validated responses and file rows.

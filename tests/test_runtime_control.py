@@ -100,7 +100,7 @@ def main():
             assert hello['contractManifestSha256'] == digest(ROOT / 'interfaces/0.3.0/manifest.json')
             assert {'instruction','control','irq','lifecycle','input','uart'} == set(hello['observationCoverage']) and 'advance' in hello['capabilities']
             assert 'uartOutcomes' in hello['capabilities']
-            assert not set(hello['capabilities']) & {'captureB', 'traceFile'}
+            assert not set(hello['capabilities']) & {'traceFile'}
             initial = c.attach(); assert initial['cycle'] == '0'
             sid = initial['sessionId']; first_lease = c.lease
             observer = Client(endpoint); observer.hello(); observer.attach('observer')

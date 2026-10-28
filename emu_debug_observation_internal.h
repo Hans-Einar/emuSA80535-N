@@ -5,6 +5,8 @@
 typedef void (*emu_debug_observation_fn)(void *, const struct emuif_observation *);
 enum em8051_debug_event_status emu_debug_runtime_observer(struct em8051_debug_runtime *,
                                                           emu_debug_observation_fn, void *);
+enum em8051_debug_event_status emu_debug_runtime_after_observation(struct em8051_debug_runtime *,
+    emu_debug_observation_fn, void *);
 enum em8051_debug_event_status emu_debug_runtime_observation(struct em8051_debug_runtime *,
                                                              const struct emuif_observation *,
                                                              uint64_t *);
@@ -16,4 +18,5 @@ enum em8051_debug_event_status emu_debug_runtime_delivery(struct em8051_debug_ru
 enum em8051_debug_event_status emu_debug_runtime_flush(struct em8051_debug_runtime *);
 size_t emu_debug_runtime_pending_summaries(const struct em8051_debug_runtime *, uint32_t);
 enum em8051_debug_event_status emu_debug_runtime_flush_selected(struct em8051_debug_runtime *, uint32_t destination_id, uint32_t trace_id);
+enum em8051_debug_event_status emu_debug_runtime_discard_suppression(struct em8051_debug_runtime *, uint32_t trace_id);
 #endif

@@ -569,8 +569,142 @@ static void file_exhaustion(void)
     assert(!emu_trace_stop_pending(state));
     done();
 }
+static void candidate_suppression(unsigned overflow)
+{
+    struct emuif_capture_request q;
+    struct emuif_capture_status v;
+    unsigned i;
+    fixture(125);
+    config.traces.count = 3; points[0].route_count = 3;
+    points[0].trace_ids[1] = 2; points[0].trace_ids[2] = 3;
+    traces[0].interrupt_policy = traces[1].interrupt_policy = EMUIF_TRACE_SUPPRESS_IRQ;
+    dests[0].capacity = 1024; replace();
+    INIT(q); INIT(v); q.generation = 1; q.trace_id = 2;
+    q.mode = EMUIF_SCOPE_NEXT_CALL; q.entry_pc = 0x100;
+    q.max_records = q.max_cycles = 10000;
+    assert(!emu_trace_capture(state, &q, &v));
+    event.kind = EMUIF_OBS_IRQ_ENTER; event.instruction_id = 0;
+    event.context_id = 1; event.frame_kind = 2;
+    event.known = EMUIF_OBS_KNOWN_TARGET | EMUIF_OBS_KNOWN_CONTEXT;
+    event.target = 3; event.return_pc = 0; event.sp_before = 7; event.sp_after = 9; emit();
+    event.kind = EMUIF_OBS_CALL; event.instruction_id = 1;
+    event.context_id = 2; event.parent_context_id = 1; event.frame_kind = 1;
+    event.target = 0x100; event.return_pc = 6; event.sp_before = 9; event.sp_after = 11; emit();
+    assert(emu_debug_runtime_pending_summaries(engine, 1) == 2);
+    if (overflow) {
+        event.kind = EMUIF_OBS_IRQ_REQUEST;
+        for (i = 0; i < 256; i++) emit();
+        assert(emu_debug_runtime_pending_summaries(engine, 1) == 1);
+        event.kind = EMUIF_OBS_INSTRUCTION_RETIRE;
+    } else event.kind = EMUIF_OBS_INSTRUCTION_ABORT;
+    emit();
+    assert(emu_debug_runtime_pending_summaries(engine, 1) == 1); /* unrelated A survives */
+    command("captureStatus", "{\"captureId\":\"1\"}");
+    assert(strstr(output.data, "\"state\":3") && strstr(output.data, "\"records\":\"0\""));
+    assert(strstr(output.data, overflow ? "\"reason\":6" : "\"reason\":7"));
+    done();
+}
+static void prior_candidate_suppression(void)
+{
+    struct emuif_capture_request q;
+    struct emuif_capture_status v;
+    unsigned i, found = 0;
+    fixture(125);
+    traces[0].interrupt_policy = EMUIF_TRACE_SUPPRESS_IRQ; replace();
+    event.kind = EMUIF_OBS_IRQ_ENTER; event.instruction_id = 0;
+    event.context_id = 1; event.frame_kind = 2;
+    event.known = EMUIF_OBS_KNOWN_TARGET | EMUIF_OBS_KNOWN_CONTEXT;
+    event.target = 3; event.return_pc = 0; event.sp_before = 7; event.sp_after = 9; emit();
+    event.kind = EMUIF_OBS_INSTRUCTION_BEGIN; event.instruction_id = 1; emit();
+    event.kind = EMUIF_OBS_INSTRUCTION_RETIRE; emit();
+    assert(emu_debug_runtime_pending_summaries(engine, 1) == 1);
+    INIT(q); INIT(v); q.generation = 1; q.trace_id = 1;
+    q.mode = EMUIF_SCOPE_NEXT_CALL; q.entry_pc = 0x100;
+    q.max_records = q.max_cycles = 100;
+    q.context_id = 7;
+    assert(emu_trace_capture(state, &q, &v) == EMUIF_INVALID);
+    assert(emu_debug_runtime_pending_summaries(engine, 1) == 1);
+    q.context_id = 0;
+    assert(!emu_trace_capture(state, &q, &v));
+    assert(emu_debug_runtime_pending_summaries(engine, 1) == 0);
+    event.kind = EMUIF_OBS_CALL; event.instruction_id = 2;
+    event.context_id = 2; event.parent_context_id = 1; event.frame_kind = 1;
+    event.target = 0x100; event.return_pc = 6; event.sp_before = 9; event.sp_after = 11; emit();
+    event.kind = EMUIF_OBS_INSTRUCTION_ABORT; emit();
+    assert(emu_debug_runtime_pending_summaries(engine, 1) == 0);
+    read_page();
+    for (i = 0; i < page.written; i++) if (records[i].kind == EMUIF_RECORD_SUPPRESSION) {
+        assert(records[i].trace_id == 1 && records[i].count == 2); found++;
+    }
+    assert(found == 1);
+    done();
+}
+static void invocation_staging(void)
+{
+    struct emuif_capture_request q;
+    struct emuif_capture_status v;
+    unsigned i;
+    fixture(125);
+    config.traces.count = 2;
+    points[0].route_count = 2;
+    points[0].trace_ids[1] = 2;
+    replace();
+    INIT(q); INIT(v);
+    q.generation = 1; q.trace_id = 2; q.mode = EMUIF_SCOPE_NEXT_CALL;
+    q.entry_pc = 0x100; q.max_records = 1000; q.max_cycles = 1000;
+    assert(!emu_trace_capture(state, &q, &v) && v.state == EMUIF_SCOPE_ARMED);
+    event.kind = EMUIF_OBS_CALL; event.context_id = 1; event.frame_kind = 1;
+    event.known = EMUIF_OBS_KNOWN_TARGET | EMUIF_OBS_KNOWN_CONTEXT;
+    event.target = 0x100; event.return_pc = 3; event.sp_before = 7; event.sp_after = 9;
+    emit();
+    read_page(); assert(page.written == 0); /* Both A/default and candidate B wait. */
+    assert(emu_trace_replace(state, &config, &revision) == EMUIF_BUSY);
+    assert(emu_trace_close_files(state) == EMUIF_BUSY);
+    q.trace_id = 1; q.mode = EMUIF_SCOPE_ACTIVE_CONTEXT; q.context_id = 1; q.entry_pc = 0;
+    assert(emu_trace_capture(state, &q, &v) == EMUIF_BUSY);
+    event.kind = EMUIF_OBS_INSTRUCTION_RETIRE; event.cycle = 2; emit();
+    read_page(); assert(page.written == 2);
+    assert(records[0].event.kind == EMUIF_OBS_CALL && records[1].event.kind == EMUIF_OBS_INSTRUCTION_RETIRE);
+    for (i = 0; i < 2; i++) assert(records[i].route_count == 2 && records[i].trace_ids[0] == 1 && records[i].trace_ids[1] == 2);
+    command("captureStatus", "{\"captureId\":\"1\"}");
+    assert(strstr(output.data, "\"startSequence\":\"2\"") && strstr(output.data, "\"cycles\":\"0\""));
+    event.instruction_id = 2; event.kind = EMUIF_OBS_RET;
+    event.target = 3; event.sp_before = 9; event.sp_after = 7; emit();
+    event.kind = EMUIF_OBS_INSTRUCTION_RETIRE; event.cycle = 4; emit();
+    command("captureStatus", "{\"captureId\":\"1\"}");
+    assert(strstr(output.data, "\"state\":2") && strstr(output.data, "\"reason\":0") && strstr(output.data, "\"endSequence\":\"4\""));
+    event.instruction_id = 3; emit(); read_page();
+    assert(page.written == 5 && records[4].route_count == 1 && records[4].trace_ids[0] == 1);
+    done();
+
+    /* Exact 256-record candidate boundary, atomic overflow, A ordering intact. */
+    fixture(125); config.traces.count = 2; points[0].route_count = 2;
+    points[0].trace_ids[1] = 2; dests[0].capacity = 1024; replace();
+    INIT(q); INIT(v); q.generation = 1; q.trace_id = 2; q.mode = EMUIF_SCOPE_NEXT_CALL;
+    q.entry_pc = 0x100; q.max_records = q.max_cycles = 1000;
+    assert(!emu_trace_capture(state, &q, &v));
+    event.kind = EMUIF_OBS_CALL; event.context_id = 1; event.frame_kind = 1;
+    event.known = EMUIF_OBS_KNOWN_TARGET | EMUIF_OBS_KNOWN_CONTEXT;
+    event.target = 0x100; event.return_pc = 3; event.sp_before = 7; event.sp_after = 9; emit();
+    event.kind = EMUIF_OBS_IRQ_REQUEST;
+    for (i = 0; i < 255; i++) emit();
+    read_page(); assert(page.written == 0);
+    emit(); read_page(); assert(page.written == 16 && page.newest == 257);
+    for (i = 0; i < page.written; i++) {
+        assert(records[i].route_count == 1 && records[i].trace_ids[0] == 1);
+        assert(records[i].event.sequence == i + 1 && records[i].record_sequence == i + 1);
+    }
+    event.kind = EMUIF_OBS_INSTRUCTION_RETIRE; event.cycle = 2; emit();
+    command("captureStatus", "{\"captureId\":\"1\"}");
+    assert(strstr(output.data, "\"state\":3") && strstr(output.data, "\"reason\":6") && strstr(output.data, "\"invocationId\":\"0\"") && strstr(output.data, "\"records\":\"0\""));
+    done();
+}
 int main(void)
 {
+    invocation_staging();
+    candidate_suppression(0);
+    candidate_suppression(1);
+    prior_candidate_suppression();
     explicit_stop_exhaustion();
     file_exhaustion();
     retention_and_suppression();
