@@ -206,7 +206,6 @@ static void input_observation(struct emuif_session *s, const struct queued_input
                               uint32_t kind, emuif_status status)
 {
     struct emuif_observation o;
-    struct emuif_snapshot v;
     if (!s->observation_bound) return;
     INIT(o); INIT(o.old_value); INIT(o.new_value);
     o.old_value.width = o.new_value.width = 8;
@@ -227,11 +226,6 @@ static void input_observation(struct emuif_session *s, const struct queued_input
         o.known |= EMUIF_OBS_KNOWN_PC;
     }
     o.retired_instructions = s->retired;
-    INIT(v);
-    if (!s->cpu_api.snapshot(s->cpu, &v)) {
-        o.legacy_instructions = v.instructions;
-        o.cycle = v.cycle;
-    }
     cpu_observation(s, &o);
 }
 static void publish_fault(struct emuif_session *s)
@@ -800,6 +794,7 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
             s->retirement_pending = false;
         }
         s->cycle = r.cycle;
+        s->observed_legacy = r.instructions;
         if (s->observation_error) { e = fault(s, s->observation_error); break; }
         turns++;
         e = boundary(s);
