@@ -3,14 +3,15 @@
 Date: 2026-10-28
 Reviewer: fresh independent `indirect_mov_reviewer`
 Disposition: **APPROVED** for bounded SLC-029
-Reviewed candidate: `4e74190aed7d76af4483a4e63fe47a018df53e7a`
+Reviewed final candidate: `d247e7ff82b7b3890da4154d720c94bdb86af64f`
+Initial product candidate: `4e74190aed7d76af4483a4e63fe47a018df53e7a`
 Activation baseline: `66f3cbbafc5853cf1dbe8a7daf57a8e95c2964af`
 
 ## Scope and decision
 
 Read AGENTS, CurrentIndex, the active IndirectMovFixSlice, Sprint and handoff,
 and applicable mandate, CPU/runtime study, requirements, architecture and design.
-Reviewed the exact two-file candidate in an independent detached worktree. The
+Reviewed both exact candidates in an independent detached worktree. The
 Reviewer changed no product code. No blocking findings remain.
 
 The two-line handler correction captures the active bank's R0/R1 indirect
@@ -26,7 +27,10 @@ independently confirms the 86/87 encoding, indirect source, direct destination,
 two-byte length and two machine cycles. Source review also checked the decoder,
 SFR gateway, parity update and public step/run timing boundaries.
 
-Only `opcodes.c` and `tests/test_stage0.c` differ from activation. Public headers,
+The product/test diff touches only `opcodes.c` and `tests/test_stage0.c`.
+The final successor adds the user's short synthetic programs and this review;
+its production source is byte-identical to the initial product candidate.
+Public headers,
 immutable 0.1/0.2/0.3 bundles, decoder, licensing and upstream ancestry are
 unchanged. No external firmware, application address, board behavior or physical
 I/O enters this correction. Approval establishes this instruction correction;
@@ -43,13 +47,16 @@ both destination and preserved source are A9 with the same correct timing; the
 same probe exits 0.
 
 Separately compiled the committed new Stage-0 tests against baseline source:
-they report 1984 failed assertions. This independently reproduces the Worker's
-negative result and demonstrates that the regressions distinguish the defect.
+they report 1984 failed assertions for the initial matrix and 2020 after adding
+the requested short programs. This independently reproduces the Worker's
+negative results and demonstrates that the regressions distinguish the defect.
 
 ## Independent verification
 
-All following checks used the exact candidate in
-`/tmp/slc029-review-candidate`, without modifying its tracked files:
+Checks used pinned detached revisions in `/tmp/slc029-review-candidate`,
+without modifying tracked files. The full suite ran on the initial product
+candidate; Stage-0 and its sanitizer build were rerun on the final candidate
+after reviewing the test-only successor and confirming unchanged product code:
 
 - `make core-test control3-test runtime-session-test runtime-control-test
   runtime-host-test debug-test cpu-link-test PYTHON=python3` passed, exit 0.
@@ -63,6 +70,12 @@ All following checks used the exact candidate in
   aliases, source/pointer preservation, absent-upper 8051 convention, unchanged
   flags except intentional PSW writes, exactly one SFR write with no SFR reads,
   PC, instruction/cycle counters and two timer ticks.
+- The final candidate additionally passes the user's exact zero-padded 64 KiB
+  programs with prefixes `78307530a575205a8620e52080fe` and
+  `79307530a575205a8720e52080fe`. All 12 variant/opcode/dispatcher combinations
+  complete five instructions in eight cycles at PC 000C, with A, destination
+  and preserved source equal to A5. The old handler instead leaves all three
+  at 5A. The terminating loop remains unexecuted under the five-instruction bound.
 - Callback abort cases preserve the applied destination write, leave PC and
   instruction/cycle counters unchanged, perform no timer ticks, and retain
   pre-parity-update PSW state. These match the existing partial-effect contract.
@@ -75,11 +88,12 @@ All following checks used the exact candidate in
   It additionally verifies ACC destination/parity and absent-upper behavior.
 - A separate reverse-direction probe passed 80 A6/A7 cases covering all banks,
   variants and dispatchers, direct B source and lower/upper indirect destination.
-- `git diff --check 66f3cbb 4e74190` passed.
+- `git diff --check 66f3cbb d247e7` passed.
 
 Transient logs are `/tmp/slc029-review-suite.log`,
-`/tmp/slc029-review-sanitizer.log` and
-`/tmp/slc029-review-old-matrix.log`. Independent probe sources are
+`/tmp/slc029-review-sanitizer.log`, `/tmp/slc029-review-sanitizer-final.log`,
+`/tmp/slc029-review-old-matrix.log` and
+`/tmp/slc029-review-old-matrix-final.log`. Independent probe sources are
 `/tmp/slc029-review-old/review_mov_probe.c`, `/tmp/slc029-review-extra.c` and
 `/tmp/slc029-review-reverse.c`. Master retains exact-source artifact/install,
 verification, traceability and acceptance duties.
