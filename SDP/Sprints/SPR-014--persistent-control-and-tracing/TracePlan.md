@@ -58,3 +58,14 @@ and flush/close operation barriers. Fault injection must stay test-local.
 Run prior026, CPU, native/session, Unix, script, legacy and immutable SDK checks.
 Export exact reviewed source and verify installed runtime capabilities and actual
 trace file output before handoff. CPU API1, board ABI1 and frozen SDKs unchanged.
+
+## SLC-028 follow-up: recovery after unknown ancestry
+
+The026 producer conservatively keeps context unknown after an observation gap,
+mismatch or unwind until reset.028 must test and decide recovery at a newly
+fully observed CALL: that child's entry/SP/return may establish a known frame
+with unknown parent0 without asserting anything about prior ancestry. A pending
+B-next-call can then bind that actual invocation. Never permit active-context
+binding before such observed entry, infer entry from PC/SP, or mark the old
+unknown scope complete. This requires a fresh bounded CPU/context change and
+independent review in028, not a new026 capability claim.
