@@ -1277,3 +1277,25 @@ void disasm_setptrs(struct em8051 *aCPU)
     aCPU->dec[0xf6] = &disasm_mov_indir_rx_a;
     aCPU->dec[0xf7] = &disasm_mov_indir_rx_a;
 }
+
+/* Decode only captured evidence through the existing decoder table. The tiny
+ * circular CODE view preserves the original PC for relative/absolute targets;
+ * incomplete operands are never returned as a completed disassembly. */
+uint8_t em8051_decode_captured(const struct em8051 *cpu, uint16_t pc,
+                              const uint8_t bytes[3], uint8_t count, char text[97])
+{
+    struct em8051 view;
+    uint8_t code[4] = {0,0,0,0};
+    uint8_t size, i;
+    char staged[97];
+    text[0] = 0;
+    if (!count || count > 3) return 0;
+    memset(&view, 0, sizeof(view));
+    view.mVariant = cpu->mVariant;
+    view.mCodeMem = code;
+    view.mCodeMemMaxIdx = 3;
+    for (i = 0; i < count; ++i) code[(pc + i) & 3] = bytes[i];
+    size = cpu->dec[bytes[0]](&view, pc, staged);
+    if (size <= count) { strncpy(text, staged, 96); text[96] = 0; }
+    return size;
+}

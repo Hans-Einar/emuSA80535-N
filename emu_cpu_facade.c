@@ -1,6 +1,7 @@
 /* Opaque CPU API1 adapter over the preserved emu8051 engine.
  * Copyright 2006 Jari Komppa; Copyright 2026 Hans-Einar. MIT; see LICENSE. */
 #include "emu_decode_internal.h"
+#include "emu_cpu_observation_internal.h"
 #include <emusa80535/contracts/cpu.h>
 #include <emusa80535/emu8051.h>
 #include <limits.h>
@@ -8,8 +9,38 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Observation state is private to this opaque CPU and never reachable through
+ * borrowed immutable records. IDs and retired totals survive resets/rebinding. */
+struct observed_frame {
+    uint64_t id, parent;
+    uint16_t return_pc;
+    uint8_t sp, kind, irq_source;
+};
+struct observed_uart {
+    uint64_t id, parent, order, scheduled, start, instruction, access;
+    uint16_t value;
+    bool started;
+};
+struct cpu_observation_state {
+    struct emu_cpu_raw_observer raw;
+    struct emuif_observer sink;
+    uint64_t generation, sequence, next_instruction, next_access, next_context, next_frame;
+    uint64_t retired, instruction, begin, delivery_parent, delivery_order, delivery_cycle;
+    uint64_t current_access, attempted_cycle, unbound_cycle, unbound_instructions;
+    bool access_old_known;
+    uint8_t access_old;
+    uint32_t access_kind, access_space;
+    uint16_t access_address;
+    uint16_t pc, next_pc;
+    uint8_t bytes[3], byte_mask, depth, irq_depth;
+    bool bound, pending, opcode_done, closing, fault_emitted, context_lost;
+    struct observed_frame frames[64];
+    struct observed_uart rx, tx, hold;
+};
+
 struct emuif_cpu {
     struct em8051 core; /* First member: native callbacks recover this owner. */
+    struct cpu_observation_state observation;
     uint8_t code[65536];
     struct emu_decode_cache decode_cache;
     struct emuif_cpu_hooks hooks;
@@ -74,6 +105,261 @@ static void fail(struct emuif_cpu *cpu, emuif_status status) {
         cpu->fault = status > EMUIF_NOT_FOUND ? EMUIF_FAULT : status;
 }
 
+static bool obs_id(struct emuif_cpu *cpu, uint64_t *counter, uint64_t *value) {
+    if (*counter == UINT64_MAX) { fail(cpu, EMUIF_EXHAUSTED); return false; }
+    *value = ++*counter;
+    return true;
+}
+static void obs_init(struct emuif_cpu *cpu, struct emuif_observation *e,
+                     uint32_t kind, uint32_t phase, uint64_t cycle) {
+    struct cpu_observation_state *o = &cpu->observation;
+    INIT(e); INIT(&e->old_value); INIT(&e->new_value);
+    e->old_value.width = e->new_value.width = 8;
+    e->generation = o->generation;
+    e->cycle = cycle; e->kind = kind; e->phase = phase;
+    e->legacy_instructions = cpu->core.mInstructionCount;
+    e->retired_instructions = o->retired;
+    e->instruction_id = o->pending ? o->instruction : 0;
+    e->begin_cycle = o->pending ? o->begin : 0;
+    e->pc = o->pending ? o->pc : cpu->core.mPC;
+    e->known = EMUIF_OBS_KNOWN_PC;
+    e->irq_depth = o->irq_depth;
+}
+static void obs_emit(struct emuif_cpu *cpu, struct emuif_observation *e) {
+    struct cpu_observation_state *o = &cpu->observation;
+    bool busy;
+    if (!o->bound || !obs_id(cpu, &o->sequence, &e->sequence)) return;
+    busy = cpu->busy; cpu->busy = true;
+    o->sink.observe(o->sink.context, e);
+    cpu->busy = busy;
+}
+static void obs_bytes(struct emuif_cpu *cpu, struct emuif_observation *e) {
+    struct cpu_observation_state *o = &cpu->observation;
+    while (e->byte_count < 3 && (o->byte_mask & (1u << e->byte_count))) {
+        e->bytes[e->byte_count] = o->bytes[e->byte_count]; ++e->byte_count;
+    }
+    (void)em8051_decode_captured(&cpu->core, o->pc, e->bytes, e->byte_count, e->text);
+}
+static void obs_uart_event(struct emuif_cpu *cpu, struct observed_uart *f,
+                           uint32_t kind, uint32_t reason, uint64_t cycle,
+                           uint64_t displaced) {
+    struct emuif_observation e;
+    bool rx = kind >= EMUIF_OBS_RX_START && kind <= EMUIF_OBS_RX_END;
+    if (!f->id) return;
+    obs_init(cpu, &e, kind,
+             kind == EMUIF_OBS_TX_HOLD || kind == EMUIF_OBS_TX_REPLACE ?
+             EMUIF_OBS_PHASE_EFFECT : EMUIF_OBS_PHASE_PERIPHERAL, cycle);
+    e.frame_id = f->id; e.related_frame_id = displaced; e.reason = reason;
+    e.known |= EMUIF_OBS_KNOWN_UART_STATE | EMUIF_OBS_KNOWN_TIMING;
+    e.uart_mode = cpu->core.mSFR[REG_SCON] >> 6;
+    e.uart_width = e.uart_mode >= 2 ? 9 : 8; e.ninth = (f->value >> 8) & 1;
+    e.scon = cpu->core.mSFR[REG_SCON]; e.tcon = cpu->core.mSFR[REG_TCON];
+    e.start_cycle = f->start; e.scheduled_cycle = f->scheduled;
+    if (rx) {
+        e.parent_stimulus_id = f->parent; e.cpu_input_order = f->order; e.input_stage = 1;
+    }
+    if (kind == EMUIF_OBS_TX_HOLD || kind == EMUIF_OBS_TX_REPLACE) {
+        e.instruction_id = f->instruction; e.access_id = f->access;
+    }
+    if (kind == EMUIF_OBS_RX_ACCEPT || kind == EMUIF_OBS_RX_START ||
+        kind == EMUIF_OBS_TX_HOLD || kind == EMUIF_OBS_TX_REPLACE ||
+        kind == EMUIF_OBS_TX_START) {
+        e.new_value.known = 1; e.new_value.width = 16; e.new_value.value = f->value;
+    }
+    obs_emit(cpu, &e);
+}
+static bool obs_uart_new(struct emuif_cpu *cpu, struct observed_uart *f,
+                          uint16_t value) {
+    struct cpu_observation_state *o = &cpu->observation;
+    memset(f, 0, sizeof(*f));
+    if (!obs_id(cpu, &o->next_frame, &f->id)) return false;
+    f->value = value;
+    return true;
+}
+static void obs_context_push(struct emuif_cpu *cpu, struct emuif_observation *e,
+                              uint8_t kind, uint16_t target, uint16_t return_pc,
+                              uint8_t sp_before, uint8_t sp_after, unsigned source) {
+    struct cpu_observation_state *o = &cpu->observation;
+    struct observed_frame *f;
+    e->frame_kind = kind; e->target = target; e->return_pc = return_pc;
+    e->sp_before = sp_before; e->sp_after = sp_after;
+    e->known |= EMUIF_OBS_KNOWN_TARGET;
+    if (o->depth == 64 || o->context_lost) {
+        e->reason = o->depth == 64 ? EMUIF_OBS_REASON_EXHAUSTED : EMUIF_OBS_REASON_CONTEXT;
+        o->context_lost = true;
+        (void)obs_id(cpu, &o->next_context, &e->context_id);
+        e->sp_before = e->sp_after = 0;
+        return;
+    }
+    f = &o->frames[o->depth]; memset(f, 0, sizeof(*f));
+    if (!obs_id(cpu, &o->next_context, &f->id)) return;
+    f->parent = o->depth ? o->frames[o->depth - 1].id : 0;
+    f->return_pc = return_pc; f->sp = sp_after; f->kind = kind; f->irq_source = kind == EMUIF_OBS_FRAME_IRQ ? (uint8_t)source : 0;
+    e->context_id = f->id; e->parent_context_id = f->parent;
+    e->known |= EMUIF_OBS_KNOWN_CONTEXT; ++o->depth;
+}
+static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
+                             uint64_t a, uint32_t b, uint32_t c, uint32_t d) {
+    struct emuif_cpu *cpu = context;
+    struct cpu_observation_state *o = &cpu->observation;
+    struct emuif_observation e;
+    uint64_t id = 0;
+    if (!o->bound) return 0;
+    switch (kind) {
+    case EMU_RAW_BEGIN:
+        if (!obs_id(cpu, &o->next_instruction, &o->instruction)) return 0;
+        o->pending = true; o->opcode_done = false; o->closing = false;
+        o->pc = (uint16_t)a; o->begin = cycle; o->attempted_cycle = cycle; o->byte_mask = 1;
+        memset(o->bytes, 0, sizeof(o->bytes)); o->bytes[0] = (uint8_t)b;
+        obs_init(cpu, &e, EMUIF_OBS_INSTRUCTION_BEGIN, EMUIF_OBS_PHASE_PRE, cycle);
+        obs_bytes(cpu, &e); obs_emit(cpu, &e); break;
+    case EMU_RAW_OPERAND:
+        if (o->pending && a < 3 && !(o->byte_mask & (1u << a))) {
+            o->bytes[a] = (uint8_t)b; o->byte_mask |= (uint8_t)(1u << a);
+        }
+        break;
+    case EMU_RAW_CYCLE_BEGIN: o->attempted_cycle = cycle; break;
+    case EMU_RAW_OPCODE_END:
+        if (o->pending && !cpu->fault) { o->opcode_done = true; o->next_pc = (uint16_t)a; }
+        break;
+    case EMU_RAW_CALL:
+    case EMU_RAW_IRQ_ENTER:
+        obs_init(cpu, &e, kind == EMU_RAW_CALL ? EMUIF_OBS_CALL : EMUIF_OBS_IRQ_ENTER,
+                 kind == EMU_RAW_CALL ? EMUIF_OBS_PHASE_EFFECT : EMUIF_OBS_PHASE_BOUNDARY, cycle);
+        obs_context_push(cpu, &e, kind == EMU_RAW_CALL ? EMUIF_OBS_FRAME_CALL : EMUIF_OBS_FRAME_IRQ,
+                         kind == EMU_RAW_CALL ? (uint16_t)a : cpu->core.mPC,
+                         (uint16_t)b, (uint8_t)c, (uint8_t)d, (unsigned)a);
+        if (kind == EMU_RAW_IRQ_ENTER) e.irq_source = (uint32_t)a;
+        obs_emit(cpu, &e);
+        if (kind == EMU_RAW_IRQ_ENTER && o->irq_depth < 255) ++o->irq_depth;
+        break;
+    case EMU_RAW_RET:
+    case EMU_RAW_RETI: {
+        uint8_t expected = kind == EMU_RAW_RET ? EMUIF_OBS_FRAME_CALL : EMUIF_OBS_FRAME_IRQ;
+        obs_init(cpu, &e, kind == EMU_RAW_RET ? EMUIF_OBS_RET : EMUIF_OBS_RETI,
+                 EMUIF_OBS_PHASE_EFFECT, cycle);
+        e.frame_kind = expected; e.target = e.return_pc = (uint16_t)a;
+        e.known |= EMUIF_OBS_KNOWN_TARGET;
+        if (o->depth && !o->context_lost) {
+            struct observed_frame *f = &o->frames[o->depth - 1];
+            e.context_id = f->id; e.parent_context_id = f->parent;
+            e.sp_before = (uint8_t)c; e.sp_after = (uint8_t)d;
+            e.known |= EMUIF_OBS_KNOWN_CONTEXT;
+            if (f->kind != expected || f->return_pc != a || f->sp != c ||
+                (uint8_t)(f->sp - 2) != d) {
+                e.reason = EMUIF_OBS_REASON_CONTEXT; o->context_lost = true;
+                (void)obs_id(cpu, &o->next_context, &e.context_id);
+                e.parent_context_id = 0; e.sp_before = e.sp_after = 0;
+                e.known &= ~EMUIF_OBS_KNOWN_CONTEXT;
+            } else o->closing = true;
+            if (expected == EMUIF_OBS_FRAME_IRQ && f->kind == EMUIF_OBS_FRAME_IRQ) e.irq_source = f->irq_source;
+        } else {
+            (void)obs_id(cpu, &o->next_context, &e.context_id);
+            e.reason = EMUIF_OBS_REASON_CONTEXT; o->context_lost = true; }
+        obs_emit(cpu, &e);
+        if (expected == EMUIF_OBS_FRAME_IRQ && o->irq_depth) --o->irq_depth;
+        break;
+    }
+    case EMU_RAW_IRQ_REQUEST:
+        obs_init(cpu, &e, EMUIF_OBS_IRQ_REQUEST, EMUIF_OBS_PHASE_PERIPHERAL, cycle);
+        e.irq_source = (uint32_t)a; obs_emit(cpu, &e); break;
+    case EMU_RAW_TX_HOLD: {
+        uint64_t displaced = o->hold.id;
+        if (!obs_uart_new(cpu, &o->hold, (uint16_t)(a | ((uint16_t)b << 8)))) break;
+        o->hold.instruction = o->pending ? o->instruction : 0;
+        o->hold.access = o->current_access;
+        o->hold.scheduled = cycle;
+        obs_uart_event(cpu, &o->hold, displaced ? EMUIF_OBS_TX_REPLACE : EMUIF_OBS_TX_HOLD,
+                       displaced ? EMUIF_OBS_REASON_REPLACED : 0, cycle, displaced); break;
+    }
+    case EMU_RAW_TX_START:
+        o->tx = o->hold; memset(&o->hold, 0, sizeof(o->hold));
+        o->tx.start = cycle; o->tx.started = true;
+        obs_uart_event(cpu, &o->tx, EMUIF_OBS_TX_START, 0, cycle, 0); break;
+    case EMU_RAW_TX_STOP: obs_uart_event(cpu, &o->tx, EMUIF_OBS_TX_STOP, 0, cycle, 0); break;
+    case EMU_RAW_TX_TI: obs_uart_event(cpu, &o->tx, EMUIF_OBS_TX_TI, 0, cycle, 0); break;
+    case EMU_RAW_TX_END:
+        obs_uart_event(cpu, &o->tx, EMUIF_OBS_TX_END, 0, cycle, 0);
+        memset(&o->tx, 0, sizeof(o->tx)); break;
+    case EMU_RAW_RX_START:
+        if (!obs_uart_new(cpu, &o->rx, (uint16_t)(a | ((uint16_t)b << 8)))) break;
+        o->rx.parent = o->delivery_parent; o->rx.order = o->delivery_order;
+        o->rx.scheduled = o->delivery_cycle; o->rx.start = cycle; o->rx.started = true;
+        obs_uart_event(cpu, &o->rx, EMUIF_OBS_RX_START, 0, cycle, 0); break;
+    case EMU_RAW_RX_ACCEPT: obs_uart_event(cpu, &o->rx, EMUIF_OBS_RX_ACCEPT, 0, cycle, 0); break;
+    case EMU_RAW_RX_DROP: obs_uart_event(cpu, &o->rx, EMUIF_OBS_RX_DROP, (uint32_t)a, cycle, 0); break;
+    case EMU_RAW_RX_END:
+        obs_uart_event(cpu, &o->rx, EMUIF_OBS_RX_END, 0, cycle, 0);
+        memset(&o->rx, 0, sizeof(o->rx)); break;
+    case EMU_RAW_ACCESS_BEGIN:
+        if (o->current_access && o->access_space == b && o->access_address == a)
+            return o->current_access;
+        if (!o->pending || !obs_id(cpu, &o->next_access, &id)) break;
+        o->current_access = id; o->access_kind = c; o->access_space = b;
+        o->access_address = (uint16_t)a; o->access_old_known = false;
+        obs_init(cpu, &e, EMUIF_OBS_ACCESS_ATTEMPT, EMUIF_OBS_PHASE_EFFECT, cycle);
+        e.access_id = id; e.space = b; e.address = (uint16_t)a; e.access = c;
+        if (c == EMUIF_OBS_ACCESS_WRITE) { e.new_value.known = 1; e.new_value.value = d; }
+        obs_emit(cpu, &e); return id;
+    case EMU_RAW_ACCESS_OLD:
+        if (a && a == o->current_access) { o->access_old = (uint8_t)b; o->access_old_known = true; }
+        break;
+    case EMU_RAW_ACCESS_END:
+        if (!a) break;
+        obs_init(cpu, &e, EMUIF_OBS_ACCESS_RESULT, EMUIF_OBS_PHASE_EFFECT, cycle);
+        e.access_id = a; e.address = (uint16_t)b; e.space = (c >> 16) & 255;
+        e.access = a == o->current_access ? o->access_kind : c & 255;
+        if (a == o->current_access && o->access_old_known) {
+            e.old_value.known = 1; e.old_value.value = o->access_old;
+        }
+        e.status = cpu->fault; e.partial_effects = cpu->fault != 0;
+        if (cpu->fault) e.reason = EMUIF_OBS_REASON_DEVICE;
+        else { e.new_value.known = 1; e.new_value.value = d; }
+        obs_emit(cpu, &e); o->current_access = 0; break;
+    default: break;
+    }
+    return 0;
+}
+static void obs_finish(struct emuif_cpu *cpu) {
+    struct cpu_observation_state *o = &cpu->observation;
+    struct emuif_observation e;
+    if (!o->bound) return;
+    if (o->pending && (cpu->fault || (o->opcode_done && cpu->core.mTickDelay == 0))) {
+        if (!cpu->fault && o->retired == UINT64_MAX) fail(cpu, EMUIF_EXHAUSTED);
+        if (!cpu->fault) ++o->retired;
+        obs_init(cpu, &e, cpu->fault ? EMUIF_OBS_INSTRUCTION_ABORT : EMUIF_OBS_INSTRUCTION_RETIRE,
+                 cpu->fault ? EMUIF_OBS_PHASE_BOUNDARY : EMUIF_OBS_PHASE_RETIRE,
+                 cpu->fault ? o->attempted_cycle : cpu->core.mMachineCycleCount);
+        e.status = cpu->fault; e.partial_effects = cpu->fault != 0;
+        if (cpu->fault) e.reason = cpu->fault == EMUIF_EXHAUSTED ?
+            EMUIF_OBS_REASON_EXHAUSTED : EMUIF_OBS_REASON_DEVICE;
+        if (o->opcode_done) { e.next_pc = o->next_pc; e.known |= EMUIF_OBS_KNOWN_NEXT_PC; }
+        obs_bytes(cpu, &e); obs_emit(cpu, &e);
+        if (!cpu->fault && o->closing && o->depth) {
+            --o->depth;
+        }
+        o->pending = false; o->closing = false;
+    }
+    if (cpu->fault && !o->fault_emitted) {
+        obs_init(cpu, &e, EMUIF_OBS_FAULT, EMUIF_OBS_PHASE_BOUNDARY, o->attempted_cycle);
+        e.status = cpu->fault; e.partial_effects = 1; e.reason = EMUIF_OBS_REASON_DEVICE;
+        o->fault_emitted = true; obs_emit(cpu, &e);
+    }
+}
+static void obs_reset(struct emuif_cpu *cpu) {
+    struct cpu_observation_state *o = &cpu->observation;
+    uint64_t cycle = cpu->core.mMachineCycleCount;
+    if (o->bound) {
+        obs_uart_event(cpu, &o->rx, EMUIF_OBS_RX_END, EMUIF_OBS_REASON_RESET, cycle, 0);
+        obs_uart_event(cpu, &o->tx, EMUIF_OBS_TX_END, EMUIF_OBS_REASON_RESET, cycle, 0);
+        obs_uart_event(cpu, &o->hold, EMUIF_OBS_TX_END, EMUIF_OBS_REASON_RESET, cycle, 0);
+    }
+    memset(&o->rx, 0, sizeof(o->rx)); memset(&o->tx, 0, sizeof(o->tx)); memset(&o->hold, 0, sizeof(o->hold));
+    o->pending = false; o->closing = false; o->depth = o->irq_depth = 0;
+    o->context_lost = o->fault_emitted = false; o->current_access = 0;
+    o->unbound_cycle = o->unbound_instructions = o->attempted_cycle = 0;
+}
+
 static bool sequence(struct emuif_cpu *cpu, uint64_t *out) {
     if (cpu->sequence == UINT64_MAX) {
         fail(cpu, EMUIF_EXHAUSTED);
@@ -102,23 +388,28 @@ static uint8_t bus(struct emuif_cpu *cpu, uint16_t address, uint32_t direction, 
     struct emuif_bus_access access;
     struct emuif_bus_result result;
     emuif_status status;
-    if (cpu->fault != EMUIF_OK)
-        return 0;
+    uint64_t observed_access;
+    uint32_t observed_direction = direction == EMUIF_ACCESS_READ ?
+                                 EMUIF_OBS_ACCESS_READ : EMUIF_OBS_ACCESS_WRITE;
+    uint8_t returned = 0;
+    if (cpu->fault != EMUIF_OK) return 0;
+    observed_access = emu_cpu_raw(&cpu->core, EMU_RAW_ACCESS_BEGIN, cpu->core.mMachineCycleCount,
+                                   address, EMUIF_SPACE_XDATA, observed_direction, value);
     capture_access(cpu, address, direction, value, &access);
-    if (!sequence(cpu, &access.sequence))
-        return 0;
+    if (!sequence(cpu, &access.sequence)) goto done;
     INIT(&result);
     status = cpu->hooks.bus_access(cpu->hooks.context, &access, &result);
-    if (status != EMUIF_OK) {
-        fail(cpu, status);
-        return 0;
-    }
+    if (status != EMUIF_OK) { fail(cpu, status); goto done; }
     if (PREFIX(&result) != EMUIF_OK || result.reserved[0] || result.reserved[1] ||
         result.reserved[2] || (direction == EMUIF_ACCESS_WRITE && result.value != value)) {
-        fail(cpu, EMUIF_FAULT);
-        return 0;
+        fail(cpu, EMUIF_FAULT); goto done;
     }
-    return result.value;
+    returned = result.value;
+done:
+    (void)emu_cpu_raw(&cpu->core, EMU_RAW_ACCESS_END, cpu->core.mMachineCycleCount,
+                       observed_access, address, (EMUIF_SPACE_XDATA << 16) | observed_direction,
+                       returned);
+    return returned;
 }
 
 static uint8_t read_bus(struct em8051 *core, uint16_t address) {
@@ -258,6 +549,7 @@ static emuif_status reset_cpu(struct emuif_cpu *cpu, const struct emuif_reset *r
     if (request->reserved)
         return EMUIF_INVALID;
     cpu->busy = true;
+    obs_reset(cpu);
     cpu->fault = EMUIF_OK;
     em8051_set_reset_seed(&cpu->core, request->seed);
     reset(&cpu->core, true);
@@ -282,6 +574,20 @@ static emuif_status load_code(struct emuif_cpu *cpu, const uint8_t *code, uint32
     return EMUIF_OK;
 }
 
+static void obs_rx_rejected(struct emuif_cpu *cpu, const struct emuif_input *input,
+                             emuif_status status) {
+    struct observed_uart rejected;
+    struct cpu_observation_state *o = &cpu->observation;
+    if (!o->bound || !obs_uart_new(cpu, &rejected, (uint16_t)input->value)) return;
+    rejected.parent = o->delivery_order == input->order ? o->delivery_parent : 0;
+    rejected.order = input->order; rejected.scheduled = input->cycle;
+    obs_uart_event(cpu, &rejected, EMUIF_OBS_RX_DROP,
+                   status == EMUIF_BUSY ? EMUIF_OBS_REASON_BUSY : EMUIF_OBS_REASON_REN,
+                   cpu->core.mMachineCycleCount, 0);
+    obs_uart_event(cpu, &rejected, EMUIF_OBS_RX_END,
+                   status == EMUIF_BUSY ? EMUIF_OBS_REASON_BUSY : EMUIF_OBS_REASON_REN,
+                   cpu->core.mMachineCycleCount, 0);
+}
 static emuif_status apply_input(struct emuif_cpu *cpu, const struct emuif_input *input) {
     emuif_status status = available(cpu);
     bool applied = false;
@@ -329,12 +635,20 @@ static emuif_status apply_input(struct emuif_cpu *cpu, const struct emuif_input 
             return EMUIF_RANGE;
         if ((cpu->core.mSFR[REG_SCON] & 0xc0) != 0xc0)
             return EMUIF_UNSUPPORTED;
-        if (!(cpu->core.mSFR[REG_SCON] & SCONMASK_REN))
-            return EMUIF_STATE;
-        if (cpu->core.mSABUartRxActive)
-            return EMUIF_BUSY;
-        applied = em8051_sab_uart_inject_rx_frame(&cpu->core, (uint8_t)input->value,
-                                                  (input->value & 256) != 0);
+        if (!(cpu->core.mSFR[REG_SCON] & SCONMASK_REN)) {
+            obs_rx_rejected(cpu, input, EMUIF_STATE); return EMUIF_STATE;
+        }
+        if (cpu->core.mSABUartRxActive) {
+            obs_rx_rejected(cpu, input, EMUIF_BUSY); return EMUIF_BUSY;
+        }
+        {
+            struct cpu_observation_state *o = &cpu->observation;
+            bool direct = o->delivery_order == 0;
+            if (direct) { o->delivery_order = input->order; o->delivery_cycle = input->cycle; }
+            applied = em8051_sab_uart_inject_rx_frame(&cpu->core, (uint8_t)input->value,
+                                                      (input->value & 256) != 0);
+            if (direct) o->delivery_order = o->delivery_cycle = 0;
+        }
         break;
     case EMUIF_INPUT_RELEASE:
         if (input->value)
@@ -392,6 +706,7 @@ static emuif_status cycle_cpu(struct emuif_cpu *cpu, struct emuif_cycle_result *
     }
     if (cpu->core.mMachineCycleCount == UINT64_MAX || cpu->core.mInstructionCount == UINT64_MAX) {
         fail(cpu, EMUIF_EXHAUSTED);
+        obs_finish(cpu);
         return EMUIF_EXHAUSTED;
     }
     before = cpu->core.mMachineCycleCount;
@@ -402,6 +717,7 @@ static emuif_status cycle_cpu(struct emuif_cpu *cpu, struct emuif_cycle_result *
     }
     cpu->busy = true;
     (void)tick(&cpu->core);
+    obs_finish(cpu);
     cpu->busy = false;
     if (cpu->fault)
         return cpu->fault;
@@ -621,3 +937,91 @@ void emu_cpu_test_limits(struct emuif_cpu *cpu, uint64_t cycles, uint64_t instru
     cpu->sequence = last_sequence;
 }
 #endif
+
+/* Sized extension records use the shared prefix; unknown tails are untouched. */
+static emuif_status observation_prefix(const void *record, uint32_t size) {
+    return prefix(record, size);
+}
+static emuif_status bind_observation(struct emuif_cpu *cpu,
+                                     const struct emuif_observation_binding *binding) {
+    emuif_status status = available(cpu);
+    struct cpu_observation_state *o;
+    if (status != EMUIF_OK) return status;
+    if ((status = observation_prefix(binding, sizeof(*binding))) != EMUIF_OK ||
+        (status = observation_prefix(&binding->observer, sizeof(binding->observer))) != EMUIF_OK)
+        return status;
+    if (!binding->generation || !binding->observer.observe) return EMUIF_INVALID;
+    if (cpu->core.mVariant != EM8051_VARIANT_SAB80535) return EMUIF_UNSUPPORTED;
+    o = &cpu->observation;
+    if (o->bound) return EMUIF_BUSY;
+    if (cpu->fault || cpu->core.mTickDelay || cpu->core.mSABUartTxActive ||
+        cpu->core.mSABUartTxPending || cpu->core.mSABUartRxActive) return EMUIF_STATE;
+    if (cpu->core.mMachineCycleCount != o->unbound_cycle ||
+        cpu->core.mInstructionCount != o->unbound_instructions) {
+        o->context_lost = true; o->depth = 0; o->irq_depth = cpu->core.mSABIrqDepth;
+    }
+    o->raw.context = cpu; o->raw.fact = obs_raw_fact;
+    o->generation = binding->generation; o->sink = binding->observer; o->bound = true;
+    cpu->core.mObservation = &o->raw;
+    return EMUIF_OK;
+}
+static emuif_status unbind_observation(struct emuif_cpu *cpu) {
+    emuif_status status = available(cpu);
+    if (status != EMUIF_OK) return status;
+    if (!cpu->observation.bound) return EMUIF_OK;
+    if (cpu->core.mTickDelay || cpu->observation.pending) return EMUIF_STATE;
+    cpu->core.mObservation = NULL;
+    cpu->observation.unbound_cycle = cpu->core.mMachineCycleCount;
+    cpu->observation.unbound_instructions = cpu->core.mInstructionCount;
+    cpu->observation.bound = false;
+    memset(&cpu->observation.sink, 0, sizeof(cpu->observation.sink));
+    return EMUIF_OK;
+}
+static emuif_status deliver_observation(struct emuif_cpu *cpu,
+                                        const struct emuif_observed_input *envelope) {
+    emuif_status status = available(cpu);
+    struct cpu_observation_state *o;
+    if (status != EMUIF_OK) return status;
+    if ((status = observation_prefix(envelope, sizeof(*envelope))) != EMUIF_OK ||
+        (status = observation_prefix(&envelope->input, sizeof(envelope->input))) != EMUIF_OK)
+        return status;
+    o = &cpu->observation;
+    if (!o->bound) return EMUIF_STATE;
+    o->delivery_parent = envelope->parent_stimulus_id;
+    o->delivery_order = envelope->input.order;
+    o->delivery_cycle = envelope->input.cycle;
+    status = apply_input(cpu, &envelope->input);
+    o->delivery_parent = o->delivery_order = o->delivery_cycle = 0;
+    return status;
+}
+emuif_status emu_cpu_observation_lifecycle(struct emuif_cpu *cpu, uint32_t kind,
+                                           emuif_status status) {
+    struct emuif_observation e;
+    emuif_status ready = available(cpu);
+    if (ready != EMUIF_OK) return ready;
+    if (!cpu->observation.bound) return EMUIF_STATE;
+    if ((kind != EMUIF_OBS_RESET && kind != EMUIF_OBS_LOAD && kind != EMUIF_OBS_FAULT) ||
+        status > EMUIF_NOT_FOUND || (kind == EMUIF_OBS_FAULT ? status == EMUIF_OK : status != EMUIF_OK))
+        return EMUIF_INVALID;
+    if (kind == EMUIF_OBS_FAULT && cpu->observation.fault_emitted) return EMUIF_OK;
+    obs_init(cpu, &e, kind, EMUIF_OBS_PHASE_BOUNDARY, cpu->core.mMachineCycleCount);
+    e.status = status;
+    if (kind == EMUIF_OBS_FAULT) {
+        e.partial_effects = 1; e.reason = EMUIF_OBS_REASON_DEVICE;
+        cpu->observation.fault_emitted = true;
+    }
+    obs_emit(cpu, &e);
+    return EMUIF_OK;
+}
+emuif_status emusa80535_cpu_observation_query_v1(struct emuif_observation_api *out) {
+    emuif_status status = observation_prefix(out, sizeof(*out));
+    struct emuif_observation_api api;
+    if (status != EMUIF_OK) return status;
+    INIT(&api); api.struct_size = out->struct_size;
+    api.coverage = EMUIF_OBS_COVER_INSTRUCTION | EMUIF_OBS_COVER_CONTROL |
+                   EMUIF_OBS_COVER_IRQ | EMUIF_OBS_COVER_LIFECYCLE |
+                   EMUIF_OBS_COVER_INPUT | EMUIF_OBS_COVER_UART;
+    api.bind = bind_observation; api.unbind = unbind_observation; api.deliver = deliver_observation;
+    *out = api;
+    return EMUIF_OK;
+}

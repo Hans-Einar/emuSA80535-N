@@ -528,6 +528,9 @@ struct em8051
 
     em8051executionabort execution_abort;
     void *execution_abort_user;
+
+    /* Optional private same-build observation attachment; NULL for legacy users. */
+    struct emu_cpu_raw_observer *mObservation;
 };
 
 /* Opt-in checked execution. The abort predicate remains installed over reset. */

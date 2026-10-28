@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <emusa80535/emu8051.h>
+#include "emu_cpu_observation_internal.h"
 
 #define BAD_VALUE 0x77
 #define PSW aCPU->mSFR[REG_PSW]
@@ -40,8 +41,8 @@
 #define EXTDATA(x) aCPU->mExtData[(x)&(aCPU->mExtDataMaxIdx)]
 #define UPRDATA(x) aCPU->mUpperData[(x) - 0x80]
 #define OPCODE CODEMEM(PC + 0)
-#define OPERAND1 CODEMEM(PC + 1)
-#define OPERAND2 CODEMEM(PC + 2)
+#define OPERAND1 emu_cpu_operand(aCPU, 1)
+#define OPERAND2 emu_cpu_operand(aCPU, 2)
 #define PSW_BANK ((PSW & (PSWMASK_RS0|PSWMASK_RS1))>>PSW_RS0)
 #define INDIR_RX_ADDRESS (aCPU->mLowerData[(OPCODE & 1) + 8 * PSW_BANK])
 #define RX_ADDRESS ((OPCODE & 7) + 8 * PSW_BANK)
@@ -64,6 +65,14 @@ static uint8_t read_mem(struct em8051 *aCPU, uint8_t aAddress)
  * locations retain their established read behavior. */
 static uint8_t read_mem_rmw(struct em8051 *aCPU, uint8_t aAddress)
 {
+    if (aAddress == 0x99u) {
+        uint64_t id = emu_cpu_raw(aCPU, EMU_RAW_ACCESS_BEGIN, aCPU->mMachineCycleCount,
+                                   aAddress, EMUIF_SPACE_SFR, EMUIF_OBS_ACCESS_RMW, 0);
+        uint8_t value = em8051_sfr_rmw_read(aCPU, aAddress);
+        (void)emu_cpu_raw(aCPU, EMU_RAW_ACCESS_OLD, aCPU->mMachineCycleCount,
+                           id, value, 0, 0);
+        return value;
+    }
     if (aAddress > 0x7f)
         return em8051_sfr_rmw_read(aCPU, aAddress);
     return aCPU->mLowerData[aAddress];
@@ -307,6 +316,9 @@ static uint8_t acall_offset(struct em8051 *aCPU)
         return 1;
     if (!push_to_stack(aCPU, (PC + 2) >> 8))
         return 1;
+    (void)emu_cpu_raw(aCPU, EMU_RAW_CALL, aCPU->mMachineCycleCount,
+                       address, (uint16_t)(PC + 2),
+                       (uint8_t)(aCPU->mSFR[REG_SP] - 2), aCPU->mSFR[REG_SP]);
     PC = address;
     return 1;
 }
@@ -317,8 +329,15 @@ static uint8_t lcall_address(struct em8051 *aCPU)
         return 1;
     if (!push_to_stack(aCPU, (PC + 3) >> 8))
         return 1;
-    PC = (OPERAND1 << 8) |
-         (OPERAND2 << 0);
+    {
+        uint8_t high = OPERAND1;
+        uint8_t low = OPERAND2;
+        uint16_t target = (uint16_t)((high << 8) | low);
+        (void)emu_cpu_raw(aCPU, EMU_RAW_CALL, aCPU->mMachineCycleCount,
+                           target, (uint16_t)(PC + 3),
+                           (uint8_t)(aCPU->mSFR[REG_SP] - 2), aCPU->mSFR[REG_SP]);
+        PC = target;
+    }
     return 1;
 }
 
@@ -406,6 +425,8 @@ static uint8_t ret(struct em8051 *aCPU)
     if (!pop_from_stack(aCPU, &low))
         return 1;
     PC = (uint16_t)(high << 8) | low;
+    (void)emu_cpu_raw(aCPU, EMU_RAW_RET, aCPU->mMachineCycleCount,
+                       PC, 0, (uint8_t)(aCPU->mSFR[REG_SP] + 2), aCPU->mSFR[REG_SP]);
     return 1;
 }
 
@@ -522,6 +543,8 @@ static uint8_t reti(struct em8051 *aCPU)
     }
 
     PC = (uint16_t)(high << 8) | low;
+    (void)emu_cpu_raw(aCPU, EMU_RAW_RETI, aCPU->mMachineCycleCount,
+                       PC, 0, (uint8_t)(aCPU->mSFR[REG_SP] + 2), aCPU->mSFR[REG_SP]);
     return 1;
 }
 
