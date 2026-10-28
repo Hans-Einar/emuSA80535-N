@@ -98,5 +98,6 @@ Runtime stop policy: B stopCpu=true requests a safe stop on terminal return or
 incomplete outcome as well as limits. Public budget/paused represents this scope
 stop; captureStatus supplies the exact return/incomplete reason. Higher-priority
 actual fault, power-down, CODE breakpoint and watch reasons retain precedence.
-Reset remains a paused reset lifecycle operation. With stopCpu=false, terminal
+Reset retains the existing public entry/paused lifecycle result; captureStatus
+reason3 identifies reset. With stopCpu=false, terminal
 scope only closes its trace filter and ordinary execution may continue.
