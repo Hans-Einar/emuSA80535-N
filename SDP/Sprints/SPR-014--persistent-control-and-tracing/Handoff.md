@@ -118,3 +118,7 @@ SLC-030 audit accepted through REV/VER-SLC-030. Required queued UART rejection
 still faults session; host-local observed-not-admitted policy accepted by consumer.
 Native/reset/history proof retained; no UART enhancement required. Consumer
 concurs explicit wire3.1 enumeration proposal; next bounded implementation follows.
+
+EnumerationSlice.md activates031: fresh Runtime/Contract Workers and Reviewer.
+Wire3.1 hello explicit opt-in, readCodeBreakpoints capability/command;0.4 wire-only
+sidecar pins native/file0.3. No user-lab access or consumer pin modification.

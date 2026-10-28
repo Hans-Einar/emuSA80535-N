@@ -28,3 +28,7 @@ separate contracts and reviews before implementation.
 Urgent ordering amendment2026-10-28: SLC-029 fixes a confirmed generic indirect
 MOV operand defect before external UART integration. SLC-026..028 identifiers
 and scope remain planned, and resume immediately after the correction gate.
+
+Authorized follow-up: SLC-030 UART/reset audit accepted without runtime changes;
+SLC-031 separately negotiated read-only breakpoint enumeration active. Consumer
+concurred protocol before freeze; existing028 remains consumer pin.

@@ -23,3 +23,8 @@ DES-124: host-owned bounded file sinks consume canonical routed records outside
 CPU/board callbacks; preserve metadata and explicit loss/error/completion.
 Contract artifact version differs from implemented runtime profile; freeze new
 headers/schemas/limits without changing historical bundles or availability.
+
+DES-125: wire3.1/control-only0.4 sidecar adds readCodeBreakpoints through existing
+control query3 and single-owner bitmap. Explicit hello selects profile; old3.0
+capabilities/schema/manifest remain exact. New wire artifact pins immutable0.3
+native/file semantics; no ABI, CPU/UART behavior or implicit fallback changes.

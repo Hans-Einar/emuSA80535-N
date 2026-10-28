@@ -18,3 +18,9 @@ completion/context loss and independent UART outcome retention.
 This gate freezes contracts, not these implementations. Full remote/DAP,
 physical IO, application/board protocols, joint-clock equivalence, package
 publication and SDK tracking migration remain outside this gate.
+
+REQ-030: explicitly negotiated read-only CODE breakpoint enumeration exposes
+the actual complete sorted set and same-snapshot session/generation to attached
+observers/controllers without CPU progress or state mutation. Preserve frozen
+old profiles; no CAS or restoration guarantee beyond existing exclusive lease.
+Authority: shared user coordinator request and consumer protocol concurrence.

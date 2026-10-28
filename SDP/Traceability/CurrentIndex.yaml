@@ -3,8 +3,8 @@ updated: 2026-10-28
 
 active:
   sprint: SPR-014
-  iteration: null
-  slice: null
+  iteration: ITR-031
+  slice: SLC-031
 
 merge_gate:
   status: MERGED
@@ -23,6 +23,10 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
+  ITR-031: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/EnumerationSlice.md}
+  SLC-031: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/EnumerationSlice.md}
+  REQ-030: {kind: requirement, status: active, state: target, source: SDP/03--Requirements/EMU-OBSERVATION-REQ-005.md}
+  DES-125: {kind: design, status: active, state: target, source: SDP/05--Design/EMU-OBSERVATION-DES-014.md}
   REV-SLC-030: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-030.md}
   VER-SLC-030: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-030.md}
   ITR-030: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/UartResetAuditSlice.md}
