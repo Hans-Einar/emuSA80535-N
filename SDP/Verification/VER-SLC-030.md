@@ -1,7 +1,7 @@
 # VER-SLC-030 — Accepted-runtime UART/reset contract audit
 
-Date:2026-10-28. Worker disposition:verified evidence; independent review and
-Master Slice acceptance pending. Evidence-only: no product, frozen contract,
+Date:2026-10-28. Disposition:accepted evidence; independent review approved
+d4c23c4e8535a2d44875e8e1a2834e45258280b5. Evidence-only: no product, frozen contract,
 consumer pin, existing runtime process or existing lab has been changed.
 
 Audited product:8dd1230704cd6c460167b954f7e987c23e24ff86 (accepted028).
@@ -127,3 +127,8 @@ Worker harness directory:/tmp/slc030-audit.
 
 Independent Reviewer maintains separate proof and final disposition in
 REV-SLC-030.md. Master alone accepts this Slice and communicates the final audit.
+
+Master acceptance: reviewed final evidence inventory hashes and confirmed all
+changes since audited028 are SDP records only. Durable Worker and independent
+Reviewer evidence: /home/warloc/git/emuSA80535-N-artifacts/audits/SLC-030.
+No new runtime archive is produced for this evidence-only audit;028 remains pin.

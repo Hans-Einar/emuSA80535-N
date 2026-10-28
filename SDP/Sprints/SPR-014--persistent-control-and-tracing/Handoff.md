@@ -113,3 +113,8 @@ CODE breakpoint enumeration extension. SLC-030 audit is active via
 UartResetAuditSlice.md. Accepted028 remains the current product pin.
 No existing lab/process is to be attached or changed. Enumeration implementation
 requires the next separately recorded Slice after proposal communication.
+
+SLC-030 audit accepted through REV/VER-SLC-030. Required queued UART rejection
+still faults session; host-local observed-not-admitted policy accepted by consumer.
+Native/reset/history proof retained; no UART enhancement required. Consumer
+concurs explicit wire3.1 enumeration proposal; next bounded implementation follows.

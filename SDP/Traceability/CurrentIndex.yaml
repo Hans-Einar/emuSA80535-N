@@ -3,8 +3,8 @@ updated: 2026-10-28
 
 active:
   sprint: SPR-014
-  iteration: ITR-030
-  slice: SLC-030
+  iteration: null
+  slice: null
 
 merge_gate:
   status: MERGED
@@ -23,8 +23,10 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
-  ITR-030: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/UartResetAuditSlice.md}
-  SLC-030: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/UartResetAuditSlice.md}
+  REV-SLC-030: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-030.md}
+  VER-SLC-030: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-030.md}
+  ITR-030: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/UartResetAuditSlice.md}
+  SLC-030: {kind: slice, status: accepted-audit, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/UartResetAuditSlice.md}
   REV-SLC-028: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-028.md}
   VER-SLC-028: {kind: verification, status: passed-captureB, state: current, source: SDP/Verification/VER-SLC-028.md}
   ITR-028: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/InvocationSlice.md}

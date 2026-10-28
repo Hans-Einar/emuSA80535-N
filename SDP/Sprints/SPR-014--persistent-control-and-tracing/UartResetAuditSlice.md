@@ -1,6 +1,6 @@
 # ITR-030 / SLC-030 — UART reset contract audit
 
-Status: active. Sprint SPR-014. Baseline accepted028 product8dd1230;
+Status: accepted through REV-SLC-030 / VER-SLC-030. Sprint SPR-014. Baseline accepted028 product8dd1230;
 Master state72ebca4. Authority: explicit shared-user consumer coordinator request
 for urgent bounded UART/reset audit and native actual proof, then a separately
 opt-in read-only CODE breakpoint enumeration capability. No live lab access.
