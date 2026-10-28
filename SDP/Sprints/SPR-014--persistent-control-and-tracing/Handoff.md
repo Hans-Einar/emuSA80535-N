@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: SLC-024/025/026/027/029 accepted; SLC-028 active
+Status: SLC-024/025/026/027/028/029 accepted; composed intake pending
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
@@ -98,3 +98,10 @@ Continue immediately to bounded028 under standing authority.
 InvocationSlice.md activates028 after accepted027. Fresh Context and Invocation
 Workers implement separate boundaries; fresh Reviewer assesses combined source.
 Accepted027 was directly handed to the coordinator via existing active turn.
+
+SLC-028 accepted: source 8dd1230704cd6c460167b954f7e987c23e24ff86, review
+2f748dbd222354b9665e0f09a19d788aa238c174; VER-SLC-028 and artifact inventory.
+Capture B mode1/mode2 is available alongside persistent A, paging and optional
+files. REQ-029 satisfied; REQ-028 remains partial without full ACCESS.
+No product Slice remains active. Continue external composed intake and record
+its results; any new product correction needs an explicit bounded active Slice.

@@ -1,6 +1,6 @@
 # ITR-028 / SLC-028 — One observed dynamic invocation
 
-Status: active. Sprint SPR-014. Baseline Master49dedd4; accepted027 product
+Status: accepted through REV-SLC-028 / VER-SLC-028. Sprint SPR-014. Baseline Master49dedd4; accepted027 product
 740f60863bc52481e589f219ba54df8f5bd0fc82. Authority: standing explicit user
 execution through028 and virtual composed integration, without renewed approval.
 REQ-029, DES-123; preserve partial REQ-028 coverage125. Fresh Workers implement;
