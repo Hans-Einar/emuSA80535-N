@@ -162,7 +162,8 @@ cpu-link-test: cpu-sdk
 # Native session/debug controller, separately linkable from the CPU engine.
 RUNTIME_OBJ := emu_session.sdk.o emu_json_internal.sdk.o emu_sha_internal.sdk.o
 CONTRACT_MANIFEST_SHA256 := $(shell sha256sum interfaces/$(CONTRACT_VERSION)/manifest.json | cut -d ' ' -f 1)
-RUNTIME_CPPFLAGS := -DEMU_RUNTIME_COMMIT=\"$(DEBUG_COMMIT)\" -DEMU_CONTRACT_MANIFEST_SHA256=\"$(CONTRACT_MANIFEST_SHA256)\"
+CONTROL3_MANIFEST_SHA256 := $(shell sha256sum interfaces/0.3.0/manifest.json | cut -d ' ' -f 1)
+RUNTIME_CPPFLAGS := -DEMU_CONTROL3_MANIFEST_SHA256=\"$(CONTROL3_MANIFEST_SHA256)\" -DEMU_RUNTIME_COMMIT=\"$(DEBUG_COMMIT)\" -DEMU_CONTRACT_MANIFEST_SHA256=\"$(CONTRACT_MANIFEST_SHA256)\"
 emu_session.sdk.o: emu_session.c $(HEADERS) FORCE
 	$(CC) $(CPPFLAGS) $(RUNTIME_CPPFLAGS) $(CFLAGS) -std=c99 -c -o $@ $<
 $(RUNTIME_LIB): $(RUNTIME_OBJ)
@@ -179,3 +180,7 @@ interface-target-check:
 interface-target-export:
 	$(PYTHON) interfaces/tools/bundle.py --version 0.3.0 export --output $(INTERFACE_ARCHIVE)
 .PHONY: interface-target-check interface-target-export
+
+control3-test: runtime-sdk
+	$(MAKE) -C tests control3-test
+.PHONY: control3-test

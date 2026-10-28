@@ -33,7 +33,7 @@ DEBUG_BIN_TEST := debug_facade_tests
 DEBUG_EVENT_BIN := debug_event_tests
 DEBUG_TRACE_BIN := debug_trace_tests
 DEBUG_RUNTIME_BIN := debug_runtime_tests
-CLEAN_CMD = rm -f stage0_tests stage0_tests.exe stage1_irq_tests stage1_irq_tests.exe stage1_timer_tests stage1_timer_tests.exe stage1_uart_tests stage1_uart_tests.exe stage2_port_tests stage2_port_tests.exe stage2_edge_tests stage2_edge_tests.exe stage3_adc_tests stage3_adc_tests.exe stage4_timer2_tests stage4_timer2_tests.exe debug_facade_tests debug_facade_tests.exe debug_event_tests debug_event_tests.exe debug_trace_tests debug_trace_tests.exe debug_runtime_tests debug_runtime_tests.exe cpu_facade_tests cpu_facade_tests.exe runtime_session_tests stage0-short.bin stage0-exact.bin stage0-long.bin debug-image.bin debug-short.bin
+CLEAN_CMD = rm -f stage0_tests stage0_tests.exe stage1_irq_tests stage1_irq_tests.exe stage1_timer_tests stage1_timer_tests.exe stage1_uart_tests stage1_uart_tests.exe stage2_port_tests stage2_port_tests.exe stage2_edge_tests stage2_edge_tests.exe stage3_adc_tests stage3_adc_tests.exe stage4_timer2_tests stage4_timer2_tests.exe debug_facade_tests debug_facade_tests.exe debug_event_tests debug_event_tests.exe debug_trace_tests debug_trace_tests.exe debug_runtime_tests debug_runtime_tests.exe cpu_facade_tests cpu_facade_tests.exe runtime_session_tests control3_tests control3_cpp_tests stage0-short.bin stage0-exact.bin stage0-long.bin debug-image.bin debug-short.bin
 endif
 CORE_SRC := ../core.c ../opcodes.c ../disasm.c ../binary_loader.c
 DEBUG_SRC := ../emu_sha_internal.c ../emu_debug.c ../emu_decode_internal.c $(CORE_SRC)
@@ -127,8 +127,18 @@ cpu-facade-test: $(CPU_FACADE_BIN)
 .PHONY: cpu-facade-test
 
 SESSION_SRC := ../emu_session.c ../emu_json_internal.c ../emu_sha_internal.c ../emu_cpu_facade.c ../emu_decode_internal.c $(CORE_SRC)
-runtime_session_tests: test_runtime_session.c $(SESSION_SRC) $(PUBLIC_HEADERS) ../emu_json_internal.h ../emu_sha_internal.h ../emu_session_internal.h ../emu_wire_schema_internal.h
+runtime_session_tests: test_runtime_session.c $(SESSION_SRC) $(PUBLIC_HEADERS) ../emu_json_internal.h ../emu_sha_internal.h ../emu_session_internal.h ../emu_wire_schema_internal.h ../emu_control3_schema_internal.h ../emu_control3_validation_internal.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Werror -o $@ test_runtime_session.c $(SESSION_SRC)
 runtime-session-test: runtime_session_tests
 	$(PYTHON) test_runtime_wire_schema.py
 .PHONY: runtime-session-test
+
+control3_tests: test_control3.c test_runtime_session.c $(SESSION_SRC) $(PUBLIC_HEADERS) ../emu_control3_schema_internal.h ../emu_control3_validation_internal.h ../emu_session_internal.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Werror -o $@ test_control3.c $(SESSION_SRC)
+control3-test: control3_tests control3_cpp_tests
+	./control3_cpp_tests
+	$(PYTHON) test_control3_schema.py
+.PHONY: control3-test
+
+control3_cpp_tests: test_control3_cpp.cpp $(PUBLIC_HEADERS) ../libemusa80535_runtime.a ../libemusa80535_cpu.a
+	$(CXX) $(CPPFLAGS) -std=c++11 -Wall -Wextra -Werror -o $@ $< ../libemusa80535_runtime.a ../libemusa80535_cpu.a

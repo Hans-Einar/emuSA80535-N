@@ -47,3 +47,9 @@ tests/cpu_facade_tests*
 # Local composed runtime build products
 /emu-runtime
 /tests/runtime_session_tests
+
+# Native persistent control checks and Python validation caches
+/tests/control3_tests
+/tests/control3_cpp_tests
+/tests/__pycache__/
+/interfaces/tools/__pycache__/

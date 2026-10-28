@@ -1,4 +1,4 @@
-/* Deterministic session and callback-free wire2.1 service.
+/* Deterministic session and callback-free wire2.1/control3 services.
  * Copyright 2026 Hans-Einar. MIT; see LICENSE.
  * Only the opaque CPU contract is used here. No board decode or physical I/O.
  */
@@ -6,7 +6,7 @@
 #include "emu_json_internal.h"
 #include "emu_session_internal.h"
 #include "emu_sha_internal.h"
-#include <emusa80535/contracts/debug.h>
+#include <emusa80535/contracts/control3.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +17,10 @@
 #endif
 #ifndef EMU_CONTRACT_MANIFEST_SHA256
 #define EMU_CONTRACT_MANIFEST_SHA256                                                               \
+    "0000000000000000000000000000000000000000000000000000000000000000"
+#endif
+#ifndef EMU_CONTROL3_MANIFEST_SHA256
+#define EMU_CONTROL3_MANIFEST_SHA256                                                               \
     "0000000000000000000000000000000000000000000000000000000000000000"
 #endif
 #define INIT(x)                                                                                    \
@@ -87,7 +91,8 @@ struct client_state
 {
     uint64_t id;
     uint32_t maximum_role, may_terminate, last_id, role;
-    bool hello, attached;
+    bool hello, attached, control3;
+    uint64_t lease_id;
 };
 struct emuif_session
 {
@@ -107,7 +112,9 @@ struct emuif_session
     struct queued_input queue[1024];
     size_t queued;
     struct client_state clients[8];
-    uint64_t lease;
+    uint64_t lease, next_lease, retired;
+    uint32_t execution_mode;
+    bool retirement_pending, progressed;
     uint64_t *used_clients;
     size_t used_count;
 };
@@ -309,6 +316,7 @@ static emuif_status reset_session(struct emuif_session *s, uint32_t seed, uint16
     if (!first && (s->generation == UINT64_MAX || s->revision == UINT64_MAX))
         return EMUIF_EXHAUSTED;
     s->queued = 0;
+    s->retirement_pending = false;
     s->suppress = false;
     s->cycle = 0;
     s->state = EMUIF_STATE_PAUSED;
@@ -509,6 +517,39 @@ emuif_status emu_session_allow_fault_inspection(struct emuif_session *s, uint32_
     s->fault_inspect = allow != 0;
     return EMUIF_OK;
 }
+emuif_status emu_session_set_execution_mode(struct emuif_session *s, uint32_t mode)
+{
+    if (!s || mode > EMUIF_EXECUTION_HOST_DRIVEN)
+        return EMUIF_INVALID;
+    if (s->busy)
+        return EMUIF_BUSY;
+    if (s->progressed || s->used_count || s->state != EMUIF_STATE_PAUSED)
+        return EMUIF_STATE;
+    s->execution_mode = mode;
+    return EMUIF_OK;
+}
+uint32_t emu_session_state(const struct emuif_session *s)
+{
+    return s ? s->state : EMUIF_STATE_TERMINATED;
+}
+uint32_t emu_session_client_open(const struct emuif_session *s, uint64_t id)
+{
+    unsigned i;
+    if (s && id)
+        for (i = 0; i < 8; i++)
+            if (s->clients[i].id == id)
+                return 1;
+    return 0;
+}
+uint32_t emu_session_client_ready(const struct emuif_session *s, uint64_t id)
+{
+    unsigned i;
+    if (s && id)
+        for (i = 0; i < 8; i++)
+            if (s->clients[i].id == id)
+                return s->clients[i].hello;
+    return 0;
+}
 static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepping,
                             struct emuif_progress *p)
 {
@@ -526,6 +567,13 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
         bool safe = v.safe_boundary != 0;
         if (safe)
         {
+            /* Clock-domain halt outranks CODE and user/budget stops, including
+             * an instruction that sets PD on the budget's final cycle. */
+            if (v.power_down)
+            {
+                e = stop(s, 8);
+                break;
+            }
             if (s->suppress && v.instructions > s->suppress_instruction)
                 s->suppress = false;
             if (emu_breakpoint_at(s->breakpoints, v.pc) && !(s->suppress && s->suppress_pc == v.pc))
@@ -550,6 +598,7 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
             break;
         }
         INIT(r);
+        s->progressed = true;
         e = s->cpu_api.cycle(s->cpu, &r);
         if (e)
         {
@@ -569,6 +618,23 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
         {
             e = fault(s, EMUIF_FAULT);
             break;
+        }
+        /* A successful cycle includes peripheral advancement. A legacy count
+         * increase only starts a candidate: retire after its last delay cycle,
+         * before the subsequent board/input boundary (which may itself fail).
+         * IRQ-entry/IDLE cycles have no count increase and cannot retire. Failed
+         * CPU cycles never complete this path, including bus/peripheral faults. */
+        if (r.instructions > v.instructions)
+            s->retirement_pending = true;
+        if (r.safe_boundary && s->retirement_pending)
+        {
+            if (s->retired == UINT64_MAX)
+            {
+                e = fault(s, EMUIF_EXHAUSTED);
+                break;
+            }
+            s->retired++;
+            s->retirement_pending = false;
         }
         s->cycle = r.cycle;
         turns++;
@@ -631,6 +697,13 @@ static bool wire_equal(const struct json_document *d, int a, int b)
     return json_integer(d, a, 0, UINT32_MAX, &n) && json_integer(d, b, 0, UINT32_MAX, &m) && n == m;
 }
 #include "emu_wire_schema_internal.h"
+static bool wire3_literal(const struct json_document *d, int t, const char *value)
+{
+    return t >= 0 && t < d->count && d->tokens[t].type == JSON_PRIMITIVE &&
+           (size_t)(d->tokens[t].end - d->tokens[t].start) == strlen(value) &&
+           !memcmp(d->text + d->tokens[t].start, value, strlen(value));
+}
+#include "emu_control3_schema_internal.h"
 static struct client_state *client(struct emuif_session *s, uint64_t id)
 {
     unsigned i;
@@ -678,6 +751,19 @@ emuif_status emusa80535_debug_open_v1(struct emuif_session *s, const struct emui
     s->clients[slot].may_terminate = c->may_terminate;
     return EMUIF_OK;
 }
+static emuif_status acquire_lease(struct emuif_session *s, struct client_state *c)
+{
+    if (!c->maximum_role)
+        return EMUIF_DENIED;
+    if (s->lease)
+        return EMUIF_BUSY;
+    if (s->next_lease == UINT64_MAX)
+        return EMUIF_EXHAUSTED;
+    c->lease_id = ++s->next_lease;
+    c->role = EMUIF_ROLE_CONTROLLER;
+    s->lease = c->id;
+    return EMUIF_OK;
+}
 static void close_client(struct emuif_session *s, struct client_state *c)
 {
     if (s->lease == c->id)
@@ -704,7 +790,8 @@ static const char *status_name(emuif_status e)
                                   "FAULT",    "EXHAUSTED",   "IO",      "HASH",  "NOT_FOUND"};
     return names[normalize(e)];
 }
-static void snapshot_json(struct emuif_session *s, struct client_state *c, struct output *o)
+static void snapshot_json(struct emuif_session *s, struct client_state *c, struct output *o,
+                          bool include_lease)
 {
     struct emuif_snapshot v;
     unsigned i;
@@ -735,6 +822,11 @@ static void snapshot_json(struct emuif_session *s, struct client_state *c, struc
                   s->image_hash, s->module_hash, s->config_hash, s->board_api.module_id,
                   s->board_api.module_version, c->role ? "controller" : "observer",
                   c->role && c->may_terminate ? "true" : "false");
+    if (c->control3 && include_lease && !o->failed)
+    {
+        o->length--;
+        output_format(o, ",\"leaseId\":\"%" PRIu64 "\"}", c->lease_id);
+    }
 }
 static bool capability(struct emuif_session *s, const char *v)
 {
@@ -753,6 +845,7 @@ static int64_t number(const struct json_document *d, int a, const char *key)
     json_integer(d, json_member(d, a, key), INT32_MIN, UINT32_MAX, &v);
     return v;
 }
+#include "emu_control3_validation_internal.h"
 static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
                              const struct json_document *d, int a, const char *cmd,
                              struct output *o, bool *close)
@@ -837,20 +930,24 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
             return EMUIF_STATE;
         if (role > c->maximum_role)
             return EMUIF_DENIED;
-        if (role && s->lease)
-            return EMUIF_BUSY;
+        if (role)
+        {
+            e = acquire_lease(s, c);
+            if (e)
+                return e;
+        }
         c->attached = true;
         c->role = role;
         if (role)
             s->lease = c->id;
-        snapshot_json(s, c, o);
+        snapshot_json(s, c, o, true);
         return EMUIF_OK;
     }
     if (!c->attached)
         return EMUIF_STATE;
     if (!strcmp(cmd, "status"))
     {
-        snapshot_json(s, c, o);
+        snapshot_json(s, c, o, true);
         return EMUIF_OK;
     }
     if (!strcmp(cmd, "detach"))
@@ -860,6 +957,7 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
             s->lease = 0;
         c->attached = false;
         c->role = 0;
+        c->lease_id = 0;
         return EMUIF_OK;
     }
     if (!strcmp(cmd, "tracePage"))
@@ -1015,7 +1113,7 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
             return e;
         if (unsafe)
             return EMUIF_OK; /* No truthful conforming final snapshot exists. */
-        snapshot_json(s, c, o);
+        snapshot_json(s, c, o, false);
         return EMUIF_OK;
     }
     if (!strcmp(cmd, "reset"))
@@ -1026,7 +1124,7 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
                           false);
         if (e)
             return e;
-        snapshot_json(s, c, o);
+        snapshot_json(s, c, o, false);
         return EMUIF_OK;
     }
     if (s->state == EMUIF_STATE_FAULTED)
@@ -1077,6 +1175,11 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
                       "{\"generation\":\"%" PRIu64 "\",\"cycle\":\"%" PRIu64
                       "\",\"order\":\"%" PRIu64 "\"}",
                       s->generation, when, s->next_order);
+        if (c->control3 && !o->failed)
+        {
+            o->length--;
+            output_format(o, ",\"parentStimulusId\":\"%" PRIu64 "\"}", s->next_order);
+        }
         return EMUIF_OK;
     }
     if (!strcmp(cmd, "pause"))
@@ -1087,7 +1190,7 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
             if (e)
                 return e;
         }
-        snapshot_json(s, c, o);
+        snapshot_json(s, c, o, false);
         return EMUIF_OK;
     }
     if (!strcmp(cmd, "resume") || !strcmp(cmd, "step"))
@@ -1115,7 +1218,7 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
             if (e)
                 return e;
         }
-        snapshot_json(s, c, o);
+        snapshot_json(s, c, o, false);
         return EMUIF_OK;
     }
     if (!strcmp(cmd, "replaceCodeBreakpoints"))
@@ -1141,9 +1244,256 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
     }
     return EMUIF_UNSUPPORTED;
 }
-emuif_status emusa80535_debug_request_v1(struct emuif_session *s, uint64_t id,
-                                         const struct emuif_json_request *request,
-                                         struct emuif_json_response *response)
+/* All control3 operations use the same session and execution path as wire2.1. */
+static emuif_status advance_control(struct emuif_session *s, struct client_state *c,
+                                    const struct emuif_control_advance *a,
+                                    struct emuif_control_progress *p)
+{
+    struct emuif_progress progress;
+    struct emuif_snapshot v;
+    uint64_t retired = s->retired;
+    emuif_status e;
+    static const uint32_t reasons[] = {0, 0, 1, 1, 2, 3, 4, 0, 5, 6};
+    if (!c->hello || !c->attached)
+        return EMUIF_STATE;
+    if (s->execution_mode != EMUIF_EXECUTION_EXTERNALLY_DRIVEN)
+        return EMUIF_UNSUPPORTED;
+    if (a->generation != s->generation)
+        return EMUIF_STALE;
+    if (!c->role || s->lease != c->id || !a->lease_id || a->lease_id != c->lease_id)
+        return EMUIF_DENIED;
+    if (s->state != EMUIF_STATE_RUNNING)
+        return EMUIF_STATE;
+    if (!a->cycle_budget || a->cycle_budget > 100000)
+        return EMUIF_RANGE;
+    INIT(progress);
+    e = execute(s, a->cycle_budget, false, &progress);
+    if (e && s->state != EMUIF_STATE_FAULTED)
+        return e;
+    if (snapshot(s, &v))
+        return EMUIF_FAULT;
+    p->generation = s->generation;
+    p->cycles = progress.cycles;
+    p->instructions = progress.instructions;
+    p->retired_instructions = s->retired - retired;
+    p->cycle = v.cycle;
+    p->stop_revision = s->revision;
+    p->state = s->state;
+    p->safe_boundary = v.safe_boundary;
+    p->stop_reason = s->state == EMUIF_STATE_RUNNING ? 0 : reasons[s->reason];
+    p->partial = progress.cycles < a->cycle_budget || !v.safe_boundary;
+    return EMUIF_OK;
+}
+static emuif_status control3_advance(struct emuif_session *s, const struct emuif_control_advance *a,
+                                     struct emuif_control_progress *out)
+{
+    struct client_state *c;
+    struct emuif_control_progress p;
+    emuif_status e;
+    if (!s)
+        return EMUIF_INVALID;
+    if (s->busy)
+        return EMUIF_BUSY;
+    if ((e = PREFIX(a)) || (e = PREFIX(out)))
+        return e;
+    if (a->reserved || !a->connection_id)
+        return EMUIF_INVALID;
+    c = client(s, a->connection_id);
+    if (!c)
+        return EMUIF_NOT_FOUND;
+    if (!c->control3)
+        return EMUIF_VERSION;
+    INIT(p);
+    p.struct_size = out->struct_size;
+    s->busy = true;
+    e = advance_control(s, c, a, &p);
+    s->busy = false;
+    if (!e)
+        *out = p;
+    return e;
+}
+static bool capability3(struct emuif_session *s, const char *name)
+{
+    return capability(s, name) ||
+           (!strcmp(name, "advance") && s->execution_mode == EMUIF_EXECUTION_EXTERNALLY_DRIVEN);
+}
+static const char *command_capability3(const char *cmd)
+{
+    if (!strcmp(cmd, "boardInput"))
+        return "boardInput";
+    if (!strcmp(cmd, "boardInspect"))
+        return "boardInspect";
+    if (!strcmp(cmd, "advance"))
+        return "advance";
+    if (!strcmp(cmd, "traceConfig") || !strcmp(cmd, "replaceTraceConfig"))
+        return "traceConfig";
+    if (!strcmp(cmd, "tracePage") || !strcmp(cmd, "clearTrace"))
+        return "tracePage";
+    if (!strcmp(cmd, "outcomePage"))
+        return "uartOutcomes";
+    if (!strncmp(cmd, "capture", 7))
+        return "captureA";
+    if (!strncmp(cmd, "sink", 4))
+        return "traceFile";
+    return "control";
+}
+static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
+                              const struct json_document *d, int a, const char *cmd,
+                              struct output *o, bool *close)
+{
+    char text[128];
+    int t;
+    uint64_t gen = 0, lease_id = 0;
+    emuif_status e;
+    if (!strcmp(cmd, "hello"))
+    {
+        static const char *caps[] = {
+            "attachSession", "status",     "control",      "codeBreakpoints",   "decodeCode",
+            "memoryRead",    "boardInput", "boardInspect", "boardInspectFault", "advance"};
+        unsigned i;
+        bool comma = false;
+        int protocol = json_member(d, a, "protocol"),
+            required = json_member(d, a, "requiredCapabilities");
+        if (c->hello)
+            return EMUIF_STATE;
+        if (number(d, protocol, "major") != 3 || number(d, protocol, "minor") != 0 ||
+            !wire_string_is(d, json_member(d, a, "contractVersion"), "0.3.0"))
+        {
+            *close = true;
+            return EMUIF_VERSION;
+        }
+        for (t = required + 1; t < d->count && d->tokens[t].start < d->tokens[required].end;
+             t = json_next(d, t))
+        {
+            json_string(d, t, text, sizeof text);
+            if (!capability3(s, text))
+                return EMUIF_UNSUPPORTED;
+            if (!strcmp(text, "boardInspectFault"))
+            {
+                int k;
+                bool found = false;
+                for (k = required + 1; k < d->count && d->tokens[k].start < d->tokens[required].end;
+                     k = json_next(d, k))
+                    if (wire_string_is(d, k, "boardInspect"))
+                        found = true;
+                if (!found)
+                    return EMUIF_INVALID;
+            }
+        }
+        c->hello = true;
+        output_format(
+            o,
+            "{\"protocol\":{\"major\":3,\"minor\":0},\"contractVersion\":\"0.3.0\","
+            "\"runtimeCommit\":\"%s\",\"contractManifestSha256\":\"%s\",\"capabilities\":[",
+            EMU_RUNTIME_COMMIT, EMU_CONTROL3_MANIFEST_SHA256);
+        for (i = 0; i < sizeof caps / sizeof caps[0]; i++)
+            if (capability3(s, caps[i]))
+            {
+                if (comma)
+                    output_raw(o, ",");
+                output_string(o, caps[i]);
+                comma = true;
+            }
+        output_format(o, "],\"executionMode\":\"%s\",\"observationCoverage\":[],\"limits\":",
+                      s->execution_mode ? "host-driven" : "externally-driven");
+        output_raw(o, "{\"maxFrameBytes\":65536,\"maxConfigBytes\":16384,\"maxInputs\":1024,"
+                      "\"maxPageRecords\":16,\"maxCycleBudget\":100000,\"maxSafeDrainCycles\":16,"
+                      "\"maxClients\":8,\"maxPendingRequests\":32,\"maxBreakpoints\":1024,"
+                      "\"maxMemoryBytes\":256,\"maxDecodeRecords\":256,\"maxBoardPayloadBytes\":"
+                      "4096,\"maxTraces\":16,\"maxDestinations\":8,\"maxPoints\":32,\"maxGates\":"
+                      "32,\"maxWatches\":64,\"maxActions\":8,\"maxRoutes\":16,\"maxContextDepth\":"
+                      "64,\"maxRingRecords\":4096,\"outcomeRecords\":1024,\"maxRecordBytes\":3072,"
+                      "\"fileQueueRecords\":256,\"maxFileSegments\":16,\"frameTimeoutMs\":5000,"
+                      "\"maxJsonDepth\":16,\"maxJsonValues\":8192}}");
+        return EMUIF_OK;
+    }
+    if (!c->hello)
+    {
+        *close = true;
+        return EMUIF_STATE;
+    }
+    if (strcmp(cmd, "attach") && !c->attached)
+        return EMUIF_STATE;
+    if (!capability3(s, command_capability3(cmd)))
+        return EMUIF_UNSUPPORTED;
+    t = json_member(d, a, "sessionId");
+    if (!(wire_null(d, t) && !strcmp(cmd, "attach")))
+    {
+        json_string(d, t, text, sizeof text);
+        if (strcmp(text, s->id))
+            return EMUIF_STALE;
+    }
+    t = json_member(d, a, "generation");
+    if (t >= 0 && (!json_u64(d, t, &gen) || gen != s->generation))
+        return EMUIF_STALE;
+    t = json_member(d, a, "leaseId");
+    if (t >= 0 &&
+        (!json_u64(d, t, &lease_id) || !c->role || s->lease != c->id || lease_id != c->lease_id))
+        return EMUIF_DENIED;
+    if (s->state == EMUIF_STATE_TERMINATED)
+        return EMUIF_STATE;
+    if (!strcmp(cmd, "acquireControl"))
+    {
+        e = acquire_lease(s, c);
+        if (e)
+            return e;
+        output_format(o, "{\"leaseId\":\"%" PRIu64 "\"}", c->lease_id);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "releaseControl"))
+    {
+        s->lease = 0;
+        c->lease_id = 0;
+        c->role = EMUIF_ROLE_OBSERVER;
+        output_raw(o, "{\"leaseId\":\"0\"}");
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "stopDetail"))
+    {
+        static const char *reasons[] = {"entry",     "entry",      "pause",
+                                        "step",      "breakpoint", "watchpoint",
+                                        "fault",     "budget",     "power-down-unsupported",
+                                        "terminated"};
+        output_format(
+            o,
+            "{\"stopRevision\":\"%" PRIu64 "\",\"generation\":\"%" PRIu64
+            "\",\"reason\":\"%s\",\"sourceSequence\":\"0\",\"instructionId\":\"0\",\"matches\":[]}",
+            s->revision, s->generation, reasons[s->reason]);
+        return EMUIF_OK;
+    }
+    if (!strcmp(cmd, "advance"))
+    {
+        struct emuif_control_advance request;
+        struct emuif_control_progress p;
+        static const char *states[] = {"paused", "running", "faulted", "terminated"};
+        static const char *reasons[] = {"budget",     "pause", "breakpoint",
+                                        "watchpoint", "fault", "power-down-unsupported",
+                                        "terminated"};
+        INIT(request);
+        INIT(p);
+        request.connection_id = c->id;
+        request.generation = gen;
+        request.lease_id = lease_id;
+        request.cycle_budget = (uint32_t)number(d, a, "cycleBudget");
+        e = advance_control(s, c, &request, &p);
+        if (e)
+            return e;
+        output_format(o,
+                      "{\"generation\":\"%" PRIu64 "\",\"cycles\":\"%" PRIu64
+                      "\",\"instructions\":\"%" PRIu64 "\",\"retiredInstructions\":\"%" PRIu64
+                      "\",\"cycle\":\"%" PRIu64 "\",\"stopRevision\":\"%" PRIu64
+                      "\",\"state\":\"%s\",\"safeBoundary\":%s,\"reason\":\"%s\",\"partial\":%s}",
+                      p.generation, p.cycles, p.instructions, p.retired_instructions, p.cycle,
+                      p.stop_revision, states[p.state], p.safe_boundary ? "true" : "false",
+                      reasons[p.stop_reason], p.partial ? "true" : "false");
+        return EMUIF_OK;
+    }
+    return dispatch(s, c, d, a, cmd, o, close);
+}
+
+static emuif_status request_profile(struct emuif_session *s, uint64_t id,
+                                    const struct emuif_json_request *request,
+                                    struct emuif_json_response *response, bool control3)
 {
     struct client_state *c;
     struct json_document *d;
@@ -1175,6 +1525,8 @@ emuif_status emusa80535_debug_request_v1(struct emuif_session *s, uint64_t id,
     c = client(s, id);
     if (!c)
         return EMUIF_NOT_FOUND;
+    if (c->control3 != control3)
+        return EMUIF_VERSION;
     d = malloc(sizeof *d);
     body = calloc(1, sizeof *body);
     out = calloc(1, sizeof *out);
@@ -1200,14 +1552,17 @@ emuif_status emusa80535_debug_request_v1(struct emuif_session *s, uint64_t id,
         }
     }
     if (!json_integer(d, json_member(d, 0, "id"), 1, UINT32_MAX, &rid) ||
-        !json_string(d, json_member(d, 0, "command"), cmd, sizeof cmd) || !wire_command(cmd))
+        !json_string(d, json_member(d, 0, "command"), cmd, sizeof cmd) ||
+        !(control3 ? wire3_command(cmd) : wire_command(cmd)))
     {
         close_client(s, c);
         goto done;
     }
     a = json_member(d, 0, "arguments");
     if (!valid || d->tokens[0].size != 8 ||
-        !wire_string_is(d, json_member(d, 0, "type"), "request") || !wire_arguments(d, a, cmd))
+        !wire_string_is(d, json_member(d, 0, "type"), "request") ||
+        !(control3 ? (wire3_arguments(d, a, cmd) && wire3_semantics(d, a, cmd))
+                   : wire_arguments(d, a, cmd)))
     {
         e = EMUIF_INVALID;
         close = true;
@@ -1220,7 +1575,8 @@ emuif_status emusa80535_debug_request_v1(struct emuif_session *s, uint64_t id,
     else
     {
         c->last_id = (uint32_t)rid;
-        e = dispatch(s, c, d, a, cmd, body, &close);
+        e = control3 ? dispatch3(s, c, d, a, cmd, body, &close)
+                     : dispatch(s, c, d, a, cmd, body, &close);
     }
     if (!e && !strcmp(cmd, "terminate") && !body->length)
     {
@@ -1273,5 +1629,36 @@ done:
     free(d);
     free(body);
     free(out);
+    return EMUIF_OK;
+}
+
+emuif_status emusa80535_debug_request_v1(struct emuif_session *s, uint64_t id,
+                                         const struct emuif_json_request *request,
+                                         struct emuif_json_response *response)
+{
+    return request_profile(s, id, request, response, false);
+}
+static emuif_status control3_request(struct emuif_session *s, uint64_t id,
+                                     const struct emuif_json_request *request,
+                                     struct emuif_json_response *response)
+{
+    return request_profile(s, id, request, response, true);
+}
+static emuif_status control3_open(struct emuif_session *s, const struct emuif_client *c)
+{
+    emuif_status e = emusa80535_debug_open_v1(s, c);
+    if (!e)
+        client(s, c->connection_id)->control3 = true;
+    return e;
+}
+emuif_status emusa80535_control_query_v3(struct emuif_control3_api *out)
+{
+    emuif_status e = PREFIX(out);
+    if (e)
+        return e;
+    out->open = control3_open;
+    out->request = control3_request;
+    out->close = emusa80535_debug_close_v1;
+    out->advance = control3_advance;
     return EMUIF_OK;
 }
