@@ -1,4 +1,4 @@
-# Local runtime script1
+# Local runtime script1 and persistent control3
 
 `emu-runtime` owns one CPU/session and one independently built native board.
 Build offline from a pinned clean source checkout/archive with `make emu-runtime`.
@@ -10,7 +10,11 @@ open/request/close, alongside CPU API1. Immutable SDK0.2.0 headers retain their
 historical publication labels (`TARGET` and `EMUIF_TARGET_IMPLEMENTED=0`);
 those frozen labels describe the bundle's publication, not this later runtime.
 The exact runtime source pin shown by `--version`, identity and capability hello
-is the implementation authority. Socket listeners and DAP attach remain absent.
+is the implementation authority. The explicit Unix frontend implements control3
+wire3.0 with SDK0.3.0; the existing script frontend retains wire2.1/SDK0.2.0.
+The frozen target headers keep their historical availability markers. Query
+`emusa80535_control_query_v3` or the live wire hello to discover implementation.
+DAP attach is outside this host.
 
 The source archive must carry its exact `SOURCE_COMMIT` (the repository's
 `packaging/make_source.py` generates it). Record and verify the archive SHA256
@@ -24,7 +28,8 @@ emu-runtime --variant sab80535 --clock-hz 11059200 --seed 0 --entry 0 \
   --board-inspect-fault
 ```
 
-All valued arguments are required, unique and case sensitive. `--help` and
+All common valued arguments are required, unique and case sensitive. Select
+either `--script` or the pair `--control-unix` and `--execution-mode`. `--help` and
 `--version` work alone without opening any input. Numeric arguments are decimal.
 Image size is exactly65536 bytes. Configuration is a nonempty UTF-8 JSON object,
 maximum16384 bytes; use `{}` for empty configuration. Identity hashes the exact
@@ -98,8 +103,7 @@ reset remain available; execution without reset fails. Exit0 means all operation
 succeeded; exit2 means startup/static validation failed before CPU execution and
 stdout is empty; exit3 means an operation/runtime/output failure, even after
 recovery. Diagnostics use stderr. Native crashes are OS failures, not typed
-results. No retries, sockets, DAP attach, administrative signal handling,
-physical I/O or wall-clock pacing are implemented by this host.
+results. Script1 has no retries, DAP attach, physical I/O or wall-clock pacing.
 
 For replay compare architectural snapshot/time/module evidence, retaining both
 identity records. Session IDs vary between processes; lifetime admission/access
@@ -111,7 +115,7 @@ connection IDs. IDs cannot be reused; lifetime exhaustion returns CAPACITY befor
 mutation. The script host uses only one connection. Host tests additionally need
 Python `jsonschema` and Git history for the immutable0.1 fixture; an unpacked
 verified SDK0.1 include tree can instead be supplied as `EMUIF_SDK01_INCLUDE`.
-Run `make runtime-host-test` after building. No test dependency is needed to run
+Run `make runtime-host-test runtime-control-test` after building. No test dependency is needed to run
 the installed executable.
 
 Native consumers: authorized terminate after an unsafe partial fault applies
@@ -120,3 +124,63 @@ Wire2.1 cannot represent a terminated unsafe snapshot, so no success acknowledge
 is fabricated. Zero response here means connection closure; ordinary safe
 termination returns its conforming acknowledgement. Script1 has no terminate
 operation and is unaffected by this native lifecycle case.
+
+## Persistent Unix control3
+
+Use the same required pinned image/module/configuration arguments, replacing
+`--script` with `--control-unix /absolute/private/control.sock --execution-mode
+externally-driven` (or `host-driven`). The parent directory must already exist,
+be owned by the effective UID and have mode0700. The absolute UTF-8 path is at
+most107 bytes. Ancestor symlinks and `.`/`..` components are rejected, as are
+preexisting endpoint files, sockets or symlinks. The host pins the directory
+before loading the module, creates a mode0600 stream socket and authenticates
+each peer with Linux SO_PEERCRED before accepting input. Same-UID clients may
+request controller access and termination. No listener exists in script mode.
+
+The listener speaks only wire3.0: strict UTF-8 JSON objects followed by LF,
+maximum65536 bytes including LF. It produces responses only on the socket and
+never writes unsolicited protocol records or identity to stdout. The immutable
+`interfaces/0.3.0/docs/03-control.md` and schema define exact request/response
+shapes. Begin with hello(protocol3.0, contractVersion0.3.0), then attach with
+sessionId:null and observer/controller role. Attach selects the existing session;
+it never resets or reloads the CPU. Every mutation requires the current session,
+generation and nonzero controller lease. A single controller is shared with the
+native debug facade. Release, detach or disconnect relinquishes the lease;
+acquisition grants a new lease. Reconnect requires fresh hello/attach and state
+queries: requests may have executed before a lost response, so do not replay
+mutations automatically.
+
+In externally-driven mode, only explicit step or advance changes virtual time.
+Resume changes the session to running without progress. Advance requires running
+state and a budget1..100000 machine cycles; the session may use up to16 additional
+safe-drain cycles. Its result reports actual cycles, legacy instructions and
+completed instructions separately, including partial fault progress. Step retains
+its bounded one-instruction semantics. In host-driven mode the sole owner pumps
+up to64 cycles plus bounded drain between control iterations while running;
+advance is unavailable. Paused and faulted sessions remain responsive without
+pumping. No wall-clock synchronization or physical I/O is implied.
+
+Available commands include status/control, CODE breakpoint replacement, decode,
+pure memory reads, stopDetail and board admission/inspection when advertised.
+Board inputs report parent admission identity; this Slice does not implement
+UART outcomes or canonical observation/trace/capture/file commands. Those
+commands return UNSUPPORTED and hello reports empty observation coverage. The
+live hello carries the immutable0.3 manifest digest, actual runtime source pin,
+execution mode, bounds and only implemented capabilities. `--version` also
+identifies the unchanged script1 compatibility profile.
+
+One nonblocking owner loop serializes every request and CPU operation. At most8
+clients are admitted. The session retains at most8192 lifetime connection IDs;
+after exhaustion new connections are closed before any input or mutation. Each
+client has one outstanding request and one output frame;
+reads stop until the response has been written. Pipelined bytes remain in the
+bounded kernel stream buffers until admission, so the admitted request count is
+at most8 (within the protocol maximum32). Partial reads/writes are supported.
+Incomplete hello/frames and incomplete output expire after5000ms measured from
+the start, without extending the deadline for trickle traffic. Idle established
+connections do not expire or stop the session. Slow readers cannot block other
+clients or the owner. SIGINT/SIGTERM request orderly host shutdown; they never
+become emulated interrupts. Terminate or shutdown removes only the created
+socket inode. Replacing that path does not authorize deleting the replacement.
+Native callback hangs/crashes remain host failures; control cannot interrupt a
+hung trusted module.

@@ -3,7 +3,9 @@
 #include "emu_session_internal.h"
 #include "emu_sha_internal.h"
 #include "emusa80535/contracts/debug.h"
+#include "control.h"
 #include "loader.h"
+#include <emusa80535/contracts/control3.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -411,20 +413,28 @@ result:
 }
 static void help(void)
 {
-    puts("emu-runtime script1 (Linux x86-64)\nUsage: emu-runtime --variant 8051|8052|sab80535 "
-         "--clock-hz N --seed N --entry N\n  --image /absolute/image.bin --image-sha256 HEX64\n  "
-         "--board /absolute/module.so --board-sha256 HEX64\n  --board-config /absolute/config.json "
-         "--script /absolute/commands.ndjson\n  [--board-inspect-fault]\nAll options except "
-         "--board-inspect-fault are required. The flag asserts the pinned\nmodule promises pure "
-         "bounded post-fault inspection. --help and --version exit\nwithout loading inputs. No "
-         "sockets, signals, wall-clock pacing or physical I/O.");
+    puts("emu-runtime script1 / persistent control3 (Linux x86-64)\n"
+         "Usage: emu-runtime --variant 8051|8052|sab80535 --clock-hz N --seed N --entry N\n"
+         "  --image /absolute/image.bin --image-sha256 HEX64\n"
+         "  --board /absolute/module.so --board-sha256 HEX64\n"
+         "  --board-config /absolute/config.json\n"
+         "  (--script /absolute/commands.ndjson |\n"
+         "   --control-unix /private/directory/socket --execution-mode externally-driven|host-driven)\n"
+         "  [--board-inspect-fault]\n"
+         "The optional flag asserts the pinned module promises pure bounded post-fault inspection.\n"
+         "Control3 is wire3.0 / bundle0.3.0; script1 uses wire2.1 / bundle0.2.0.\n"
+         "Unix control requires an owned 0700 directory and same-UID clients. No listener opens\n"
+         "without --control-unix. External mode advances only through step/advance.\n"
+         "--help and --version exit without loading inputs. No physical I/O.");
 }
 int main(int argc, char **argv)
 {
-    const char *names[] = {"--variant",      "--clock-hz",     "--seed",  "--entry",
-                           "--image",        "--image-sha256", "--board", "--board-sha256",
-                           "--board-config", "--script"};
-    const char *values[10] = {0};
+    const char *names[] = {"--variant",      "--clock-hz",       "--seed",        "--entry",
+                           "--image",        "--image-sha256",   "--board",       "--board-sha256",
+                           "--board-config", "--script",         "--control-unix", "--execution-mode"};
+    const char *values[12] = {0};
+    struct runtime_endpoint endpoint = {.directory = -1};
+    uint32_t execution_mode = EMUIF_EXECUTION_EXTERNALLY_DRIVEN;
     int opt, i, inspect_fault = 0, rc = 2;
     size_t j, count = 0, image_n = 0, config_n = 0;
     unsigned char *image = NULL, *config = NULL;
@@ -445,7 +455,8 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && !strcmp(argv[1], "--version"))
     {
-        printf("emu-runtime script1 source=%s bundle=%s API1 boardABI1.0 wire2.1\n",
+        printf("emu-runtime script1 source=%s bundle=%s API1 boardABI1.0 wire2.1; "
+               "control3 bundle=0.3.0 wire3.0\n",
                EMU_RUNTIME_COMMIT, EMUIF_BUNDLE_VERSION);
         return 0;
     }
@@ -458,16 +469,32 @@ int main(int argc, char **argv)
             inspect_fault = 1;
             continue;
         }
-        for (opt = 0; opt < 10; opt++)
+        for (opt = 0; opt < 12; opt++)
             if (!strcmp(argv[i], names[opt]))
                 break;
-        if (opt == 10 || values[opt] || i + 1 == argc)
+        if (opt == 12 || values[opt] || i + 1 == argc)
             goto cleanup;
         values[opt] = argv[++i];
     }
-    for (opt = 0; opt < 10; opt++)
+    for (opt = 0; opt < 9; opt++)
         if (!values[opt])
             goto cleanup;
+    if (values[9])
+    {
+        if (values[10] || values[11])
+            goto cleanup;
+    }
+    else
+    {
+        if (!values[10] || !values[11])
+            goto cleanup;
+        if (!strcmp(values[11], "host-driven"))
+            execution_mode = EMUIF_EXECUTION_HOST_DRIVEN;
+        else if (strcmp(values[11], "externally-driven"))
+            goto cleanup;
+        if (!runtime_endpoint_prepare(&endpoint, values[10]))
+            goto cleanup;
+    }
     if (!strcmp(values[0], "8051"))
         variant = 0;
     else if (!strcmp(values[0], "8052"))
@@ -481,7 +508,7 @@ int main(int argc, char **argv)
         !runtime_hash_valid(values[5]) || !runtime_hash_valid(values[7]))
         goto cleanup;
     /* Complete static validation precedes dlopen, module create and CPU progress. */
-    if (!load_script(values[9], commands, &count) ||
+    if ((values[9] && !load_script(values[9], commands, &count)) ||
         !runtime_read(values[4], 65536, &image, &image_n) || image_n != 65536 ||
         !runtime_read(values[8], 16384, &config, &config_n) || !config_n)
         goto cleanup;
@@ -514,6 +541,15 @@ int main(int argc, char **argv)
         goto cleanup;
     if (emu_session_allow_fault_inspection(h.session, (uint32_t)inspect_fault) != EMUIF_OK)
         goto cleanup;
+    if (values[10])
+    {
+        if (emu_session_set_execution_mode(h.session, execution_mode) != EMUIF_OK)
+            goto cleanup;
+        rc = runtime_control_run(h.session, &endpoint, execution_mode);
+        if (rc)
+            fprintf(stderr, "emu-runtime: Unix control host failure\n");
+        goto cleanup;
+    }
     INIT(client);
     client.connection_id = 1;
     client.role = EMUIF_ROLE_CONTROLLER;
@@ -580,6 +616,7 @@ cleanup:
         emusa80535_session_destroy_v1(h.session);
     }
     runtime_module_close(&module);
+    runtime_endpoint_release(&endpoint);
     for (j = 0; j < count; j++)
         free(commands[j].json);
     free(image);
