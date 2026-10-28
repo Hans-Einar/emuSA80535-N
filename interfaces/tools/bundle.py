@@ -16,6 +16,29 @@ PREFIX = 'emusa80535-interfaces-' + VERSION
 MANIFEST = 'interfaces/' + VERSION + '/manifest.json'
 ROOT = Path(__file__).resolve().parents[2]
 SCOPES = ('interfaces/' + VERSION, 'interfaces/tools', 'lib/include/emusa80535')
+
+def select_version(version):
+    global VERSION, PREFIX, MANIFEST, SCOPES
+    if version not in ('0.2.0', '0.3.0'):
+        raise ValueError('supported bundle versions: 0.2.0, 0.3.0')
+    VERSION = version
+    PREFIX = 'emusa80535-interfaces-' + VERSION
+    MANIFEST = 'interfaces/' + VERSION + '/manifest.json'
+    SCOPES = ('interfaces/' + VERSION, 'interfaces/tools', 'lib/include/emusa80535')
+    if version == '0.3.0':
+        SCOPES += ('interfaces/0.2.0', 'interfaces/legacy-payloads/0.2.0')
+
+def payload_bytes(root, path, digest=None):
+    # Frozen shared files are retrieved from checked-in immutable snapshots;
+    # this also works in a full source or SDK export without Git.
+    if VERSION == '0.2.0':
+        frozen = root / 'interfaces/legacy-payloads/0.2.0' / path
+        if frozen.is_file():
+            data = frozen.read_bytes()
+            if digest is not None and sha(data) != digest:
+                raise ValueError('frozen payload checksum mismatch: ' + path)
+            return data
+    return (root / path).read_bytes()
 SINGLE = ('interfaces/README.md', 'LICENSE')
 GENERATED = {'SOURCE_COMMIT', 'BUNDLE-RECEIPT.json'}
 
@@ -42,6 +65,8 @@ def payload_paths(root):
     paths = set(SINGLE)
     for scope in SCOPES:
         for path in (root / scope).rglob('*'):
+            if '__pycache__' in path.parts or path.suffix == '.pyc':
+                continue
             if path.is_symlink():
                 raise ValueError('symlink not allowed: ' + str(path))
             if path.is_file():
@@ -53,11 +78,18 @@ def checked_manifest(root):
     manifest = load_json((root / MANIFEST).read_bytes())
     if not manifest['bundleVersion'] == VERSION:
         raise ValueError('wrong bundle version')
-    actual = payload_paths(root)
+    actual = payload_paths(root) if VERSION != '0.2.0' else sorted(manifest['files'])
+    if VERSION == '0.2.0':
+        # Detect any additions/removals in immutable version directories.
+        directory = 'interfaces/0.2.0/'
+        present = {p.relative_to(root).as_posix() for p in (root / directory).rglob('*') if p.is_file()}
+        expected = {p for p in manifest['files'] if p.startswith(directory)} | {MANIFEST}
+        if present != expected:
+            raise ValueError('immutable baseline inventory changed')
     if not actual == sorted(manifest['files']):
         raise ValueError('payload inventory differs from manifest')
     for path in actual:
-        if not sha((root / path).read_bytes()) == manifest['files'][path]:
+        if not sha(payload_bytes(root, path, manifest['files'][path])) == manifest['files'][path]:
             raise ValueError('checksum mismatch: ' + path)
     return manifest
 
@@ -74,10 +106,12 @@ def origin_commit(root):
     return commit
 
 def bundle_files(root, commit):
+    if VERSION == '0.2.0':
+        commit = '0a77c2d0da22ecb0bd37781b430e30444f779e39'
     manifest = checked_manifest(root)
     if not re.fullmatch('[0-9a-f]{40}', commit):
         raise ValueError('invalid source commit')
-    result = {path: (root / path).read_bytes() for path in manifest['files']}
+    result = {path: payload_bytes(root, path, digest) for path, digest in manifest['files'].items()}
     result[MANIFEST] = (root / MANIFEST).read_bytes()
     result['SOURCE_COMMIT'] = (commit + '\n').encode()
     result['BUNDLE-RECEIPT.json'] = encode({'bundleVersion': VERSION, 'repository': REPOSITORY, 'sourceCommit': commit, 'manifestSha256': sha(result[MANIFEST]), 'versions': manifest['versions']})
@@ -173,6 +207,7 @@ def verify_copy(root, lock):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--version', choices=['0.2.0', '0.3.0'], default='0.2.0')
     parser.add_argument('--root', type=Path, default=ROOT)
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('check')
@@ -193,7 +228,10 @@ def main():
     install.add_argument('--destination', type=Path, required=True)
     install.add_argument('--source-commit', required=True)
     args = parser.parse_args()
+    select_version(args.version)
     if args.command == 'refresh':
+        if VERSION != '0.3.0':
+            raise ValueError('accepted baseline cannot be refreshed')
         existing = load_json((args.root / MANIFEST).read_bytes())
         existing['files'] = {p: sha((args.root / p).read_bytes()) for p in payload_paths(args.root)}
         (args.root / MANIFEST).write_bytes(encode(existing))

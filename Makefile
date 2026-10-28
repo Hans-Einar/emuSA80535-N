@@ -98,6 +98,7 @@ install: $(DEBUG_BIN) $(SDK_LIB) $(CPU_LIB) $(RUNTIME_LIB) emu-runtime emusa8053
 	$(INSTALL) -d $(DESTDIR)$(includedir)/emusa80535/contracts
 	$(INSTALL) -m 644 lib/include/emusa80535/*.h $(DESTDIR)$(includedir)/emusa80535/
 	$(INSTALL) -m 644 lib/include/emusa80535/contracts/*.h $(DESTDIR)$(includedir)/emusa80535/contracts/
+	$(PYTHON) interfaces/tools/bundle.py --version 0.3.0 install --destination $(DESTDIR)$(docdir)/interface-bundles/0.3.0 --source-commit $(DEBUG_COMMIT)
 	$(PYTHON) interfaces/tools/bundle.py install --destination $(DESTDIR)$(docdir)/interface-bundles/$(CONTRACT_VERSION) --source-commit $(DEBUG_COMMIT)
 	$(INSTALL) -m 644 LICENSE $(DESTDIR)$(licensedir)/
 	$(INSTALL) -m 644 README.md $(DESTDIR)$(docdir)/
@@ -171,3 +172,10 @@ runtime-session-test: runtime-sdk
 	$(MAKE) -C tests runtime-session-test
 -include runtime/targets.mk
 .PHONY: runtime-sdk runtime-session-test
+
+# Contract-only target; no new runtime symbols/capabilities are built.
+interface-target-check:
+	$(PYTHON) interfaces/tools/check_target_contracts.py
+interface-target-export:
+	$(PYTHON) interfaces/tools/bundle.py --version 0.3.0 export --output $(INTERFACE_ARCHIVE)
+.PHONY: interface-target-check interface-target-export

@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:emusa80535:observation:1",
+  "type": "object",
+  "properties": {
+    "generation": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "sequence": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "cycle": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "instructionId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "legacyInstructions": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "retiredInstructions": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "accessId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "parentStimulusId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "cpuInputOrder": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "frameId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "relatedFrameId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "contextId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "parentContextId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "scheduledCycle": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "startCycle": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "sourceEventSequence": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "beginCycle": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "kind": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 28
+    },
+    "inputStage": {
+      "enum": [
+        0,
+        1
+      ]
+    },
+    "phase": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "reason": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "known": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 63
+    },
+    "status": {
+      "enum": [
+        "OK",
+        "INVALID",
+        "VERSION",
+        "STATE",
+        "RANGE",
+        "CAPACITY",
+        "UNSUPPORTED",
+        "BUSY",
+        "STALE",
+        "DENIED",
+        "FAULT",
+        "EXHAUSTED",
+        "IO",
+        "HASH",
+        "NOT_FOUND"
+      ]
+    },
+    "partialEffects": {
+      "type": "boolean"
+    },
+    "space": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "access": {
+      "enum": [
+        0,
+        1,
+        2,
+        4,
+        8
+      ]
+    },
+    "frameKind": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "irqSource": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 11
+    },
+    "irqDepth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 64
+    },
+    "watchId": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "firedActions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "pc": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "target": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "address": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "returnPc": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "nextPc": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "spBefore": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "spAfter": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "bytes": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
+      "minItems": 0,
+      "maxItems": 3
+    },
+    "uartMode": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "uartWidth": {
+      "enum": [
+        0,
+        8,
+        9
+      ]
+    },
+    "ninth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "scon": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "tcon": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "oldValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "width": {
+          "enum": [
+            8,
+            1,
+            16,
+            32,
+            64
+          ]
+        },
+        "known": {
+          "type": "boolean"
+        },
+        "isSigned": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "width",
+        "known",
+        "isSigned"
+      ],
+      "additionalProperties": false
+    },
+    "newValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "width": {
+          "enum": [
+            8,
+            1,
+            16,
+            32,
+            64
+          ]
+        },
+        "known": {
+          "type": "boolean"
+        },
+        "isSigned": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "width",
+        "known",
+        "isSigned"
+      ],
+      "additionalProperties": false
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 96
+    }
+  },
+  "required": [
+    "generation",
+    "sequence",
+    "cycle",
+    "instructionId",
+    "legacyInstructions",
+    "retiredInstructions",
+    "accessId",
+    "parentStimulusId",
+    "cpuInputOrder",
+    "frameId",
+    "relatedFrameId",
+    "contextId",
+    "parentContextId",
+    "scheduledCycle",
+    "startCycle",
+    "sourceEventSequence",
+    "beginCycle",
+    "kind",
+    "inputStage",
+    "phase",
+    "reason",
+    "known",
+    "status",
+    "partialEffects",
+    "space",
+    "access",
+    "frameKind",
+    "irqSource",
+    "irqDepth",
+    "watchId",
+    "firedActions",
+    "pc",
+    "target",
+    "address",
+    "returnPc",
+    "nextPc",
+    "spBefore",
+    "spAfter",
+    "bytes",
+    "uartMode",
+    "uartWidth",
+    "ninth",
+    "scon",
+    "tcon",
+    "oldValue",
+    "newValue",
+    "text"
+  ],
+  "additionalProperties": false
+}

@@ -96,7 +96,7 @@ def main():
         for name in manifest["files"]:
             path = fixture / name
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes((ROOT / name).read_bytes())
+            path.write_bytes(bundle.payload_bytes(ROOT, name, manifest['files'][name]))
         (fixture / bundle.MANIFEST).write_bytes((ROOT / bundle.MANIFEST).read_bytes())
         (fixture / "SOURCE_COMMIT").write_text("a" * 40 + "\n")
         a, b = work / "a.tar.gz", work / "b.tar.gz"

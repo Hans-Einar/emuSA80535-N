@@ -86,10 +86,12 @@ def run():
         work = Path(temp)
         old = work / 'old/include/emusa80535/contracts'
         old.mkdir(parents=True)
-        for header in (ROOT / 'lib/include/emusa80535/contracts').glob('*.h'):
-            content = subprocess.check_output(['git', '-C', str(ROOT), 'show',
-                BASELINE + ':lib/include/emusa80535/contracts/' + header.name])
-            (old / header.name).write_bytes(content)
+        # Enumerate the immutable profile, not newly added target headers.
+        headers = subprocess.check_output(['git', '-C', str(ROOT), 'ls-tree',
+            '-r', '--name-only', BASELINE, 'lib/include/emusa80535/contracts'], text=True).splitlines()
+        for header in headers:
+            content = subprocess.check_output(['git', '-C', str(ROOT), 'show', BASELINE + ':' + header])
+            (old / Path(header).name).write_bytes(content)
         for profile, include in [('current', ROOT / 'lib/include'), ('0.1', old.parents[1])]:
             for language, compiler, standard in [('c', os.environ.get('CC', 'cc'), 'c99'),
                                                 ('cpp', os.environ.get('CXX', 'c++'), 'c++17')]:
