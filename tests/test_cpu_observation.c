@@ -109,7 +109,7 @@ static void test_instruction(void) {
     assert(e->begin_cycle==2 && e->cycle==4 && e->next_pc==6 && e->retired_instructions==2 && e->text[0]);
     f.bus_error=EMUIF_UNSUPPORTED;
     assert(step(&f)==EMUIF_UNSUPPORTED);
-    e=last_kind(&f,EMUIF_OBS_ACCESS_RESULT); assert(e && e->status==EMUIF_UNSUPPORTED && !e->new_value.known);
+    e=last_kind(&f,EMUIF_OBS_ACCESS_RESULT); assert(e && e->status==EMUIF_UNSUPPORTED && e->reason==EMUIF_OBS_REASON_UNSUPPORTED && !e->new_value.known);
     assert(count_kind(&f,2)==2 && count_kind(&f,3)==1);
     e=last_kind(&f,3); assert(e->pc==6 && e->cycle==4 && e->retired_instructions==2);
     assert(!(e->known&EMUIF_OBS_KNOWN_NEXT_PC)); finish(&f);
@@ -264,11 +264,32 @@ static void test_sm2_and_rmw(void) {
     assert(r->old_value.known && r->new_value.known && ((r->old_value.value+1)&255)==r->new_value.value);
     finish(&f);
 }
+#ifdef EMU_CPU_FACADE_TESTING
+extern void emu_cpu_test_observation_limits(struct emuif_cpu *, uint64_t, uint64_t);
+static void test_exhaustion(void) {
+    struct fixture f;
+    const uint8_t code[]={0x75,0x98,0xd0,0x75,0x99,0x55};
+    start(&f,code,sizeof(code),2,1); assert(step(&f)==0);
+    emu_cpu_test_observation_limits(f.cpu,UINT64_MAX,0);
+    assert(rx(&f,1,1,0x55,0)==EMUIF_EXHAUSTED);
+    assert(count_kind(&f,18)==0 && count_kind(&f,20)==0 && snapshot(&f).state==EMUIF_STATE_PAUSED);
+    assert(step(&f)==EMUIF_EXHAUSTED);
+    assert(count_kind(&f,22)==0 && count_kind(&f,3)==1);
+    assert(last_kind(&f,3)->reason==EMUIF_OBS_REASON_EXHAUSTED); finish(&f);
+    const uint8_t movx[]={0xe0}; start(&f,movx,sizeof(movx),2,1);
+    emu_cpu_test_observation_limits(f.cpu,0,UINT64_MAX);
+    assert(step(&f)==EMUIF_EXHAUSTED); assert(count_kind(&f,4)==0 && count_kind(&f,5)==0);
+    assert(snapshot(&f).a==0); finish(&f);
+}
+#endif
 int main(void) {
     INIT(api); INIT(obs); assert(emusa80535_cpu_query_v1(&api)==0);
     assert(emusa80535_cpu_observation_query_v1(&obs)==0);
     assert(obs.coverage==125 && obs.bind && obs.unbind && obs.deliver);
     test_prefix(); test_instruction(); test_context(); test_uart(); test_reset(); test_irq_and_gap(); test_sm2_and_rmw();
+#ifdef EMU_CPU_FACADE_TESTING
+    test_exhaustion();
+#endif
     puts("CPU observations: prefixes, all opcodes/equivalence, retirement/faults, contexts, UART/correlation/reset PASS");
     return 0;
 }

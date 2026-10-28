@@ -1190,6 +1190,7 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     {
         uint64_t observed_access = emu_cpu_raw(aCPU, EMU_RAW_ACCESS_BEGIN,
             aCPU->mMachineCycleCount, aAddress, EMUIF_SPACE_SFR, EMUIF_OBS_ACCESS_WRITE, aValue);
+        if (em8051_execution_aborted(aCPU)) return;
         sab_uart_sbuf_write(aCPU, aValue);
         /* Present TX through the established callback surface, then restore
          * the SBUF mirror from canonical RX state as it exists after the

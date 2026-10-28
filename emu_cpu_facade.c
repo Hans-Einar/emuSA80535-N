@@ -105,6 +105,10 @@ static void fail(struct emuif_cpu *cpu, emuif_status status) {
         cpu->fault = status > EMUIF_NOT_FOUND ? EMUIF_FAULT : status;
 }
 
+static uint32_t obs_failure_reason(emuif_status status) {
+    return status == EMUIF_UNSUPPORTED ? EMUIF_OBS_REASON_UNSUPPORTED :
+           status == EMUIF_EXHAUSTED ? EMUIF_OBS_REASON_EXHAUSTED : EMUIF_OBS_REASON_DEVICE;
+}
 static bool obs_id(struct emuif_cpu *cpu, uint64_t *counter, uint64_t *value) {
     if (*counter == UINT64_MAX) { fail(cpu, EMUIF_EXHAUSTED); return false; }
     *value = ++*counter;
@@ -292,6 +296,10 @@ static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
         obs_uart_event(cpu, &o->rx, EMUIF_OBS_RX_END, 0, cycle, 0);
         memset(&o->rx, 0, sizeof(o->rx)); break;
     case EMU_RAW_ACCESS_BEGIN:
+        if (b == EMUIF_SPACE_SFR && a == 0x99 &&
+            (cpu->core.mSFR[REG_SCON] & 0xc0) == 0xc0 && o->next_frame == UINT64_MAX) {
+            fail(cpu, EMUIF_EXHAUSTED); break;
+        }
         if (o->current_access && o->access_space == b && o->access_address == a)
             return o->current_access;
         if (!o->pending || !obs_id(cpu, &o->next_access, &id)) break;
@@ -313,7 +321,7 @@ static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
             e.old_value.known = 1; e.old_value.value = o->access_old;
         }
         e.status = cpu->fault; e.partial_effects = cpu->fault != 0;
-        if (cpu->fault) e.reason = EMUIF_OBS_REASON_DEVICE;
+        if (cpu->fault) e.reason = obs_failure_reason(cpu->fault);
         else { e.new_value.known = 1; e.new_value.value = d; }
         obs_emit(cpu, &e); o->current_access = 0; break;
     default: break;
@@ -331,8 +339,7 @@ static void obs_finish(struct emuif_cpu *cpu) {
                  cpu->fault ? EMUIF_OBS_PHASE_BOUNDARY : EMUIF_OBS_PHASE_RETIRE,
                  cpu->fault ? o->attempted_cycle : cpu->core.mMachineCycleCount);
         e.status = cpu->fault; e.partial_effects = cpu->fault != 0;
-        if (cpu->fault) e.reason = cpu->fault == EMUIF_EXHAUSTED ?
-            EMUIF_OBS_REASON_EXHAUSTED : EMUIF_OBS_REASON_DEVICE;
+        if (cpu->fault) e.reason = obs_failure_reason(cpu->fault);
         if (o->opcode_done) { e.next_pc = o->next_pc; e.known |= EMUIF_OBS_KNOWN_NEXT_PC; }
         obs_bytes(cpu, &e); obs_emit(cpu, &e);
         if (!cpu->fault && o->closing && o->depth) {
@@ -342,7 +349,7 @@ static void obs_finish(struct emuif_cpu *cpu) {
     }
     if (cpu->fault && !o->fault_emitted) {
         obs_init(cpu, &e, EMUIF_OBS_FAULT, EMUIF_OBS_PHASE_BOUNDARY, o->attempted_cycle);
-        e.status = cpu->fault; e.partial_effects = 1; e.reason = EMUIF_OBS_REASON_DEVICE;
+        e.status = cpu->fault; e.partial_effects = 1; e.reason = obs_failure_reason(cpu->fault);
         o->fault_emitted = true; obs_emit(cpu, &e);
     }
 }
@@ -402,6 +409,7 @@ static uint8_t bus(struct emuif_cpu *cpu, uint16_t address, uint32_t direction, 
     if (cpu->fault != EMUIF_OK) return 0;
     observed_access = emu_cpu_raw(&cpu->core, EMU_RAW_ACCESS_BEGIN, cpu->core.mMachineCycleCount,
                                    address, EMUIF_SPACE_XDATA, observed_direction, value);
+    if (cpu->fault) return 0;
     capture_access(cpu, address, direction, value, &access);
     if (!sequence(cpu, &access.sequence)) goto done;
     INIT(&result);
@@ -642,6 +650,8 @@ static emuif_status apply_input(struct emuif_cpu *cpu, const struct emuif_input 
             return EMUIF_RANGE;
         if ((cpu->core.mSFR[REG_SCON] & 0xc0) != 0xc0)
             return EMUIF_UNSUPPORTED;
+        if (cpu->observation.bound && cpu->observation.next_frame == UINT64_MAX)
+            return EMUIF_EXHAUSTED;
         if (!(cpu->core.mSFR[REG_SCON] & SCONMASK_REN)) {
             obs_rx_rejected(cpu, input, EMUIF_STATE); return EMUIF_STATE;
         }
@@ -942,6 +952,11 @@ void emu_cpu_test_limits(struct emuif_cpu *cpu, uint64_t cycles, uint64_t instru
     cpu->core.mMachineCycleCount = cycles;
     cpu->core.mInstructionCount = instructions;
     cpu->sequence = last_sequence;
+}
+void emu_cpu_test_observation_limits(struct emuif_cpu *cpu, uint64_t frame,
+                                     uint64_t access) {
+    cpu->observation.next_frame = frame;
+    cpu->observation.next_access = access;
 }
 #endif
 
