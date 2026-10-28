@@ -79,3 +79,27 @@ source reproducibly, build/install without Git, verify actual installed wire
 capabilities/outcomePage and hand off exact source/archive identity. Preserve
 V0 and corrected029 artifacts. No physical IO, board protocol, TCP/DAP, RPM
 publication or SDP migration. Continue027 then028 after acceptance.
+
+## Reviewed representation clarifications during implementation
+
+The frozen validator requires typed nonzero context tokens for CALL/RET/IRQ/RETI.
+For an unmatched or mismatched return, unknown context or bounded stack overflow,
+allocate a fresh observational token, retain the opcode-derived CALL/IRQ type,
+clear KNOWN_CONTEXT and zero unknown SP/parent fields. Use reason CONTEXT, or
+EXHAUSTED for stack overflow. This token is not proof of an observed entry or a
+matching closing frame. Correct matching returns keep their original frame ID.
+Future invocation binding requires known context and closes incomplete on these
+unknown/overflow facts. Do not reuse a known IRQ ID as a CALL return identity.
+
+Observation cycle records the actual source phase. A fault inside an attempted
+peripheral cycle may follow facts at N+1 while the architectural completed-cycle
+counter remains N. Track the attempted phase explicitly for abort/fault facts;
+do not advance the CPU counter to make diagnostics appear complete. Operand bytes
+not actually fetched (including a lazy untaken branch operand) remain absent;
+text stays empty when captured bytes cannot completely decode the instruction.
+
+Outcome destination0 follows the ordinary ring loss-record policy: its1024
+storage slots include typed loss summaries, reserving space for summary+event on
+overwrite. Overwritten counts all evicted storage records, including summaries;
+eviction of a loss marker must not recursively create another marker. Dropped
+is0, cursor gaps are exact, and reset preserves history/epoch.
