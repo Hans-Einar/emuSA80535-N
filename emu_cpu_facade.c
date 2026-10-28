@@ -33,7 +33,7 @@ struct cpu_observation_state {
     uint16_t access_address;
     uint16_t pc, next_pc;
     uint8_t bytes[3], byte_mask, depth, irq_depth;
-    bool bound, pending, opcode_done, closing, fault_emitted, context_lost;
+    bool bound, pending, opcode_done, closing, fault_emitted, unknown_base;
     struct observed_frame frames[64];
     struct observed_uart rx, tx, hold;
 };
@@ -188,15 +188,21 @@ static void obs_context_push(struct emuif_cpu *cpu, struct emuif_observation *e,
     e->frame_kind = kind; e->target = target; e->return_pc = return_pc;
     e->sp_before = sp_before; e->sp_after = sp_after;
     e->known |= EMUIF_OBS_KNOWN_TARGET;
-    if (o->depth == 64 || o->context_lost) {
-        e->reason = o->depth == 64 ? EMUIF_OBS_REASON_EXHAUSTED : EMUIF_OBS_REASON_CONTEXT;
-        o->context_lost = true;
+    if (o->depth == 64) {
+        e->reason = EMUIF_OBS_REASON_EXHAUSTED;
+        /* None of the retained ancestors remains a usable top frame after
+         * an unrepresented push. A later fully observed child may establish
+         * its own known extent above this unknown base, never recover it. */
+        o->unknown_base = true; o->depth = 0;
         (void)obs_id(cpu, &o->next_context, &e->context_id);
         e->sp_before = e->sp_after = 0;
         return;
     }
     f = &o->frames[o->depth]; memset(f, 0, sizeof(*f));
     if (!obs_id(cpu, &o->next_context, &f->id)) return;
+    /* Entry itself supplies all facts needed for this new frame. Parent0
+     * means no known parent, including when unknown_base survives a gap,
+     * mismatch or overflow. Popping this frame cannot recover that ancestry. */
     f->parent = o->depth ? o->frames[o->depth - 1].id : 0;
     f->return_pc = return_pc; f->sp = sp_after; f->kind = kind; f->irq_source = kind == EMUIF_OBS_FRAME_IRQ ? (uint8_t)source : 0;
     e->context_id = f->id; e->parent_context_id = f->parent;
@@ -248,14 +254,15 @@ static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
                  EMUIF_OBS_PHASE_EFFECT, cycle);
         e.frame_kind = expected; e.target = e.return_pc = (uint16_t)a;
         e.known |= EMUIF_OBS_KNOWN_TARGET;
-        if (o->depth && !o->context_lost) {
+        if (o->depth) {
             struct observed_frame *f = &o->frames[o->depth - 1];
             e.context_id = f->id; e.parent_context_id = f->parent;
             e.sp_before = (uint8_t)c; e.sp_after = (uint8_t)d;
             e.known |= EMUIF_OBS_KNOWN_CONTEXT;
             if (f->kind != expected || f->return_pc != a || f->sp != c ||
                 (uint8_t)(f->sp - 2) != d) {
-                e.reason = EMUIF_OBS_REASON_CONTEXT; o->context_lost = true;
+                e.reason = EMUIF_OBS_REASON_CONTEXT;
+                o->unknown_base = true; o->depth = 0;
                 e.context_id = 0;
                 if (!obs_id(cpu, &o->next_context, &e.context_id)) break;
                 e.parent_context_id = 0; e.sp_before = e.sp_after = 0;
@@ -264,7 +271,7 @@ static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
             if (expected == EMUIF_OBS_FRAME_IRQ && f->kind == EMUIF_OBS_FRAME_IRQ) e.irq_source = f->irq_source;
         } else {
             if (!obs_id(cpu, &o->next_context, &e.context_id)) break;
-            e.reason = EMUIF_OBS_REASON_CONTEXT; o->context_lost = true; }
+            e.reason = EMUIF_OBS_REASON_CONTEXT; o->unknown_base = true; }
         obs_emit(cpu, &e);
         if (expected == EMUIF_OBS_FRAME_IRQ && o->irq_depth) --o->irq_depth;
         break;
@@ -375,7 +382,7 @@ static void obs_reset(struct emuif_cpu *cpu) {
     }
     memset(&o->rx, 0, sizeof(o->rx)); memset(&o->tx, 0, sizeof(o->tx)); memset(&o->hold, 0, sizeof(o->hold));
     o->pending = false; o->closing = false; o->depth = o->irq_depth = 0;
-    o->context_lost = o->fault_emitted = false; o->current_access = 0;
+    o->unknown_base = o->fault_emitted = false; o->current_access = 0;
     o->unbound_cycle = o->unbound_instructions = o->attempted_cycle = 0;
 }
 
@@ -988,7 +995,7 @@ static emuif_status bind_observation(struct emuif_cpu *cpu,
         cpu->core.mSABUartTxPending || cpu->core.mSABUartRxActive) return EMUIF_STATE;
     if (cpu->core.mMachineCycleCount != o->unbound_cycle ||
         cpu->core.mInstructionCount != o->unbound_instructions) {
-        o->context_lost = true; o->depth = 0; o->irq_depth = cpu->core.mSABIrqDepth;
+        o->unknown_base = true; o->depth = 0; o->irq_depth = cpu->core.mSABIrqDepth;
     }
     o->raw.context = cpu; o->raw.fact = obs_raw_fact;
     o->generation = binding->generation; o->sink = binding->observer; o->bound = true;

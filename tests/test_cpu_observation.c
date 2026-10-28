@@ -240,7 +240,12 @@ static void test_irq_and_gap(void) {
     start(&f,code,sizeof(code),2,1); assert(step(&f)==0); assert(obs.unbind(f.cpu)==0); assert(step(&f)==0);
     struct emuif_observation_binding b; INIT(b); INIT(b.observer); b.generation=2;
     b.observer.context=&f; b.observer.observe=observed; assert(obs.bind(f.cpu,&b)==0); assert(step(&f)==0);
-    assert(last_kind(&f,6)->reason==EMUIF_OBS_REASON_CONTEXT && !(last_kind(&f,6)->known&EMUIF_OBS_KNOWN_CONTEXT));
+    /* The next actual CALL establishes only its own fully observed extent;
+     * the old stack was invalidated, so it has no known parent. */
+    e=last_kind(&f,6); context=e->context_id;
+    assert(e->reason==0 && (e->known&EMUIF_OBS_KNOWN_CONTEXT) && !e->parent_context_id);
+    assert(step(&f)==0); e=last_kind(&f,7);
+    assert(e->context_id==context && (e->known&EMUIF_OBS_KNOWN_CONTEXT));
     finish(&f);
     /* Recursion beyond the bounded observer stack produces a fresh unknown
      * token with the opcode's frame type, never an invented known entry. */
@@ -249,6 +254,149 @@ static void test_irq_and_gap(void) {
     for(unsigned i=0;i<65;++i) assert(step(&f)==0);
     e=last_kind(&f,6); assert(e->reason==EMUIF_OBS_REASON_EXHAUSTED && e->context_id && !(e->known&EMUIF_OBS_KNOWN_CONTEXT));
     finish(&f);
+}
+static void rebind(struct fixture *f, uint64_t generation) {
+    struct emuif_observation_binding b; INIT(b); INIT(b.observer);
+    b.generation=generation; b.observer.context=f; b.observer.observe=observed;
+    assert(obs.bind(f->cpu,&b)==0);
+}
+static void test_context_recovery(void) {
+    struct fixture f;
+    const struct emuif_observation *e;
+    uint64_t child, grandchild;
+    uint8_t code[512]={0x12,0,16};
+    /* An unobserved outer CALL cannot become known merely because a nested
+     * child and grandchild are fully observed and return successfully. */
+    code[16]=0x12; code[18]=32; code[19]=0x22;
+    code[32]=0x12; code[34]=48; code[35]=0x22; code[48]=0x22;
+    start(&f,code,sizeof(code),2,0); assert(step(&f)==0); rebind(&f,2);
+    assert(step(&f)==0); e=last_kind(&f,6); child=e->context_id;
+    assert((e->known&EMUIF_OBS_KNOWN_CONTEXT) && !e->parent_context_id && !e->reason);
+    assert(step(&f)==0); e=last_kind(&f,6); grandchild=e->context_id;
+    assert((e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->parent_context_id==child);
+    assert(step(&f)==0); e=last_kind(&f,7);
+    assert(e->context_id==grandchild && (e->known&EMUIF_OBS_KNOWN_CONTEXT));
+    assert(step(&f)==0); e=last_kind(&f,7);
+    assert(e->context_id==child && (e->known&EMUIF_OBS_KNOWN_CONTEXT));
+    assert(step(&f)==0); e=last_kind(&f,7);
+    assert(!(e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->reason==EMUIF_OBS_REASON_CONTEXT);
+    assert(!e->parent_context_id && !e->sp_before && !e->sp_after);
+    finish(&f);
+
+    /* A typed mismatch loses the old CALL but permits a new observed child.
+     * Returning that child still cannot repair the mismatched ancestry. */
+    memset(code,0,sizeof(code)); code[0]=0x12; code[2]=16;
+    code[3]=0x12; code[5]=32; code[6]=0x22; code[16]=0x32; code[32]=0x22;
+    start(&f,code,sizeof(code),2,1); assert(step(&f)==0);
+    uint64_t old=last_kind(&f,6)->context_id;
+    assert(step(&f)==0); e=last_kind(&f,10);
+    assert(!(e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->context_id!=old);
+    assert(e->reason==EMUIF_OBS_REASON_CONTEXT);
+    assert(step(&f)==0); e=last_kind(&f,6); child=e->context_id;
+    assert((e->known&EMUIF_OBS_KNOWN_CONTEXT) && !e->parent_context_id);
+    assert(step(&f)==0); assert(last_kind(&f,7)->context_id==child);
+    assert(step(&f)==0); e=last_kind(&f,7);
+    assert(!(e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->reason==EMUIF_OBS_REASON_CONTEXT);
+    finish(&f);
+
+    /* Known return PC and SP are both required. Corrupting either invalidates
+     * the complete ancestor chain, not just the frame reporting the mismatch. */
+    for(unsigned corrupt_sp=0;corrupt_sp<2;++corrupt_sp) {
+        memset(code,0,sizeof(code)); code[0]=0x12; code[2]=16;
+        code[6]=0x12; code[8]=32; code[9]=0x22; code[32]=0x22;
+        const uint8_t corrupt_pc[]={0x75,8,6,0x22};
+        const uint8_t corrupt_stack[]={0x75,10,6,0x75,11,0,0x75,0x81,11,0x22};
+        memcpy(code+16,corrupt_sp ? corrupt_stack : corrupt_pc,
+               corrupt_sp ? sizeof(corrupt_stack) : sizeof(corrupt_pc));
+        start(&f,code,sizeof(code),2,1); assert(step(&f)==0); old=last_kind(&f,6)->context_id;
+        for(unsigned i=0;i<(corrupt_sp ? 4u : 2u);++i) assert(step(&f)==0);
+        e=last_kind(&f,7);
+        assert(snapshot(&f).pc==6 && e->context_id!=old && !(e->known&EMUIF_OBS_KNOWN_CONTEXT));
+        assert(e->reason==EMUIF_OBS_REASON_CONTEXT);
+        assert(step(&f)==0); e=last_kind(&f,6); child=e->context_id;
+        assert((e->known&EMUIF_OBS_KNOWN_CONTEXT) && !e->parent_context_id);
+        assert(step(&f)==0); e=last_kind(&f,7);
+        assert(e->context_id==child && (e->known&EMUIF_OBS_KNOWN_CONTEXT));
+        assert(step(&f)==0); e=last_kind(&f,7);
+        assert(!(e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->reason==EMUIF_OBS_REASON_CONTEXT);
+        finish(&f);
+    }
+
+    /* Overflow closes all older observation continuity. Entry66 can be known
+     * above the unknown65th frame; its return must not expose frame64 as top. */
+    memset(code,0,sizeof(code));
+    const uint8_t recurse[]={0x75,0x81,0x30,0x7f,66,0x12,0,16,0x80,0xfe};
+    memcpy(code,recurse,sizeof(recurse));
+    const uint8_t function[]={0xdf,1,0x22,0x12,0,16,0x22};
+    memcpy(code+16,function,sizeof(function));
+    start(&f,code,sizeof(code),2,1);
+    while(count_kind(&f,6)<65) assert(step(&f)==0);
+    e=last_kind(&f,6); old=e->context_id;
+    assert(e->reason==EMUIF_OBS_REASON_EXHAUSTED && !(e->known&EMUIF_OBS_KNOWN_CONTEXT));
+    while(count_kind(&f,6)<66) assert(step(&f)==0);
+    e=last_kind(&f,6); child=e->context_id;
+    assert(child>old && (e->known&EMUIF_OBS_KNOWN_CONTEXT) && !e->parent_context_id);
+    assert(step(&f)==0); assert(step(&f)==0); e=last_kind(&f,7);
+    assert(e->context_id==child && (e->known&EMUIF_OBS_KNOWN_CONTEXT));
+    assert(step(&f)==0); e=last_kind(&f,7);
+    assert(!(e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->reason==EMUIF_OBS_REASON_CONTEXT);
+    finish(&f);
+
+    /* A newly observed interrupt is a known IRQ above an unknown base, with
+     * observed CALL children; RETI validates that IRQ without knowing ancestry. */
+    memset(code,0,sizeof(code)); code[0]=2; code[1]=1;
+    code[3]=0x12; code[5]=32; code[6]=0x32; code[32]=0x22;
+    const uint8_t enable[]={0x75,0x81,0x40,0x75,0xa8,0x81,0x75,0x88,0x03,0x80,0xfe};
+    memcpy(code+256,enable,sizeof(enable));
+    start(&f,code,sizeof(code),2,0);
+    for(unsigned i=0;i<4;++i) assert(step(&f)==0);
+    rebind(&f,2);
+    for(unsigned i=0;i<3 && !count_kind(&f,9);++i) assert(step(&f)==0);
+    e=last_kind(&f,9); assert(e && (e->known&EMUIF_OBS_KNOWN_CONTEXT) && !e->parent_context_id);
+    uint64_t irq=e->context_id;
+    assert(step(&f)==0); e=last_kind(&f,6); child=e->context_id;
+    assert((e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->parent_context_id==irq);
+    assert(step(&f)==0); assert(last_kind(&f,7)->context_id==child);
+    assert(step(&f)==0); e=last_kind(&f,10);
+    assert((e->known&EMUIF_OBS_KNOWN_CONTEXT) && e->context_id==irq && !e->reason);
+    finish(&f);
+}
+static void test_context_tail_irq(void) {
+    struct fixture f;
+    uint8_t code[512]={2,1,0}; code[3]=0x32;
+    const uint8_t main_code[]={0x75,0x81,0x40,0x75,0xa8,0x81,0x75,0x88,1,0,0x12,1,0x20,0x80,0xfe};
+    memcpy(code+256,main_code,sizeof(main_code)); code[0x120]=0x22;
+    for(unsigned returning=0;returning<2;++returning) {
+        start(&f,code,sizeof(code),2,1);
+        for(unsigned i=0;i<5;++i) assert(step(&f)==0);
+        if(returning) assert(step(&f)==0);
+        assert(cycle(&f)==0 && !snapshot(&f).safe_boundary);
+        const struct emuif_observation *flow=last_kind(&f,returning ? 7 : 6);
+        assert(flow && (flow->known&EMUIF_OBS_KNOWN_CONTEXT));
+        uint64_t context=flow->context_id, attempt=flow->instruction_id;
+        struct emuif_observed_input input; INIT(input); INIT(input.input);
+        input.parent_stimulus_id=1; input.input.order=1;
+        input.input.cycle=snapshot(&f).cycle; input.input.kind=EMUIF_INPUT_INTERRUPT;
+        input.input.index=0; input.input.value=0; input.input.mask=1;
+        assert(obs.deliver(f.cpu,&input)==0);
+        assert(cycle(&f)==0 && snapshot(&f).safe_boundary);
+        const struct emuif_observation *request=last_kind(&f,8),*retire=last_kind(&f,2);
+        assert(request && request->instruction_id==attempt && retire->instruction_id==attempt);
+        assert(request->sequence>flow->sequence && request->sequence<retire->sequence);
+        assert(!count_kind(&f,9));
+        uint64_t retired_sequence=retire->sequence;
+        assert(step(&f)==0); const struct emuif_observation *entry=last_kind(&f,9);
+        assert(entry && entry->sequence>retired_sequence);
+        assert(entry->parent_context_id==(returning ? 0 : context));
+        uint64_t irq=entry->context_id;
+        assert(step(&f)==0); const struct emuif_observation *exit=last_kind(&f,10);
+        assert(exit && exit->context_id==irq && (exit->known&EMUIF_OBS_KNOWN_CONTEXT));
+        if(!returning) {
+            assert(step(&f)==0); exit=last_kind(&f,7);
+            assert(exit->context_id==context && (exit->known&EMUIF_OBS_KNOWN_CONTEXT));
+        }
+        finish(&f);
+    }
 }
 static void test_sm2_and_rmw(void) {
     struct fixture f;
@@ -310,7 +458,7 @@ int main(void) {
     INIT(api); INIT(obs); assert(emusa80535_cpu_query_v1(&api)==0);
     assert(emusa80535_cpu_observation_query_v1(&obs)==0);
     assert(obs.coverage==125 && obs.bind && obs.unbind && obs.deliver);
-    test_prefix(); test_instruction(); test_context(); test_uart(); test_reset(); test_irq_and_gap(); test_sm2_and_rmw();
+    test_prefix(); test_instruction(); test_context(); test_uart(); test_reset(); test_irq_and_gap(); test_context_recovery(); test_context_tail_irq(); test_sm2_and_rmw();
 #ifdef EMU_CPU_FACADE_TESTING
     test_exhaustion();
 #endif
