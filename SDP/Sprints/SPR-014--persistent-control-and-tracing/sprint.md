@@ -1,6 +1,6 @@
 # SPR-014 — Persistent local control and canonical tracing
 
-Status: active; urgent ITR-029 / SLC-029 CPU correction; SLC-024/025 accepted
+Status: open; SLC-024/025/029 accepted; planned SLC-026 next
 Authority: shared user's continued collaboration instruction, relayed and
 confirmed by the external simulator Master on 2026-10-28; external planning
 acceptance30fe45a. Baseline fe6203f; accepted runtime a03504b remains operational.

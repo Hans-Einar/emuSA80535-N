@@ -1,6 +1,6 @@
 # ITR-029 / SLC-029 — Correct MOV direct,@Ri operand direction
 
-Status: active urgent CPU correction; SLC-026 remains planned
+Status: accepted urgent CPU correction; SLC-026 remains planned
 Authority: explicit coordinating user handoff2026-10-28 reports a blocking CPU
 instruction defect and requests fresh bounded fix/review before consumer UART
 integration. Baseline accepted SLC-025 source45b92ab; Master acceptance5e52f36.
@@ -11,8 +11,7 @@ Ri. Opcode86/87 decoding identifies MOV direct,@R0/@R1, which instead copies the
 indirect RAM byte selected by the active bank's Ri to the encoded direct address.
 The related A6/A7 handlers implement the opposite direction and must not change.
 
-Primary ISA reference: [Philips/Handshake 80C51 instruction definitions, page113]
-(https://www.keil.com/dd/docs/datashts/handshake/ht80c51_um.pdf): opcode1000011i,
+Primary ISA reference: [Philips/Handshake 80C51 instruction definitions, page113](https://www.keil.com/dd/docs/datashts/handshake/ht80c51_um.pdf): opcode1000011i,
 two-byte instruction, two classic machine cycles, indirect source and direct
 destination. Existing decoder and dispatch tables independently agree on the
 encoding. Preserve this repository's established timing and exception behavior.
@@ -40,3 +39,6 @@ and sanitizer coverage. Master owns review/verification/traceability/artifact
 handoff. Export a new exact runtime source archive preserving all accepted pins;
 notify coordinator that this supersedes the control-only candidate for UART
 integration while V0 remains historical evidence. Then resume plannedSLC-026.
+
+Accepted final d247e7ff82b7b3890da4154d720c94bdb86af64f through REV-SLC-029 /
+VER-SLC-029. SLC-029-ARTIFACT.json pins corrected runtime and retained evidence.

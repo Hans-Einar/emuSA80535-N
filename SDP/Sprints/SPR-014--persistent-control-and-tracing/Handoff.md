@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: urgent SLC-029 active; SLC-025 and SLC-024 accepted
+Status: SLC-029 correction accepted; SLC-025 and SLC-024 accepted
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
@@ -65,3 +65,9 @@ with a fresh Worker and Reviewer. No ROM/board workaround is authorized here.
 Provide corrected exact runtime artifact before consumer UART integration, then
 resume SLC-026 without asking for renewed authorization. The accepted45b92ab
 control artifact remains reproducible but retains this inherited CPU defect.
+
+Correction accepted: source d247e7ff82b7b3890da4154d720c94bdb86af64f, review
+6809ea1bfcc999ced1bac767b2108a0305165767, VER-SLC-029 and its artifact record.
+This is the current integration runtime pin; prior artifacts remain immutable.
+Both exact synthetic regressions are preserved and independently verified through
+installed Unix runtimes. Continue SLC-026 canonical production/outcome retention.
