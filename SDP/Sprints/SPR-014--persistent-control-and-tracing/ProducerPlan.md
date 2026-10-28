@@ -1,6 +1,6 @@
 # Planned remaining producer implementation boundaries
 
-Status: planning only; SLC-025 is the sole active implementation Slice.
+Status: SLC-026 active through ObservationSlice.md; SLC-027/028 planned.
 Authority: continued Master execution instruction2026-10-28. These notes prepare
 later bounded contracts; they do not activate concurrent product work.
 

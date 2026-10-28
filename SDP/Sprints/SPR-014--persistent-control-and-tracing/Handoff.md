@@ -71,3 +71,9 @@ Correction accepted: source d247e7ff82b7b3890da4154d720c94bdb86af64f, review
 This is the current integration runtime pin; prior artifacts remain immutable.
 Both exact synthetic regressions are preserved and independently verified through
 installed Unix runtimes. Continue SLC-026 canonical production/outcome retention.
+
+SLC-026 is now active through ObservationSlice.md. The external coordinator
+reports successful composed receive/reply using unchanged firmware and module
+with the corrected029 archive. This is externally reported integration evidence;
+producer generic regression evidence remains VER-SLC-029. Continue outcome and
+trace implementation under the existing authority.
