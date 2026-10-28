@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: SLC-025 accepted implementation; SLC-024 accepted contract gate
+Status: urgent SLC-029 active; SLC-025 and SLC-024 accepted
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
@@ -56,3 +56,12 @@ uses a separate opt-in pin, preserving V0. Coordination handoff:
 /home/warloc/git/emuSA80535-N-artifacts/coordination/p1000-20261028-control-ready.md.
 Continue immediately to a bounded SLC-026 contract under the standing execution
 authority. ProducerPlan.md records source/integration and immutable-SDK hazards.
+
+## Urgent correction before observation work
+
+The coordinator reported a generic opcode86/87 operand reversal. Master confirmed
+the handler against the decoder/ISA; IndirectMovFixSlice.md activates SLC-029
+with a fresh Worker and Reviewer. No ROM/board workaround is authorized here.
+Provide corrected exact runtime artifact before consumer UART integration, then
+resume SLC-026 without asking for renewed authorization. The accepted45b92ab
+control artifact remains reproducible but retains this inherited CPU defect.

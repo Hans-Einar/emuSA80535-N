@@ -1,6 +1,6 @@
 # SPR-014 — Persistent local control and canonical tracing
 
-Status: open; SLC-024 and SLC-025 accepted; next bounded activation pending
+Status: active; urgent ITR-029 / SLC-029 CPU correction; SLC-024/025 accepted
 Authority: shared user's continued collaboration instruction, relayed and
 confirmed by the external simulator Master on 2026-10-28; external planning
 acceptance30fe45a. Baseline fe6203f; accepted runtime a03504b remains operational.
@@ -24,3 +24,7 @@ CurrentIndex records no active Iteration/Slice until the next contract is set.
 Master mode and execute the agreed implementation/integration sequence without
 renewed approval. SLC-025 is activated by ControlSlice.md; later Slices retain
 separate contracts and reviews before implementation.
+
+Urgent ordering amendment2026-10-28: SLC-029 fixes a confirmed generic indirect
+MOV operand defect before external UART integration. SLC-026..028 identifiers
+and scope remain planned, and resume immediately after the correction gate.
