@@ -56,3 +56,5 @@ tests/cpu_facade_tests*
 
 /tests/outcome_tests
 /tests/cpu_observation_tests
+
+/tests/trace_native_tests

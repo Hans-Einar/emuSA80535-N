@@ -246,17 +246,17 @@ static void errors3(void)
     a.generation = 1;
     assert(control.advance(session, &a, &p) == EMUIF_DENIED);
     cmd3(1, "traceConfig", NULL);
-    error_is("UNSUPPORTED");
+    assert(successful());
     cmd3(1, "tracePage",
          "\"destinationId\":0,\"epoch\":\"1\",\"afterRecordSequence\":\"0\",\"maxRecords\":16");
-    error_is("UNSUPPORTED");
+    error_is("NOT_FOUND");
     cmd3(1, "outcomePage", "\"epoch\":\"1\",\"afterRecordSequence\":\"0\",\"maxRecords\":16");
     assert(successful());
     open3(2, 0);
     attach3(2, false);
     strcpy(sid, "ffffffffffffffffffffffffffffffff");
     cmd3(2, "traceConfig", NULL);
-    error_is("UNSUPPORTED");
+    error_is("STALE");
     memset(big, 'x', sizeof big - 1);
     big[sizeof big - 1] = 0;
     snprintf(args, sizeof args,
@@ -458,18 +458,19 @@ static void unavailable3(void)
     for (unsigned i = 0; i < sizeof commands / sizeof commands[0]; i++)
     {
         mut3(1, commands[i].cmd, commands[i].extra);
-        error_is("UNSUPPORTED");
+        if(i==0) assert(successful());
+        else error_is(i<4 ? "NOT_FOUND" : "UNSUPPORTED");
         assert(emu_session_client_open(session, 1));
     }
     cmd3(1, "captureStatus", "\"captureId\":\"1\"");
-    error_is("UNSUPPORTED");
+    error_is("NOT_FOUND");
     cmd3(1, "sinkStatus", "\"destinationId\":1");
     error_is("UNSUPPORTED");
     mut3(1, "replaceTraceConfig",
-         "\"expectedRevision\":\"0\",\"config\":{\"traces\":[],\"destinations\":[{"
+         "\"expectedRevision\":\"1\",\"config\":{\"traces\":[],\"destinations\":[{"
          "\"destinationId\":1,\"kind\":0,\"capacity\":2,\"stopOnFull\":false}],\"points\":[],"
          "\"gates\":[],\"watches\":[]}");
-    error_is("UNSUPPORTED");
+    assert(successful());
     mut3(1, "captureStart",
          "\"traceId\":1,\"mode\":0,\"contextId\":\"0\",\"entryPc\":0,\"maxRecords\":\"1\","
          "\"maxCycles\":\"1\",\"rearmOnReset\":\"false\",\"stopCpu\":true");
@@ -586,7 +587,7 @@ static void outcomes3(void)
     unsigned i;
     INIT(trace);assert(!emusa80535_trace_query_v1(&trace));
     assert(trace.replace && trace.page && trace.outcomes && trace.capture_start && trace.sink_open);
-    assert(trace.replace(NULL,NULL,NULL)==EMUIF_UNSUPPORTED);
+    assert(trace.replace(NULL,NULL,NULL)==EMUIF_INVALID);
     memset(code,0,sizeof code); create3(0);
     page3();assert(field64("oldest")==0 && field64("newest")==0);
     mut3(1,"boardInput","\"cycle\":\"1\",\"schema\":\"fixture.v1\",\"payload\":{}");

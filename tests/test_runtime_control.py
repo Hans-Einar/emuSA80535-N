@@ -100,7 +100,7 @@ def main():
             assert hello['contractManifestSha256'] == digest(ROOT / 'interfaces/0.3.0/manifest.json')
             assert {'instruction','control','irq','lifecycle','input','uart'} == set(hello['observationCoverage']) and 'advance' in hello['capabilities']
             assert 'uartOutcomes' in hello['capabilities']
-            assert not set(hello['capabilities']) & {'tracePage', 'captureA', 'captureB', 'traceFile'}
+            assert not set(hello['capabilities']) & {'captureB', 'traceFile'}
             initial = c.attach(); assert initial['cycle'] == '0'
             sid = initial['sessionId']; first_lease = c.lease
             observer = Client(endpoint); observer.hello(); observer.attach('observer')
@@ -135,7 +135,7 @@ def main():
             re.call('resume', re.args()); progress = re.call('advance', re.args(cycleBudget=100))
             assert progress['reason'] == 'breakpoint' and progress['partial']
             detail = re.call('stopDetail', re.identity); assert detail['reason'] == 'breakpoint'
-            re.call('traceConfig', re.identity, 'UNSUPPORTED')
+            re.call('traceConfig', re.identity)
             re.call('detach', re.identity); re.close(); c.close()
             ending = Client(endpoint); ending.hello(); ending.attach(); ending.call('terminate', ending.args()); ending.close()
             p.wait(timeout=5)

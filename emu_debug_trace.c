@@ -61,7 +61,7 @@ static void saturated_increment(uint64_t *value)
 
 static bool selector_valid(const struct em8051_debug_trace_selector *s)
 {
-    return s->match_observation_kind <= 1u && s->match_access <= 1u &&
+    return s->canonical <= 1u && s->canonical_space <= 4u && s->match_observation_kind <= 1u && s->match_access <= 1u &&
            (!s->match_observation_kind || (s->observation_kind >= 1u && s->observation_kind <= 28u)) &&
            (!s->match_access || (s->access_mask && !(s->access_mask & ~15u))) &&
            s->match_kind <= 1u && s->match_pc <= 1u &&
@@ -77,10 +77,11 @@ static bool selector_valid(const struct em8051_debug_trace_selector *s)
 static bool selector_match(const struct em8051_debug_trace_selector *s,
                            const struct em8051_debug_event *e)
 {
-    return (!s->match_observation_kind || s->observation_kind == e->observation.kind) &&
+    return (!s->canonical_space || (e->observation.kind && e->observation.space + 1 == s->canonical_space)) &&
+           (!s->match_observation_kind || s->observation_kind == e->observation.kind) &&
            (!s->match_access || (s->access_mask & e->access)) &&
            (!e->observation.kind || !s->match_pc || (e->observation.known & EMUIF_OBS_KNOWN_PC)) &&
-           (!e->observation.kind || !(s->match_address || s->match_address_space || s->match_access) ||
+           (!e->observation.kind || !(s->match_address || s->match_address_space || s->canonical_space || s->match_access) ||
             e->observation.kind == EMUIF_OBS_ACCESS_ATTEMPT || e->observation.kind == EMUIF_OBS_ACCESS_RESULT) &&
            (!s->match_kind || s->kind == e->kind) &&
            (!s->match_address_space ||
@@ -148,8 +149,8 @@ static bool config_valid(const struct em8051_debug_trace_config *c)
     for (i = 0u; i < c->point_count; ++i)
         if (!c->points[i].point_id || c->points[i].enabled > 1u ||
             !selector_valid(&c->points[i].selector) ||
-            !ids_valid(c, c->points[i].trace_ids,
-                       c->points[i].trace_id_count) ||
+            (!(c->points[i].selector.canonical && !c->points[i].trace_id_count) && !ids_valid(c, c->points[i].trace_ids,
+                       c->points[i].trace_id_count)) ||
             (i && c->points[i - 1u].point_id >= c->points[i].point_id))
             return false;
     for (i = 0u; i < c->gate_count; ++i)
@@ -157,7 +158,7 @@ static bool config_valid(const struct em8051_debug_trace_config *c)
             c->gates[i].action > EM8051_DEBUG_TRACE_GATE_OFF ||
             c->gates[i].timing > EM8051_DEBUG_TRACE_GATE_AFTER ||
             !selector_valid(&c->gates[i].selector) ||
-            !ids_valid(c, c->gates[i].trace_ids, c->gates[i].trace_id_count) ||
+            (!(c->gates[i].selector.canonical && !c->gates[i].trace_id_count) && !ids_valid(c, c->gates[i].trace_ids, c->gates[i].trace_id_count)) ||
             (i && c->gates[i - 1u].gate_id >= c->gates[i].gate_id))
             return false;
     return true;
@@ -241,6 +242,7 @@ static void suppression_emit(struct em8051_debug_trace_router *r, size_t ti)
     record.trace_id_count = 1u;
     record.suppression = s->value;
     ring_push(&r->rings[di], &record);
+    if (r->deliver) r->deliver(r->delivery_context, &record);
     memset(s, 0, sizeof(*s));
 }
 
@@ -266,6 +268,7 @@ static enum em8051_debug_event_status route_ids(
         t = &r->config.traces[ti];
         if (!(enabled_snapshot != NULL ? enabled_snapshot[ti] : t->enabled))
             continue;
+        if (r->eligible && !r->eligible(r->delivery_context, t->trace_id, e)) continue;
         if (!policy_accepts(t->interrupt_policy, e->kind, r->interrupt_depth)) {
             suppression_add(r, (size_t)ti, e);
             continue;
@@ -282,8 +285,10 @@ static enum em8051_debug_event_status route_ids(
         records[di].trace_ids[records[di].trace_id_count++] = t->trace_id;
     }
     for (i = 0u; i < r->config.destination_count; ++i)
-        if (used[i])
+        if (used[i]) {
             ring_push(&r->rings[i], &records[i]);
+            if (r->deliver) r->deliver(r->delivery_context, &records[i]);
+        }
     return EM8051_DEBUG_EVENT_OK;
 }
 
@@ -480,4 +485,15 @@ bool em8051_debug_trace_ring_pop(struct em8051_debug_trace_ring *r,
                          EM8051_DEBUG_TRACE_RING_CAPACITY);
     --r->count;
     return true;
+}
+
+/* Private scoped canonical flush; preserves unrelated destination counters. */
+enum em8051_debug_event_status emu_debug_trace_flush_selected(struct em8051_debug_trace_router *r, uint32_t destination_id, uint32_t trace_id)
+{
+    size_t i;
+    if (!r || r->source_open) return EM8051_DEBUG_EVENT_BUSY;
+    for(i=0;i<r->config.trace_count;i++)
+        if ((!destination_id || r->config.traces[i].destination_id==destination_id) &&
+            (!trace_id || r->config.traces[i].trace_id==trace_id)) suppression_emit(r,i);
+    return EM8051_DEBUG_EVENT_OK;
 }

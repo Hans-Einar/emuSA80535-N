@@ -9,6 +9,7 @@
 #include "emu_cpu_lifecycle_internal.h"
 #include "emu_debug_observation_internal.h"
 #include "emu_outcome_internal.h"
+#include "emu_trace_internal.h"
 #include <emusa80535/contracts/control3.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -108,13 +109,14 @@ struct emuif_session
     struct emuif_observation_api observation_api;
     struct em8051_debug_runtime *events;
     struct emu_outcome_ring outcomes;
+    struct emu_trace_state *trace;
     uint64_t observation_coverage, parent_context, next_parent;
     uint64_t last_source_sequence, last_instruction_id, observed_legacy;
     uint64_t last_retire_sequence, last_retire_id, stop_source_sequence, stop_instruction_id;
     uint64_t fault_source_sequence, fault_instruction_id;
     uint64_t pending_instruction_id, pending_begin_cycle;
     uint16_t pending_pc;
-    bool observation_bound, fault_published;
+    bool observation_bound, fault_published, fault_detail_recorded;
     emuif_status observation_error;
     void *board;
     uint8_t code[65536], config[16385], breakpoints[8192];
@@ -131,7 +133,7 @@ struct emuif_session
     struct client_state clients[8];
     uint64_t lease, next_lease, retired;
     uint32_t execution_mode;
-    bool retirement_pending, progressed;
+    bool retirement_pending, progressed, termination_pending;
     uint64_t *used_clients;
     size_t used_count;
 };
@@ -146,6 +148,7 @@ static emuif_status fault(struct emuif_session *s, emuif_status code)
         if (s->revision != UINT64_MAX)
             s->revision++;
         s->cause = code;
+        s->fault_detail_recorded = false;
     }
     s->state = EMUIF_STATE_FAULTED;
     s->reason = 6;
@@ -158,6 +161,7 @@ static void retained_observation(void *ctx, const struct emuif_observation *o)
     s->last_source_sequence = o->sequence;
     s->last_instruction_id = o->instruction_id;
     s->observed_legacy = o->legacy_instructions;
+    emu_trace_observe(s->trace, o);
     if (o->kind == EMUIF_OBS_INSTRUCTION_BEGIN) {
         s->pending_instruction_id = o->instruction_id;
         s->pending_begin_cycle = o->begin_cycle;
@@ -232,9 +236,17 @@ static void publish_fault(struct emuif_session *s)
 {
     if (s->observation_bound && !s->fault_published && s->state == EMUIF_STATE_FAULTED)
         emu_cpu_observation_lifecycle(s->cpu, EMUIF_OBS_FAULT, s->cause);
-    if (s->state == EMUIF_STATE_FAULTED) {
-        s->stop_source_sequence = s->fault_source_sequence;
-        s->stop_instruction_id = s->fault_instruction_id;
+    if (s->state == EMUIF_STATE_FAULTED && !s->fault_detail_recorded) {
+        s->fault_detail_recorded=true;
+        if (emu_trace_stop_pending(s->trace)) {
+            s->stop_source_sequence = emu_trace_stop_source(s->trace);
+            s->stop_instruction_id = emu_trace_stop_instruction(s->trace);
+            emu_trace_applied_stop(s->trace, 6);
+        } else {
+            emu_trace_applied_stop(s->trace,6);
+            s->stop_source_sequence = s->fault_source_sequence;
+            s->stop_instruction_id = s->fault_instruction_id;
+        }
     }
 }
 static emuif_status snapshot(struct emuif_session *s, struct emuif_snapshot *v)
@@ -258,6 +270,11 @@ static emuif_status stop(struct emuif_session *s, uint32_t reason)
     s->reason = reason;
     s->stop_source_sequence = reason == 3 ? s->last_retire_sequence : 0;
     s->stop_instruction_id = reason == 3 ? s->last_retire_id : 0;
+    if (emu_trace_stop_pending(s->trace)) {
+        s->stop_source_sequence = emu_trace_stop_source(s->trace);
+        s->stop_instruction_id = emu_trace_stop_instruction(s->trace);
+    }
+    emu_trace_applied_stop(s->trace, reason);
     s->state = reason == 9 ? EMUIF_STATE_TERMINATED : EMUIF_STATE_PAUSED;
     return EMUIF_OK;
 }
@@ -628,6 +645,18 @@ emuif_status emusa80535_session_create_v1(const struct emuif_session_config *c,
             !emusa80535_cpu_observation_query_v1(&s->observation_api))
             s->observation_coverage = s->observation_api.coverage;
     }
+    if (s->observation_coverage) {
+        struct emu_trace_metadata m;
+        memset(&m, 0, sizeof m);
+        memcpy(m.session_id,s->id,sizeof m.session_id);
+        memcpy(m.runtime_commit,EMU_RUNTIME_COMMIT,sizeof m.runtime_commit);
+        memcpy(m.manifest,EMU_CONTROL3_MANIFEST_SHA256,sizeof m.manifest);
+        memcpy(m.image_hash,s->image_hash,sizeof m.image_hash);
+        memcpy(m.module_hash,s->module_hash,sizeof m.module_hash);
+        memcpy(m.config_hash,s->config_hash,sizeof m.config_hash);
+        s->trace=emu_trace_create(s->events,&m,s->observation_coverage);
+        if(!s->trace) { e=EMUIF_CAPACITY; goto fail; }
+    }
     e = reset_session(s, c->seed, c->entry, true);
     if (e)
         goto fail;
@@ -639,6 +668,7 @@ fail:
         s->board_api.destroy(s->board);
     if (s->cpu)
         s->cpu_api.destroy(s->cpu);
+    emu_trace_destroy(s->trace);
     em8051_debug_runtime_destroy(s->events);
     free(s);
     return normalize(e);
@@ -658,6 +688,7 @@ void emusa80535_session_destroy_v1(struct emuif_session *s)
     s->board_api.destroy(s->board);
     s->cpu_api.destroy(s->cpu);
     free(s->used_clients);
+    emu_trace_destroy(s->trace);
     em8051_debug_runtime_destroy(s->events);
     free(s);
 }
@@ -684,6 +715,20 @@ emuif_status emu_session_set_execution_mode(struct emuif_session *s, uint32_t mo
         return EMUIF_STATE;
     s->execution_mode = mode;
     return EMUIF_OK;
+}
+emuif_status emu_session_set_file_provider(struct emuif_session *s, const struct emu_trace_file_provider *p)
+{
+    if (!s || !p || !p->open || !p->enqueue || !p->operation || !p->status || !p->active || !p->close_all) return EMUIF_INVALID;
+    if(s->busy) return EMUIF_BUSY;
+    if(s->progressed || s->used_count || s->state != EMUIF_STATE_PAUSED || emu_trace_has_provider(s->trace)) return EMUIF_STATE;
+    if(!s->trace) return EMUIF_UNSUPPORTED;
+    emu_trace_set_provider(s->trace,p); return EMUIF_OK;
+}
+emuif_status emu_session_close_file_sinks(struct emuif_session *s)
+{
+    if(!s) return EMUIF_INVALID;
+    if(s->busy) return EMUIF_BUSY;
+    return emu_trace_close_files(s->trace);
 }
 uint32_t emu_session_state(const struct emuif_session *s)
 {
@@ -717,6 +762,7 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
     uint32_t turns = 0;
     if (e)
         return e;
+    emu_trace_poll_files(s->trace);
     start = v.cycle;
     instructions = v.instructions;
     while (s->state == EMUIF_STATE_RUNNING)
@@ -736,6 +782,10 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
             if (emu_breakpoint_at(s->breakpoints, v.pc) && !(s->suppress && s->suppress_pc == v.pc))
             {
                 e = stop(s, 4);
+                break;
+            }
+            if (emu_trace_stop_pending(s->trace)) {
+                e = stop(s, (uint32_t)emu_trace_stop_pending(s->trace));
                 break;
             }
             if (stepping && v.instructions > instructions)
@@ -795,6 +845,7 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
         }
         s->cycle = r.cycle;
         s->observed_legacy = r.instructions;
+        emu_trace_tick(s->trace, s->generation, s->cycle);
         if (s->observation_error) { e = fault(s, s->observation_error); break; }
         turns++;
         e = boundary(s);
@@ -804,6 +855,7 @@ static emuif_status execute(struct emuif_session *s, uint32_t budget, bool stepp
         if (e)
             break;
     }
+    emu_trace_poll_files(s->trace);
     publish_fault(s);
     snapshot(s, &v);
     p->cycles = v.cycle - start;
@@ -826,7 +878,7 @@ emuif_status emusa80535_session_pump_v1(struct emuif_session *s, uint32_t budget
         return e;
     if (!budget || budget > 100000)
         return EMUIF_RANGE;
-    if (s->state != EMUIF_STATE_RUNNING)
+    if (s->state != EMUIF_STATE_RUNNING || s->termination_pending)
         return EMUIF_STATE;
     INIT(p);
     s->busy = true;
@@ -1268,6 +1320,12 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
         bool unsafe = s->state == EMUIF_STATE_FAULTED;
         if (!c->may_terminate)
             return EMUIF_DENIED;
+        if(!s->termination_pending) {
+            if(s->state==EMUIF_STATE_RUNNING) { e=stop(s,2); if(e)return e; }
+            s->termination_pending=true;
+        }
+        e = emu_trace_close_files(s->trace);
+        if(e) return e;
         e = stop(s, 9);
         if (e)
             return e;
@@ -1358,6 +1416,7 @@ static emuif_status dispatch(struct emuif_session *s, struct client_state *c,
     if (!strcmp(cmd, "resume") || !strcmp(cmd, "step"))
     {
         bool stepping = !strcmp(cmd, "step");
+        if(s->termination_pending) return EMUIF_STATE;
         if (stepping && s->state != EMUIF_STATE_PAUSED)
             return EMUIF_STATE;
         e = snapshot(s, &v);
@@ -1424,7 +1483,7 @@ static emuif_status advance_control(struct emuif_session *s, struct client_state
         return EMUIF_STALE;
     if (!c->role || s->lease != c->id || !a->lease_id || a->lease_id != c->lease_id)
         return EMUIF_DENIED;
-    if (s->state != EMUIF_STATE_RUNNING)
+    if (s->state != EMUIF_STATE_RUNNING || s->termination_pending)
         return EMUIF_STATE;
     if (!a->cycle_budget || a->cycle_budget > 100000)
         return EMUIF_RANGE;
@@ -1477,6 +1536,8 @@ static emuif_status control3_advance(struct emuif_session *s, const struct emuif
 static bool capability3(struct emuif_session *s, const char *name)
 {
     return capability(s, name) ||
+           (s->trace && (!strcmp(name,"traceConfig") || !strcmp(name,"tracePage") || !strcmp(name,"captureA"))) ||
+           (!strcmp(name,"traceFile") && emu_trace_has_provider(s->trace)) ||
            (!strcmp(name, "observations") && s->observation_coverage != 0) ||
            (!strcmp(name, "uartOutcomes") && (s->observation_coverage & 112u) == 112u) ||
            (!strcmp(name, "advance") && s->execution_mode == EMUIF_EXECUTION_EXTERNALLY_DRIVEN);
@@ -1513,7 +1574,7 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
     {
         static const char *caps[] = {
             "attachSession", "status",     "control",      "codeBreakpoints",   "decodeCode",
-            "memoryRead",    "boardInput", "boardInspect", "boardInspectFault", "advance", "observations", "uartOutcomes"};
+            "memoryRead",    "boardInput", "boardInspect", "boardInspectFault", "advance", "observations", "uartOutcomes", "traceConfig", "tracePage", "captureA", "traceFile"};
         unsigned i;
         bool comma = false;
         int protocol = json_member(d, a, "protocol"),
@@ -1589,6 +1650,10 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
         return EMUIF_STATE;
     if (!capability3(s, command_capability3(cmd)))
         return EMUIF_UNSUPPORTED;
+    if (!strcmp(cmd, "tracePage")) {
+        if(s->state==EMUIF_STATE_TERMINATED) return EMUIF_STATE;
+        return emu_trace_command(s->trace,cmd,d,a,o);
+    }
     if (!strcmp(cmd, "outcomePage")) {
         struct emuif_trace_page_request q;
         struct emuif_trace_page page;
@@ -1646,8 +1711,9 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
         output_format(
             o,
             "{\"stopRevision\":\"%" PRIu64 "\",\"generation\":\"%" PRIu64
-            "\",\"reason\":\"%s\",\"sourceSequence\":\"%" PRIu64 "\",\"instructionId\":\"%" PRIu64 "\",\"matches\":[]}",
+            "\",\"reason\":\"%s\",\"sourceSequence\":\"%" PRIu64 "\",\"instructionId\":\"%" PRIu64 "\",\"matches\":",
             s->revision, s->generation, reasons[s->reason], s->stop_source_sequence, s->stop_instruction_id);
+        emu_trace_stop_detail(s->trace,o); output_raw(o,"}");
         return EMUIF_OK;
     }
     if (!strcmp(cmd, "advance"))
@@ -1676,6 +1742,11 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
                       p.stop_revision, states[p.state], p.safe_boundary ? "true" : "false",
                       reasons[p.stop_reason], p.partial ? "true" : "false");
         return EMUIF_OK;
+    }
+    if (!strcmp(command_capability3(cmd),"traceConfig") || !strcmp(command_capability3(cmd),"tracePage") ||
+        !strcmp(command_capability3(cmd),"captureA") || !strcmp(command_capability3(cmd),"traceFile")) {
+        if(!strcmp(cmd,"captureStart") && s->state==EMUIF_STATE_FAULTED) return EMUIF_STATE;
+        return emu_trace_command(s->trace,cmd,d,a,o);
     }
     return dispatch(s, c, d, a, cmd, o, close);
 }
@@ -1852,20 +1923,47 @@ emuif_status emusa80535_control_query_v3(struct emuif_control3_api *out)
     return EMUIF_OK;
 }
 
-/* The trace table is discoverable while later trace/capture/file operations
- * remain explicitly unavailable. Outcomes are trusted serialized owner reads. */
-static emuif_status trace_replace_unavailable(struct emuif_session *s,
+/* Trusted serialized-owner trace operations; file service requires a host provider. */
+static emuif_status trace_replace_native(struct emuif_session *s,
     const struct emuif_trace_config *c, struct emuif_trace_revision *r)
-{ (void)s; (void)c; (void)r; return EMUIF_UNSUPPORTED; }
-static emuif_status trace_page_unavailable(struct emuif_session *s,
+{
+    if(!s) return EMUIF_INVALID;
+    if(s->busy) return EMUIF_BUSY;
+    if(!s->trace) return EMUIF_UNSUPPORTED;
+    if(s->state==EMUIF_STATE_TERMINATED) return EMUIF_STATE;
+    return emu_trace_replace(s->trace,c,r);
+}
+
+static emuif_status trace_page_native(struct emuif_session *s,
     const struct emuif_trace_page_request *q, struct emuif_trace_page *p)
-{ (void)s; (void)q; (void)p; return EMUIF_UNSUPPORTED; }
-static emuif_status trace_capture_unavailable(struct emuif_session *s,
+{
+    if(!s) return EMUIF_INVALID;
+    if(s->busy) return EMUIF_BUSY;
+    if(!s->trace) return EMUIF_UNSUPPORTED;
+    if(s->state==EMUIF_STATE_TERMINATED) return EMUIF_STATE;
+    return emu_trace_page(s->trace,q,p);
+}
+
+static emuif_status trace_capture_native(struct emuif_session *s,
     const struct emuif_capture_request *q, struct emuif_capture_status *p)
-{ (void)s; (void)q; (void)p; return EMUIF_UNSUPPORTED; }
-static emuif_status trace_sink_unavailable(struct emuif_session *s,
+{
+    if(!s) return EMUIF_INVALID;
+    if(s->busy) return EMUIF_BUSY;
+    if(!s->trace) return EMUIF_UNSUPPORTED;
+    if(s->state==EMUIF_STATE_TERMINATED || s->state==EMUIF_STATE_FAULTED) return EMUIF_STATE;
+    return emu_trace_capture(s->trace,q,p);
+}
+
+static emuif_status trace_sink_native(struct emuif_session *s,
     const struct emuif_sink_request *q, struct emuif_sink_status *p)
-{ (void)s; (void)q; (void)p; return EMUIF_UNSUPPORTED; }
+{
+    if(!s) return EMUIF_INVALID;
+    if(s->busy) return EMUIF_BUSY;
+    if(!s->trace) return EMUIF_UNSUPPORTED;
+    if(s->state==EMUIF_STATE_TERMINATED) return EMUIF_STATE;
+    return emu_trace_sink_open(s->trace,q,p);
+}
+
 static emuif_status trace_outcomes(struct emuif_session *s,
     const struct emuif_trace_page_request *q, struct emuif_trace_page *p)
 {
@@ -1879,10 +1977,10 @@ emuif_status emusa80535_trace_query_v1(struct emuif_trace_api *out)
 {
     emuif_status e = PREFIX(out);
     if (e) return e;
-    out->replace = trace_replace_unavailable;
-    out->page = trace_page_unavailable;
+    out->replace = trace_replace_native;
+    out->page = trace_page_native;
     out->outcomes = trace_outcomes;
-    out->capture_start = trace_capture_unavailable;
-    out->sink_open = trace_sink_unavailable;
+    out->capture_start = trace_capture_native;
+    out->sink_open = trace_sink_native;
     return EMUIF_OK;
 }

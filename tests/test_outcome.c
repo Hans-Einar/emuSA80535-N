@@ -226,8 +226,28 @@ static void pages(void)
     assert(emu_outcome_append(ring, &o) == EMUIF_EXHAUSTED && ring->overwritten == 3952);
     free(ring);
 }
+static void odd_stride(void)
+{
+    struct emu_outcome_ring *ring=calloc(1,sizeof *ring);
+    struct emuif_trace_record record;
+    struct emuif_trace_page_request q;
+    struct emuif_trace_page p;
+    struct emuif_observation o;
+    unsigned char slots[2*(sizeof record+1)];unsigned i;
+    assert(ring);emu_outcome_init(ring);INIT(o);o.generation=1;o.kind=EMUIF_OBS_INPUT_ADMITTED;
+    INIT(o.old_value);INIT(o.new_value);o.old_value.width=o.new_value.width=8;
+    o.sequence=1;assert(!emu_outcome_append(ring,&o));o.sequence=2;assert(!emu_outcome_append(ring,&o));
+    INIT(q);memcpy(q.session_id,identity,33);q.epoch=1;q.max_records=2;
+    INIT(p);p.records=(void*)slots;p.capacity=2;p.element_size=sizeof record+1;
+    memset(slots,0xa5,sizeof slots);initialize_record(&record);record.struct_size=sizeof record+1;
+    for(i=0;i<2;i++)memcpy(slots+i*(sizeof record+1),&record,sizeof record);
+    assert(!emu_outcome_page(ring,identity,&q,&p));assert(p.written==2);
+    for(i=0;i<2;i++){memcpy(&record,slots+i*(sizeof record+1),sizeof record);assert(record.record_sequence==i+1 && slots[(i+1)*(sizeof record+1)-1]==0xa5);}
+    free(ring);
+}
 int main(void)
 {
+    odd_stride();
     canonical();
     pages();
     puts("canonical outcomes: sequencing, uint64 generation, paging, loss, prefixes passed");

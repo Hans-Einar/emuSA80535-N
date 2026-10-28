@@ -57,6 +57,8 @@ struct em8051_debug_trace_selector {
     uint8_t match_observation_kind;
     uint8_t access_mask;
     uint8_t match_access;
+    uint8_t canonical_space; /* CPU space + 1, zero preserves legacy */
+    uint8_t canonical;
 };
 
 struct em8051_debug_trace_session {
@@ -145,6 +147,9 @@ struct em8051_debug_trace_router {
     struct em8051_debug_event open_source_event;
     uint8_t seen_trace_id_count;
     uint8_t source_open;
+    void *delivery_context;
+    void (*deliver)(void *, const struct em8051_debug_trace_record *);
+    bool (*eligible)(void *, uint32_t, const struct em8051_debug_event *);
 };
 
 void em8051_debug_trace_router_init(struct em8051_debug_trace_router *aRouter);

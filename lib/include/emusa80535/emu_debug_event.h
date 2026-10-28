@@ -171,6 +171,7 @@ struct em8051_debug_watch_action
     uint32_t trace_ids[EM8051_DEBUG_WATCH_MAX_ROUTES];
     uint8_t kind;
     uint8_t trace_id_count;
+    uint8_t canonical;
 };
 
 struct em8051_debug_watch
@@ -183,6 +184,7 @@ struct em8051_debug_watch
     uint8_t address_space;
     uint8_t access_mask;
     uint8_t action_count;
+    uint8_t canonical_space; /* canonical CPU space + 1, zero keeps legacy matching */
 };
 
 struct em8051_debug_watch_result

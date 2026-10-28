@@ -156,37 +156,31 @@ emuif_status emu_outcome_page(const struct emu_outcome_ring *r, const char *sess
     }
     for (i = 0; i < p.required; i++)
     {
-        struct emuif_trace_record *slot =
-            (struct emuif_trace_record *)((char *)p.records + (size_t)i * p.element_size);
+        struct emuif_trace_record local;
+        struct emuif_trace_record *slot=&local;
+        memcpy(slot,(const char *)p.records+(size_t)i*p.element_size,sizeof *slot);
         status = sized(slot, sizeof *slot);
-        if (status)
-            return status;
+        if (status) return status;
         if (slot->struct_size > p.element_size || slot->reserved || slot->event.reserved_pc ||
             !zero(slot->event.reserved_bytes, sizeof slot->event.reserved_bytes) ||
             !zero(slot->event.reserved_text, sizeof slot->event.reserved_text) ||
-            slot->event.old_value.reserved || slot->event.new_value.reserved)
-            return EMUIF_INVALID;
+            slot->event.old_value.reserved || slot->event.new_value.reserved) return EMUIF_INVALID;
         status = sized(&slot->event, sizeof slot->event);
-        if (status)
-            return status;
+        if (status) return status;
         status = sized(&slot->event.old_value, sizeof slot->event.old_value);
-        if (status)
-            return status;
+        if (status) return status;
         status = sized(&slot->event.new_value, sizeof slot->event.new_value);
-        if (status)
-            return status;
+        if (status) return status;
     }
     for (i = 0; i < p.required; i++)
     {
-        struct emuif_trace_record *slot =
-            (struct emuif_trace_record *)((char *)p.records + (size_t)i * p.element_size);
-        uint32_t sizes[4] = {slot->struct_size, slot->event.struct_size,
-                             slot->event.old_value.struct_size, slot->event.new_value.struct_size};
-        memcpy(slot, &r->records[(r->head + offset + i) % EMU_OUTCOME_CAPACITY], sizeof *slot);
-        slot->struct_size = sizes[0];
-        slot->event.struct_size = sizes[1];
-        slot->event.old_value.struct_size = sizes[2];
-        slot->event.new_value.struct_size = sizes[3];
+        struct emuif_trace_record previous,v=r->records[(r->head+offset+i)%EMU_OUTCOME_CAPACITY];
+        unsigned char *slot=(unsigned char *)p.records+(size_t)i*p.element_size;
+        memcpy(&previous,slot,sizeof previous);
+        v.struct_size=previous.struct_size; v.event.struct_size=previous.event.struct_size;
+        v.event.old_value.struct_size=previous.event.old_value.struct_size;
+        v.event.new_value.struct_size=previous.event.new_value.struct_size;
+        memcpy(slot,&v,sizeof v);
     }
     p.written = p.required;
     p.remaining = available - p.written;
@@ -332,11 +326,18 @@ void emu_trace_record_json(struct output *o, const struct emuif_trace_record *r)
         output_raw(o, ",\"event\":");
         emu_observation_json(o, &r->event);
     }
-    else if (r->kind == EMUIF_RECORD_LOSS)
+    else if (r->kind == EMUIF_RECORD_LOSS || r->kind == EMUIF_RECORD_SUPPRESSION)
         output_format(o,
                       ",\"firstSourceSequence\":\"%" PRIu64 "\",\"lastSourceSequence\":\"%" PRIu64
                       "\",\"count\":\"%" PRIu64 "\"",
                       r->first_source_sequence, r->last_source_sequence, r->count);
+    if (r->kind == EMUIF_RECORD_SUPPRESSION)
+        output_format(o,",\"traceId\":%u,\"interruptPolicy\":%u,\"entryDepth\":%u,\"maximumDepth\":%u",
+                      r->trace_id,r->interrupt_policy,r->entry_depth,r->maximum_depth);
+    if (r->kind == EMUIF_RECORD_SINK) {
+        static const char *statuses[]={"OK","INVALID","VERSION","STATE","RANGE","CAPACITY","UNSUPPORTED","BUSY","STALE","DENIED","FAULT","EXHAUSTED","IO","HASH","NOT_FOUND"};
+        output_format(o,",\"status\":\"%s\"",statuses[r->status <= EMUIF_NOT_FOUND ? r->status : EMUIF_FAULT]);
+    }
     output_raw(o, "}");
 }
 void emu_trace_page_json(struct output *o, const struct emuif_trace_page *p)

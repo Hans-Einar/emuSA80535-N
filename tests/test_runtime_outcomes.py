@@ -39,7 +39,7 @@ def main():
             assert endpoint.exists() and proc.poll() is None
             client=ValidatedClient(endpoint);hello=client.hello()
             assert {'observations','uartOutcomes'} <= set(hello['capabilities'])
-            assert not {'captureA','captureB','tracePage','traceFile'} & set(hello['capabilities'])
+            assert not {'captureB','traceFile'} & set(hello['capabilities'])
             client.attach()
             admission=client.call('boardInput',client.args(cycle='20',schema='synthetic.uart.v1',payload={}))
             client.call('resume',client.args());progress=client.call('advance',client.args(cycleBudget=1000))

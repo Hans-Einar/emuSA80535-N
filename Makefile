@@ -160,7 +160,7 @@ cpu-link-test: cpu-sdk
 .PHONY: cpu-link-test
 
 # Native session/debug controller, separately linkable from the CPU engine.
-RUNTIME_OBJ := emu_session.sdk.o emu_json_internal.sdk.o emu_sha_internal.sdk.o emu_outcome_internal.sdk.o emu_debug_event.sdk.o emu_debug_trace.sdk.o emu_debug_runtime.sdk.o
+RUNTIME_OBJ := emu_trace_internal.sdk.o emu_session.sdk.o emu_json_internal.sdk.o emu_sha_internal.sdk.o emu_outcome_internal.sdk.o emu_debug_event.sdk.o emu_debug_trace.sdk.o emu_debug_runtime.sdk.o
 CONTRACT_MANIFEST_SHA256 := $(shell sha256sum interfaces/$(CONTRACT_VERSION)/manifest.json | cut -d ' ' -f 1)
 CONTROL3_MANIFEST_SHA256 := $(shell sha256sum interfaces/0.3.0/manifest.json | cut -d ' ' -f 1)
 RUNTIME_CPPFLAGS := -DEMU_CONTROL3_MANIFEST_SHA256=\"$(CONTROL3_MANIFEST_SHA256)\" -DEMU_RUNTIME_COMMIT=\"$(DEBUG_COMMIT)\" -DEMU_CONTRACT_MANIFEST_SHA256=\"$(CONTRACT_MANIFEST_SHA256)\"
@@ -192,3 +192,8 @@ outcome-test: runtime-sdk
 cpu-observation-test:
 	$(MAKE) -C tests cpu-observation-test
 .PHONY: cpu-observation-test
+
+trace-test: emu-runtime
+	$(MAKE) -C tests trace-native-test
+	$(PYTHON) tests/test_runtime_trace.py
+.PHONY: trace-test
