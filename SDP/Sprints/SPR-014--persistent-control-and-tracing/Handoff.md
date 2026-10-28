@@ -122,3 +122,10 @@ concurs explicit wire3.1 enumeration proposal; next bounded implementation follo
 EnumerationSlice.md activates031: fresh Runtime/Contract Workers and Reviewer.
 Wire3.1 hello explicit opt-in, readCodeBreakpoints capability/command;0.4 wire-only
 sidecar pins native/file0.3. No user-lab access or consumer pin modification.
+
+SLC-031 accepted source59f7a5c769a4fbf9eb73d0d660e94c58534c1c9c, fresh review
+904ff730cbfb6565d1bcc54f8766582c41c56ae7. VER-SLC-031/SLC-031-ARTIFACT record
+exact installed proof. IFC-004 wire-only0.4/3.1 frozen by external
+interfaces/control31.lock.json; old3.0/SDK0.3 and UART behavior unchanged.
+No implementation Slice remains active. Consumer028 pin remains until explicit
+opt-in intake; no user-lab processes were attached or modified.

@@ -1,0 +1,7 @@
+{
+  "archiveSha256": "084218bcfc7cde3f43d716087cfce05268a9b9bd8547fd730a71467242a63c92",
+  "bundleVersion": "0.4.0",
+  "manifestSha256": "80932dd18f883438074b37c167828484b8cf6f95ce74a309526b6b709c60383a",
+  "schema": "emusa80535-control-lock-v1",
+  "sourceCommit": "59f7a5c769a4fbf9eb73d0d660e94c58534c1c9c"
+}

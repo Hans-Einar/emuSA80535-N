@@ -32,3 +32,7 @@ and scope remain planned, and resume immediately after the correction gate.
 Authorized follow-up: SLC-030 UART/reset audit accepted without runtime changes;
 SLC-031 separately negotiated read-only breakpoint enumeration active. Consumer
 concurred protocol before freeze; existing028 remains consumer pin.
+
+SLC-030 audit and SLC-031 opt-in enumeration now accepted. No implementation
+Slice active. REQ-028 full ACCESS gap remains explicit; later work needs its own
+bounded contract. Consumer integration pins are independently selected.

@@ -1,6 +1,6 @@
 # ITR-031 / SLC-031 — Opt-in read-only CODE breakpoint enumeration
 
-Status: active. Sprint SPR-014. Baseline accepted0288dd1230 plus
+Status: accepted through REV-SLC-031 / VER-SLC-031. Sprint SPR-014. Baseline accepted0288dd1230 plus
 accepted evidence-only030 Mastera8c1e66. Authority: explicit shared-user coordinator request,
 consumer concurrence2026-10-28 to communicated3.1 proposal. Read AGENTS,
 CurrentIndex, Sprint/Handoff, lifecycle01..05, frozen0.3 contracts and this Slice.
