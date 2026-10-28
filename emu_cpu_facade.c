@@ -226,6 +226,9 @@ static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
     case EMU_RAW_OPCODE_END:
         if (o->pending && !cpu->fault) { o->opcode_done = true; o->next_pc = (uint16_t)a; }
         break;
+    case EMU_RAW_CONTEXT_PREFLIGHT:
+        if (o->next_context == UINT64_MAX) { fail(cpu, EMUIF_EXHAUSTED); return 0; }
+        return 1;
     case EMU_RAW_CALL:
     case EMU_RAW_IRQ_ENTER:
         obs_init(cpu, &e, kind == EMU_RAW_CALL ? EMUIF_OBS_CALL : EMUIF_OBS_IRQ_ENTER,
@@ -233,6 +236,7 @@ static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
         obs_context_push(cpu, &e, kind == EMU_RAW_CALL ? EMUIF_OBS_FRAME_CALL : EMUIF_OBS_FRAME_IRQ,
                          kind == EMU_RAW_CALL ? (uint16_t)a : cpu->core.mPC,
                          (uint16_t)b, (uint8_t)c, (uint8_t)d, (unsigned)a);
+        if (!e.context_id) break; /* Exhaustion is a fault, never a malformed control fact. */
         if (kind == EMU_RAW_IRQ_ENTER) e.irq_source = (uint32_t)a;
         obs_emit(cpu, &e);
         if (kind == EMU_RAW_IRQ_ENTER && o->irq_depth < 255) ++o->irq_depth;
@@ -252,13 +256,14 @@ static uint64_t obs_raw_fact(void *context, unsigned kind, uint64_t cycle,
             if (f->kind != expected || f->return_pc != a || f->sp != c ||
                 (uint8_t)(f->sp - 2) != d) {
                 e.reason = EMUIF_OBS_REASON_CONTEXT; o->context_lost = true;
-                (void)obs_id(cpu, &o->next_context, &e.context_id);
+                e.context_id = 0;
+                if (!obs_id(cpu, &o->next_context, &e.context_id)) break;
                 e.parent_context_id = 0; e.sp_before = e.sp_after = 0;
                 e.known &= ~EMUIF_OBS_KNOWN_CONTEXT;
             } else o->closing = true;
             if (expected == EMUIF_OBS_FRAME_IRQ && f->kind == EMUIF_OBS_FRAME_IRQ) e.irq_source = f->irq_source;
         } else {
-            (void)obs_id(cpu, &o->next_context, &e.context_id);
+            if (!obs_id(cpu, &o->next_context, &e.context_id)) break;
             e.reason = EMUIF_OBS_REASON_CONTEXT; o->context_lost = true; }
         obs_emit(cpu, &e);
         if (expected == EMUIF_OBS_FRAME_IRQ && o->irq_depth) --o->irq_depth;
@@ -957,6 +962,9 @@ void emu_cpu_test_observation_limits(struct emuif_cpu *cpu, uint64_t frame,
                                      uint64_t access) {
     cpu->observation.next_frame = frame;
     cpu->observation.next_access = access;
+}
+void emu_cpu_test_context_limit(struct emuif_cpu *cpu, uint64_t context) {
+    cpu->observation.next_context = context;
 }
 #endif
 

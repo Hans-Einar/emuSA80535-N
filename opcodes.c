@@ -312,6 +312,8 @@ static uint8_t jbc_bitaddr_offset(struct em8051 *aCPU)
 static uint8_t acall_offset(struct em8051 *aCPU)
 {
     uint16_t address = ((PC + 2) & 0xf800) | OPERAND1 | ((OPCODE & 0xe0) << 3);
+    if (aCPU->mObservation && !emu_cpu_raw(aCPU, EMU_RAW_CONTEXT_PREFLIGHT,
+            aCPU->mMachineCycleCount, 0, 0, 0, 0)) return 1;
     if (!push_to_stack(aCPU, (PC + 2) & 0xff))
         return 1;
     if (!push_to_stack(aCPU, (PC + 2) >> 8))
@@ -325,6 +327,8 @@ static uint8_t acall_offset(struct em8051 *aCPU)
 
 static uint8_t lcall_address(struct em8051 *aCPU)
 {
+    if (aCPU->mObservation && !emu_cpu_raw(aCPU, EMU_RAW_CONTEXT_PREFLIGHT,
+            aCPU->mMachineCycleCount, 0, 0, 0, 0)) return 1;
     if (!push_to_stack(aCPU, (PC + 3) & 0xff))
         return 1;
     if (!push_to_stack(aCPU, (PC + 3) >> 8))

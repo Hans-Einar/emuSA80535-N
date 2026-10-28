@@ -266,6 +266,7 @@ static void test_sm2_and_rmw(void) {
 }
 #ifdef EMU_CPU_FACADE_TESTING
 extern void emu_cpu_test_observation_limits(struct emuif_cpu *, uint64_t, uint64_t);
+extern void emu_cpu_test_context_limit(struct emuif_cpu *, uint64_t);
 static void test_exhaustion(void) {
     struct fixture f;
     const uint8_t code[]={0x75,0x98,0xd0,0x75,0x99,0x55};
@@ -280,6 +281,29 @@ static void test_exhaustion(void) {
     emu_cpu_test_observation_limits(f.cpu,0,UINT64_MAX);
     assert(step(&f)==EMUIF_EXHAUSTED); assert(count_kind(&f,4)==0 && count_kind(&f,5)==0);
     assert(snapshot(&f).a==0); finish(&f);
+    for(unsigned op=0;op<3;++op) {
+        uint8_t call[]={op==0 ? 0x12 : op==1 ? 0x11 : 0x22,0,0};
+        start(&f,call,sizeof(call),2,1);
+        uint8_t before=snapshot(&f).sp; emu_cpu_test_context_limit(f.cpu,UINT64_MAX);
+        assert(step(&f)==EMUIF_EXHAUSTED);
+        assert(count_kind(&f,6)==0 && count_kind(&f,7)==0 && count_kind(&f,2)==0 && count_kind(&f,3)==1);
+        if(op<2) assert(snapshot(&f).sp==before); /* calls stop before stack writes */
+        finish(&f);
+    }
+    /* IRQ allocation exhaustion also stops before pushes and emits no enter. */
+    uint8_t irq[512]={2,1,0};
+    const uint8_t enable[]={0x75,0x81,0x40,0x75,0xa8,0x81,0x75,0x88,0x03,0x80,0xfe};
+    memcpy(irq+256,enable,sizeof(enable)); start(&f,irq,sizeof(irq),2,1);
+    for(unsigned i=0;i<4;++i) assert(step(&f)==0);
+    uint8_t before=snapshot(&f).sp; emu_cpu_test_context_limit(f.cpu,UINT64_MAX);
+    assert(step(&f)==EMUIF_EXHAUSTED); assert(count_kind(&f,9)==0 && snapshot(&f).sp==before);
+    finish(&f);
+    /* A mismatched return cannot recycle the known CALL token when allocating
+     * an unknown context fails. RETI without actual hardware IRQ is legal here. */
+    uint8_t mismatch[32]={0x12,0,16}; mismatch[16]=0x32;
+    start(&f,mismatch,sizeof(mismatch),2,1); assert(step(&f)==0);
+    emu_cpu_test_context_limit(f.cpu,UINT64_MAX); assert(step(&f)==EMUIF_EXHAUSTED);
+    assert(count_kind(&f,10)==0 && count_kind(&f,3)==1); finish(&f);
 }
 #endif
 int main(void) {

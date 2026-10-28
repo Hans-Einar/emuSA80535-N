@@ -1801,6 +1801,8 @@ static bool handle_sab_interrupts(struct em8051 *aCPU)
     if (selected < 0 || depth >= 4u)
         return true;
 
+    if (aCPU->mObservation && !emu_cpu_raw(aCPU, EMU_RAW_CONTEXT_PREFLIGHT,
+            aCPU->mMachineCycleCount, 0, 0, 0, 0)) return false;
     pending_snapshot = aCPU->mSABIrqPending;
     observed_return_pc = aCPU->mPC;
     observed_sp = aCPU->mSFR[REG_SP];
