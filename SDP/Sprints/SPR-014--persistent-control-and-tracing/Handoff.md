@@ -105,3 +105,11 @@ Capture B mode1/mode2 is available alongside persistent A, paging and optional
 files. REQ-029 satisfied; REQ-028 remains partial without full ACCESS.
 No product Slice remains active. Continue external composed intake and record
 its results; any new product correction needs an explicit bounded active Slice.
+
+## Latest authorized continuation
+
+Consumer requests independent lifecycle contract audit and an opt-in read-only
+CODE breakpoint enumeration extension. SLC-030 audit is active via
+UartResetAuditSlice.md. Accepted028 remains the current product pin.
+No existing lab/process is to be attached or changed. Enumeration implementation
+requires the next separately recorded Slice after proposal communication.
