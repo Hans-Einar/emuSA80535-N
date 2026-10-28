@@ -84,3 +84,15 @@ No trace behavior, raw external byte coordinator, board-specific model, TCP/DAP,
 RPM publication or SDP migration is implemented in this Slice. After acceptance,
 activate the next bounded producer Slice under existing authorization and notify
 the coordinator via the shared artifact directory.
+
+## Reviewed implementation capacity clarification
+
+The existing bounded lifetime registry remains8192 distinct native connection
+IDs per session, shared across profiles, with at most8 concurrent clients.
+CAPACITY is returned before mutation at exhaustion; arbitrary unused lower IDs
+remain accepted within that bound. Do not add an unbounded lifetime set or a
+new implicit public monotonic-ID requirement. Document the finite implementation
+limit in runtime availability notes and the artifact handoff, and verify it.
+Reviewer confirms frozen3.0 specifies concurrent limits without mandating all
+uint64 lifetime identities be accepted. The local host assigns monotonic IDs,
+but that private policy does not change the native API.
