@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: SLC-024/025/026/027/029 accepted; SLC-028 planned
+Status: SLC-024/025/026/027/029 accepted; SLC-028 active
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
@@ -94,3 +94,7 @@ SLC-027 accepted: source 740f60863bc52481e589f219ba54df8f5bd0fc82, review
 Persistent capture A, trace configuration/ring paging and optional asynchronous
 file sinks are implemented. Full ACCESS and capture B remain unavailable.
 Continue immediately to bounded028 under standing authority.
+
+InvocationSlice.md activates028 after accepted027. Fresh Context and Invocation
+Workers implement separate boundaries; fresh Reviewer assesses combined source.
+Accepted027 was directly handed to the coordinator via existing active turn.
