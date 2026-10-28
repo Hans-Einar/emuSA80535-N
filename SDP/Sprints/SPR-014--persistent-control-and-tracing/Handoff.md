@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: SLC-029 correction accepted; SLC-025 and SLC-024 accepted
+Status: SLC-024/025/026/029 accepted; SLC-027 active
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.

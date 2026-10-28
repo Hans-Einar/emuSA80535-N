@@ -1,7 +1,7 @@
-# SLC-027 implementation preparation (not active)
+# SLC-027 implementation preparation (adopted by active TraceSlice)
 
-SLC-026 remains the sole active Slice. This note prepares the next contract;
-no Worker may implement027 before026 acceptance and Master activation.
+SLC-026 is accepted and TraceSlice.md now activates SLC-027. This preparation
+remains supporting design; SLC-028 notes below remain future obligations.
 The frozen0.3 docs04/05/06 and existing DEBUG-DES-007/008 are normative.
 
 ## Configuration and routing Worker boundary

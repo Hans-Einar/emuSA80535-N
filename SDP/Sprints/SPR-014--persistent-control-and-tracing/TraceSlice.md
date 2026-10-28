@@ -106,3 +106,16 @@ insertion; file epoch/storage sequence and operation IDs persist across reopen.
 Only per-open IO byte/record/loss counters reset. Configuration and canonical
 source sequence remain session-owned. Startup --trace-file TOKEN=/absolute/stem
 registers up to8 mappings without adding a wire path or public ABI field.
+
+A maxCycles uses the half-open interval [start,start+limit): a source exactly
+at the cycle deadline is excluded. maxRecords includes the reaching view.
+Silent IDLE also advances this deadline through an owner progress hook, without
+a synthetic architectural event. A stop with no actual triggering source uses
+stopDetail sourceSequence/instructionId0; capture terminal status may refer to
+the last processed source boundary. Tests must distinguish attempted peripheral
+phase time from completed-cycle counters and preserve cumulative limits on reset.
+
+Existing-file refusal occurs in the asynchronous open operation: sinkOpen first
+returns a pending operation, then sinkStatus reports IO/failed without truncation.
+Invalid/unregistered tokens are rejected immediately with DENIED. No control
+request performs blocking filesystem inspection/open to predict writer results.
