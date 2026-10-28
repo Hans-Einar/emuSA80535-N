@@ -97,9 +97,9 @@ def main():
             subprocess.run([str(work/'consumer')],check=True)
         fixture=work/'source'
         for name in manifest['files']:
-            dest=fixture/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes((ROOT/name).read_bytes())
+            dest=fixture/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(bundle.payload_bytes(ROOT,name,manifest['files'][name]))
         (fixture/bundle.MANIFEST).write_bytes((ROOT/bundle.MANIFEST).read_bytes());(fixture/'SOURCE_COMMIT').write_text('a'*40+'\n')
-        a,b=work/'a.tar.gz',work/'b.tar.gz';bundle.export(fixture,a);bundle.export(fixture,b);assert a.read_bytes()==b.read_bytes()
+        a,b=work/'a.tar.gz',work/'b.tar.gz';bundle.export(fixture,a);bundle.export(fixture,b);assert a.read_bytes()==b.read_bytes();assert bundle.sha(a.read_bytes())=='405f22f7fc7e0a49d921715102102a4d667ba1ff84b1238494d76353feeb0f53','accepted target archive drift'
         files=bundle.archive_files(a);lock={**bundle.verify_files(files),'archiveSha256':bundle.sha(a.read_bytes()),'copyPath':'vendor/example','consumer':'fixture'}
         cp=work/'copy'
         for name,data in files.items():dest=cp/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(data)
@@ -115,6 +115,43 @@ def main():
             subprocess.run([sys.executable,str(fixture/'interfaces/tools/bundle.py'),'--root',str(fixture),'--version',version,'check'],check=True)
         bundle.select_version('0.3.0');target=fixture/'lib/include/emusa80535/contracts/observation.h';target.write_bytes(target.read_bytes()+b'x');reject(lambda:bundle.checked_manifest(fixture),'stale manifest')
         optimized=subprocess.run([sys.executable,'-O',str(ROOT/'interfaces/tools/bundle.py'),'--root',str(fixture),'--version','0.3.0','check'],capture_output=True);assert optimized.returncode!=0
+    check_frozen_reconstruction()
     print('PASS: target headers/layout, all commands/results/events, semantic negatives, standalone reproducible export/locks, exact immutable baseline reconstruction; target runtime NOT implemented')
+
+def check_frozen_reconstruction():
+    """New raw headers/tools never change accepted payload or provenance."""
+    with tempfile.TemporaryDirectory(prefix='emu-frozen-sdk-') as temp:
+        root=Path(temp)/'source'
+        bundle.select_version('0.3.0')
+        manifest=bundle.checked_manifest(ROOT)
+        for name,digest in manifest['files'].items():
+            dest=root/name;dest.parent.mkdir(parents=True,exist_ok=True)
+            dest.write_bytes(bundle.payload_bytes(ROOT,name,digest))
+        (root/bundle.MANIFEST).write_bytes((ROOT/bundle.MANIFEST).read_bytes())
+        # Full source snapshots are deliberately not inserted into an accepted
+        # SDK inventory. The standalone SDK retains its original self-checker.
+        shutil.copytree(ROOT/'interfaces/legacy-payloads',root/'interfaces/legacy-payloads',dirs_exist_ok=True)
+        (root/'SOURCE_COMMIT').write_text('b'*40+'\n')
+        for name in ('lib/include/emusa80535/emu8051.h','lib/include/emusa80535/emu_debug_event.h','interfaces/tools/bundle.py'):
+            p=root/name;p.write_bytes(p.read_bytes()+b'\n')
+        archives={
+            '0.2.0':'5abd71f52925c8fcf299b8b8ed417279a1bc20f2a5f004425bc083f87e9cf91d',
+            '0.3.0':'405f22f7fc7e0a49d921715102102a4d667ba1ff84b1238494d76353feeb0f53',
+        }
+        for version,digest in archives.items():
+            bundle.select_version(version)
+            archive=Path(temp)/(version+'.tar.gz')
+            receipt=bundle.export(root,archive)
+            assert receipt['sourceCommit']==bundle.FROZEN_COMMITS[version]
+            assert bundle.sha(archive.read_bytes())==digest
+            assert (root/'SOURCE_COMMIT').read_text()=='b'*40+'\n'
+            frozen=root/'interfaces/legacy-payloads'/version/'lib/include/emusa80535/emu8051.h'
+            data=frozen.read_bytes();frozen.write_bytes(data+b'x')
+            reject(lambda:bundle.checked_manifest(root),'corrupt frozen payload')
+            frozen.write_bytes(data)
+            before=(root/bundle.MANIFEST).read_bytes()
+            result=subprocess.run([sys.executable,str(ROOT/'interfaces/tools/bundle.py'),'--root',str(root),'--version',version,'refresh'],capture_output=True)
+            assert result.returncode!=0 and (root/bundle.MANIFEST).read_bytes()==before
+        bundle.select_version('0.3.0')
 
 if __name__=='__main__':main()

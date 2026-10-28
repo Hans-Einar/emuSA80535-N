@@ -80,7 +80,13 @@ def main():
     with tempfile.TemporaryDirectory(prefix="emu-interface-check-") as temp:
         work = Path(temp)
         include = work / "include"
-        shutil.copytree(ROOT / "lib/include", include)
+        # Compile the accepted bundle's headers, not evolving same-build source
+        # headers. Runtime header compatibility is tested by CPU/link gates.
+        for name, digest in manifest["files"].items():
+            if name.startswith("lib/include/"):
+                dest = include / name[len("lib/include/"):]
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(bundle.payload_bytes(ROOT, name, digest))
         source = VERSION_ROOT / "examples/consumer.c"
         for compiler, standard, suffix in [(os.environ.get("CC", "cc"), "c99", ".c"), (os.environ.get("CXX", "c++"), "c++17", ".cpp")]:
             command = shlex.split(compiler) + ["-std=" + standard, "-Wall", "-Wextra", "-Werror", "-Wno-missing-field-initializers", "-I" + str(include), "-fsyntax-only"]

@@ -17,6 +17,18 @@ MANIFEST = 'interfaces/' + VERSION + '/manifest.json'
 ROOT = Path(__file__).resolve().parents[2]
 SCOPES = ('interfaces/' + VERSION, 'interfaces/tools', 'lib/include/emusa80535')
 
+# These SDKs are accepted artifacts, distinct from the source/runtime revision.
+# Source exports may contain newer same-build headers and tools; immutable
+# payload snapshots reconstruct the accepted SDK without Git or sibling data.
+FROZEN_COMMITS = {
+    '0.2.0': '0a77c2d0da22ecb0bd37781b430e30444f779e39',
+    '0.3.0': '2133e7220284bb8dc1600ba98b2d842106a7dba4',
+}
+FROZEN_MANIFESTS = {
+    '0.2.0': '7be6be79dac99753c051b9b1a257e0774a14bf1115d70553e1371a513e583e72',
+    '0.3.0': 'ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0',
+}
+
 def select_version(version):
     global VERSION, PREFIX, MANIFEST, SCOPES
     if version not in ('0.2.0', '0.3.0'):
@@ -31,14 +43,14 @@ def select_version(version):
 def payload_bytes(root, path, digest=None):
     # Frozen shared files are retrieved from checked-in immutable snapshots;
     # this also works in a full source or SDK export without Git.
-    if VERSION == '0.2.0':
-        frozen = root / 'interfaces/legacy-payloads/0.2.0' / path
-        if frozen.is_file():
-            data = frozen.read_bytes()
-            if digest is not None and sha(data) != digest:
-                raise ValueError('frozen payload checksum mismatch: ' + path)
-            return data
-    return (root / path).read_bytes()
+    frozen = root / 'interfaces/legacy-payloads' / VERSION / path
+    source = frozen if frozen.exists() else root / path
+    if source.is_symlink():
+        raise ValueError('symlink not allowed: ' + str(source))
+    data = source.read_bytes()
+    if digest is not None and sha(data) != digest:
+        raise ValueError('payload checksum mismatch: ' + path)
+    return data
 SINGLE = ('interfaces/README.md', 'LICENSE')
 GENERATED = {'SOURCE_COMMIT', 'BUNDLE-RECEIPT.json'}
 
@@ -75,22 +87,31 @@ def payload_paths(root):
     return sorted(paths)
 
 def checked_manifest(root):
-    manifest = load_json((root / MANIFEST).read_bytes())
-    if not manifest['bundleVersion'] == VERSION:
+    manifest_data = (root / MANIFEST).read_bytes()
+    if sha(manifest_data) != FROZEN_MANIFESTS[VERSION]:
+        raise ValueError('accepted manifest changed')
+    manifest = load_json(manifest_data)
+    if manifest['bundleVersion'] != VERSION:
         raise ValueError('wrong bundle version')
-    actual = payload_paths(root) if VERSION != '0.2.0' else sorted(manifest['files'])
-    if VERSION == '0.2.0':
-        # Detect any additions/removals in immutable version directories.
-        directory = 'interfaces/0.2.0/'
-        present = {p.relative_to(root).as_posix() for p in (root / directory).rglob('*') if p.is_file()}
-        expected = {p for p in manifest['files'] if p.startswith(directory)} | {MANIFEST}
+    # Shared tools/raw headers evolve independently; only the immutable version
+    # directory inventories are closed here. Archive/copy inventories remain
+    # exact in verify_files, including every historical snapshot in that SDK.
+    versions = ('0.2.0', '0.3.0') if VERSION == '0.3.0' else ('0.2.0',)
+    for version in versions:
+        directory = 'interfaces/' + version + '/'
+        present = set()
+        for path in (root / directory).rglob('*'):
+            if path.is_symlink():
+                raise ValueError('symlink not allowed: ' + str(path))
+            if path.is_file():
+                present.add(path.relative_to(root).as_posix())
+        expected = {p for p in manifest['files'] if p.startswith(directory)}
+        if version == VERSION:
+            expected.add(MANIFEST)
         if present != expected:
-            raise ValueError('immutable baseline inventory changed')
-    if not actual == sorted(manifest['files']):
-        raise ValueError('payload inventory differs from manifest')
-    for path in actual:
-        if not sha(payload_bytes(root, path, manifest['files'][path])) == manifest['files'][path]:
-            raise ValueError('checksum mismatch: ' + path)
+            raise ValueError('immutable version inventory changed: ' + version)
+    for path, digest in manifest['files'].items():
+        payload_bytes(root, path, digest)
     return manifest
 
 def origin_commit(root):
@@ -106,8 +127,7 @@ def origin_commit(root):
     return commit
 
 def bundle_files(root, commit):
-    if VERSION == '0.2.0':
-        commit = '0a77c2d0da22ecb0bd37781b430e30444f779e39'
+    commit = FROZEN_COMMITS[VERSION]
     manifest = checked_manifest(root)
     if not re.fullmatch('[0-9a-f]{40}', commit):
         raise ValueError('invalid source commit')
@@ -230,12 +250,7 @@ def main():
     args = parser.parse_args()
     select_version(args.version)
     if args.command == 'refresh':
-        if VERSION != '0.3.0':
-            raise ValueError('accepted baseline cannot be refreshed')
-        existing = load_json((args.root / MANIFEST).read_bytes())
-        existing['files'] = {p: sha((args.root / p).read_bytes()) for p in payload_paths(args.root)}
-        (args.root / MANIFEST).write_bytes(encode(existing))
-        print('candidate manifest refreshed; requires review')
+        raise ValueError('accepted bundle cannot be refreshed; create a new version')
     elif args.command == 'check':
         manifest = checked_manifest(args.root)
         print('verified', VERSION, len(manifest['files']), 'payload checksums')
