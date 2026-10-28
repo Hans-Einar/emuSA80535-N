@@ -162,12 +162,44 @@ pumping. No wall-clock synchronization or physical I/O is implied.
 
 Available commands include status/control, CODE breakpoint replacement, decode,
 pure memory reads, stopDetail and board admission/inspection when advertised.
-Board inputs report parent admission identity; this Slice does not implement
-UART outcomes or canonical observation/trace/capture/file commands. Those
-commands return UNSUPPORTED and hello reports empty observation coverage. The
-live hello carries the immutable0.3 manifest digest, actual runtime source pin,
-execution mode, bounds and only implemented capabilities. `--version` also
-identifies the unchanged script1 compatibility profile.
+SAB80535 sessions using the native producer CPU also advertise `observations`
+and `uartOutcomes`. Their observation coverage is instruction, control, IRQ,
+lifecycle, input and UART (native bitmask125). Instruction retirement follows
+all successful timing cycles; failed attempts remain distinguishable from
+completed instructions. The native observation binding currently rejects other
+CPU variants. Explicit MOVX and SBUF access facts are produced, but implicit
+register, stack and peripheral accesses are not completely instrumented, so
+full `access` coverage is not advertised. Trace configuration, general trace
+paging, capture A/B and file commands remain UNSUPPORTED.
+
+`outcomePage` and the native trace table's `outcomes` function read the same
+fixed1024-record operational ring, independently of user tracing. It retains
+input and UART events plus explicit loss records. Reads are nondestructive;
+use the session ID, epoch and storage record sequence as the cursor, with at
+most16 records per page. Overwritten records, expired/ahead cursors and wrong
+session/epoch are explicit. Storage sequence differs from the canonical event
+sequence, which also orders instruction and other execution facts. Native
+queries validate sized records and require initialized output record prefixes.
+
+Board admission, CPU scheduling/delivery and UART receive acceptance are
+separate outcomes. A board stimulus has its own parent identity; each resulting
+CPU input has its own queue order. Autonomous board scheduling has parent0.
+RX/TX frame IDs retain their correlations through start, acceptance/drop,
+holding replacement and completion. UART values preserve the ninth bit;
+accepted nine-bit receive data uses a16-bit observed value. TI is a flag edge,
+not full transmission completion. REN-clear or busy delivery preserves the
+existing STATE/BUSY result and required-input session-fault policy; late RI/SM2
+filtering is a UART drop rather than a failed delivery.
+
+Reset cancels queued inputs and ends active/held UART frames before the new
+generation. It preserves operational history and the ring epoch; identities
+and canonical/storage sequences are not reused. Existing accepted runtime and
+SDK artifacts remain immutable. The live hello carries the immutable0.3
+manifest digest, actual runtime source pin, execution mode, bounds and only
+implemented capabilities. `--version` also identifies the unchanged script1
+compatibility profile. `make outcome-test runtime-outcome-test` verifies native
+paging and actual Unix UART outcomes; the latter also supports `RUNTIME_BIN`
+and `SDK_INCLUDE` overrides for checking an installed runtime.
 
 One nonblocking owner loop serializes every request and CPU operation. At most8
 clients are admitted. The session retains at most8192 lifetime connection IDs;
