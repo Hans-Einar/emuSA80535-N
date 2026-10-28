@@ -3,8 +3,8 @@ updated: 2026-10-28
 
 active:
   sprint: SPR-014
-  iteration: ITR-025
-  slice: SLC-025
+  iteration: null
+  slice: null
 
 merge_gate:
   status: MERGED
@@ -23,8 +23,12 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
-  ITR-025: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/ControlSlice.md}
-  SLC-025: {kind: slice, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/ControlSlice.md}
+  REQ-027: {kind: requirement, status: satisfied, state: current, source: SDP/03--Requirements/EMU-OBSERVATION-REQ-005.md}
+  REV-SLC-025: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-025.md}
+  VER-SLC-025: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-025.md}
+  REV-SLC-025-F001..F006: {kind: finding-range, status: resolved-or-documented-capacity, state: current, source: SDP/CodeReview/REV-SLC-025.md}
+  ITR-025: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/ControlSlice.md}
+  SLC-025: {kind: slice, status: accepted, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/ControlSlice.md}
   IFC-003: {kind: interface-bundle, version: 0.3.0, status: accepted-immutable, state: target, source: interfaces/0.3.0/manifest.json}
   REV-SLC-024: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-024.md}
   VER-SLC-024: {kind: verification, status: passed-contract-only, state: current, source: SDP/Verification/VER-SLC-024.md}

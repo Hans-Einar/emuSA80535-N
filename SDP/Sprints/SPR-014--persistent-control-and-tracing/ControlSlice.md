@@ -1,6 +1,6 @@
 # ITR-025 / SLC-025 — Persistent local control implementation
 
-Status: active
+Status: accepted
 Authority: shared user's explicit instruction relayed by the coordinating
 external Master on2026-10-28 to execute SLC-025..028 and composed integration
 without repeated approval. Baseline b5f9bd3; frozen contract IFC-003 at2133e722.
@@ -96,3 +96,11 @@ limit in runtime availability notes and the artifact handoff, and verify it.
 Reviewer confirms frozen3.0 specifies concurrent limits without mandating all
 uint64 lifetime identities be accepted. The local host assigns monotonic IDs,
 but that private policy does not change the native API.
+
+## Acceptance
+
+Accepted combined45b92abda4c88f56e69fff39441503d13ab64a59 after REV-SLC-025
+approval and VER-SLC-025 exact-source/install verification. Artifact/capability
+pins are in SDP/Verification/SLC-025-ARTIFACT.json. F003 is the documented8192
+lifetime capacity restriction; other recorded findings are resolved. No deferred
+producer/trace capability is implied by this acceptance.

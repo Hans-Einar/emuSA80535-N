@@ -4,6 +4,11 @@ updated: 2026-10-28
 identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 
 relations:
+  - {from: REV-SLC-025, type: reviews, to: SLC-025}
+  - {from: VER-SLC-025, type: verifies, to: SLC-025}
+  - {from: SLC-025, type: satisfies, to: REQ-027}
+  - {from: REV-SLC-025, type: opens, to: REV-SLC-025-F001..F006}
+  - {from: SLC-025, type: disposes, to: REV-SLC-025-F001..F006}
   - {from: ITR-025, type: belongs_to, to: SPR-014}
   - {from: SLC-025, type: belongs_to, to: ITR-025}
   - {from: SLC-025, type: implements_design, to: DES-119..DES-124}

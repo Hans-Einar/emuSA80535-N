@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: SLC-025 active implementation; SLC-024 accepted contract gate
+Status: SLC-025 accepted implementation; SLC-024 accepted contract gate
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
@@ -44,3 +44,15 @@ payload checks. Fresh session and host Workers implement separate owned files;
 a fresh Reviewer checks the combined candidate. Proceed through later reviewed
 Slices autonomously; communicate actual availability and exact artifacts at each
 gate. Existing accepted V0 remains reproducible throughout.
+
+## Accepted persistent control implementation
+
+SLC-025 accepted source45b92abda4c88f56e69fff39441503d13ab64a59, review
+9c0a3e80c261f9d34ef4e86742edf390a8452c46. VER-SLC-025 and SLC-025-ARTIFACT.json
+record exact source/archive/install evidence and conditional capabilities. The
+new local Unix frontend implements wire3.0 while preserving script1/wire2.1 and
+legacy1.0. UART outcomes and tracing remain unavailable. External integration
+uses a separate opt-in pin, preserving V0. Coordination handoff:
+/home/warloc/git/emuSA80535-N-artifacts/coordination/p1000-20261028-control-ready.md.
+Continue immediately to a bounded SLC-026 contract under the standing execution
+authority. ProducerPlan.md records source/integration and immutable-SDK hazards.

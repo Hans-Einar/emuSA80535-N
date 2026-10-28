@@ -1,6 +1,6 @@
 # EMU-OBSERVATION-REQ-005 — Persistent control and observable execution
 
-Status: target requirements; contract gate SLC-024
+Status: REQ-027 implemented/verified SLC-025; REQ-028/029 remain targets
 Authority: shared-user collaboration request and external concurrence2026-10-28
 
 REQ-027: expose persistent local structured control of the existing session,
