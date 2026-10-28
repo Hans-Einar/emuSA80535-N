@@ -335,3 +335,47 @@ A/configuration/file sinks and independent UART outcome history remain persisten
 `make runtime-invocation-test` exercises actual CPU/Unix capture and shared A+B
 JSONL. RUNTIME_BIN/SDK_INCLUDE select an installed executable and installed-header
 board fixture; INVOCATION_REPORT retains all validated responses and file rows.
+
+Explicit wire 3.1 CODE breakpoint enumeration
+------------------------------------------
+
+A new connection may explicitly send hello protocol `{major:3,minor:1}` with
+contractVersion `0.4.0` and required capability `readCodeBreakpoints`. The same
+Unix endpoint and native `emusa80535_control_query_v3` JSON table support this
+opt-in minor profile. There is no automatic version probe or fallback. Wire 3.0
+clients retain their exact 0.3 contract, capability set and command recognition;
+old endpoints reject a 3.1 hello with VERSION/close. No extra startup flag is
+required; the new hello is the explicit opt-in.
+
+`readCodeBreakpoints` takes exactly `{sessionId}` and returns exactly
+`{sessionId,generation,addresses}`. Addresses are the full authoritative CODE
+bitmap in ascending unique integer order 0..65535, at most 1024 entries. Empty is
+`[]`; this is not a list of watches or tracepoints. The single execution owner
+snapshots the identity, current generation and bitmap together. Attached observers
+and controllers may read paused/running/faulted sessions without a lease or
+expected generation. Terminated sessions are not readable. Wrong session is
+STALE; unattached is STATE; malformed arguments follow INVALID/close framing.
+
+Enumeration does not execute CPU cycles, alter stopRevision, stop state, lease,
+breakpoint suppression or trace state. Reset retains the bitmap and changes the
+reported generation. There is no breakpoint revision or compare-and-swap token:
+hold the exclusive controller lease throughout save, temporary replacement, run
+and restoration to exclude another controller. A lost lease/connection or
+uncertain mutation result provides no automatic restoration/replay guarantee.
+
+`interfaces/0.4.0` is a wire-only sidecar, installed alongside the frozen 0.3 SDK.
+The new hello's manifest hash identifies that sidecar and its pinned 0.3 base.
+CPU API 1, board ABI 1, native observation/trace tables and public headers remain
+unchanged. Trace file headers continue to identify 0.3 and its base manifest even
+when a 3.1 client opens the sink: trace files belong to the shared session's frozen
+trace contract, not to a connection's negotiated control minor version.
+
+`make runtime-control31-test` verifies actual Unix responses and unchanged 0.3
+file metadata; `make -C tests control31-test` exercises the native JSON table.
+RUNTIME_BIN/SDK_INCLUDE choose an installed binary/header fixture and
+CONTROL31_REPORT retains actual request/response and JSONL evidence.
+
+`make interface-control31-check` verifies the sidecar. Once frozen, the external
+`interfaces/control31.lock.json` pins its source, manifest and deterministic
+archive; check/export/install use that lock even when runtime HEAD advances.
+Before freeze, candidate exports use the explicit runtime source commit.

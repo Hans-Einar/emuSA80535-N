@@ -98,6 +98,7 @@ install: $(DEBUG_BIN) $(SDK_LIB) $(CPU_LIB) $(RUNTIME_LIB) emu-runtime emusa8053
 	$(INSTALL) -d $(DESTDIR)$(includedir)/emusa80535/contracts
 	$(INSTALL) -m 644 lib/include/emusa80535/*.h $(DESTDIR)$(includedir)/emusa80535/
 	$(INSTALL) -m 644 lib/include/emusa80535/contracts/*.h $(DESTDIR)$(includedir)/emusa80535/contracts/
+	$(PYTHON) interfaces/0.4.0/bundle.py install --destination $(DESTDIR)$(docdir)/interface-bundles/0.4.0 $(CONTROL31_PROVENANCE)
 	$(PYTHON) interfaces/tools/bundle.py --version 0.3.0 install --destination $(DESTDIR)$(docdir)/interface-bundles/0.3.0 --source-commit $(DEBUG_COMMIT)
 	$(PYTHON) interfaces/tools/bundle.py install --destination $(DESTDIR)$(docdir)/interface-bundles/$(CONTRACT_VERSION) --source-commit $(DEBUG_COMMIT)
 	$(INSTALL) -m 644 LICENSE $(DESTDIR)$(licensedir)/
@@ -163,8 +164,9 @@ cpu-link-test: cpu-sdk
 RUNTIME_OBJ := emu_trace_internal.sdk.o emu_session.sdk.o emu_json_internal.sdk.o emu_sha_internal.sdk.o emu_outcome_internal.sdk.o emu_debug_event.sdk.o emu_debug_trace.sdk.o emu_debug_runtime.sdk.o
 CONTRACT_MANIFEST_SHA256 := $(shell sha256sum interfaces/$(CONTRACT_VERSION)/manifest.json | cut -d ' ' -f 1)
 CONTROL3_MANIFEST_SHA256 := $(shell sha256sum interfaces/0.3.0/manifest.json | cut -d ' ' -f 1)
-RUNTIME_CPPFLAGS := -DEMU_CONTROL3_MANIFEST_SHA256=\"$(CONTROL3_MANIFEST_SHA256)\" -DEMU_RUNTIME_COMMIT=\"$(DEBUG_COMMIT)\" -DEMU_CONTRACT_MANIFEST_SHA256=\"$(CONTRACT_MANIFEST_SHA256)\"
-emu_session.sdk.o: emu_session.c $(HEADERS) FORCE
+CONTROL31_MANIFEST_SHA256 := $(shell sha256sum interfaces/0.4.0/manifest.json | cut -d ' ' -f 1)
+RUNTIME_CPPFLAGS := -DEMU_CONTROL31_MANIFEST_SHA256=\"$(CONTROL31_MANIFEST_SHA256)\" -DEMU_CONTROL3_MANIFEST_SHA256=\"$(CONTROL3_MANIFEST_SHA256)\" -DEMU_RUNTIME_COMMIT=\"$(DEBUG_COMMIT)\" -DEMU_CONTRACT_MANIFEST_SHA256=\"$(CONTRACT_MANIFEST_SHA256)\"
+emu_session.sdk.o: emu_session.c $(HEADERS) interfaces/0.4.0/manifest.json FORCE
 	$(CC) $(CPPFLAGS) $(RUNTIME_CPPFLAGS) $(CFLAGS) -std=c99 -c -o $@ $<
 $(RUNTIME_LIB): $(RUNTIME_OBJ)
 	$(AR) rcs $@ $^
@@ -197,3 +199,14 @@ trace-test: emu-runtime
 	$(MAKE) -C tests trace-native-test
 	$(PYTHON) tests/test_runtime_trace.py
 .PHONY: trace-test
+
+# Explicitly negotiated wire 3.1 sidecar; native SDK and trace files remain 0.3.
+# The external release lock pins contract provenance independently of runtime HEAD.
+CONTROL31_LOCK := $(wildcard interfaces/control31.lock.json)
+CONTROL31_PROVENANCE = $(if $(CONTROL31_LOCK),--lock $(CONTROL31_LOCK),--source-commit $(DEBUG_COMMIT))
+CONTROL31_ARCHIVE ?= emusa80535-control-0.4.0.tar.gz
+interface-control31-check:
+	$(PYTHON) interfaces/0.4.0/bundle.py check $(if $(CONTROL31_LOCK),--lock $(CONTROL31_LOCK))
+interface-control31-export:
+	$(PYTHON) interfaces/0.4.0/bundle.py export --output $(CONTROL31_ARCHIVE) $(CONTROL31_PROVENANCE)
+.PHONY: interface-control31-check interface-control31-export

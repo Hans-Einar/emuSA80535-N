@@ -33,7 +33,7 @@ DEBUG_BIN_TEST := debug_facade_tests
 DEBUG_EVENT_BIN := debug_event_tests
 DEBUG_TRACE_BIN := debug_trace_tests
 DEBUG_RUNTIME_BIN := debug_runtime_tests
-CLEAN_CMD = rm -f stage0_tests stage0_tests.exe stage1_irq_tests stage1_irq_tests.exe stage1_timer_tests stage1_timer_tests.exe stage1_uart_tests stage1_uart_tests.exe stage2_port_tests stage2_port_tests.exe stage2_edge_tests stage2_edge_tests.exe stage3_adc_tests stage3_adc_tests.exe stage4_timer2_tests stage4_timer2_tests.exe debug_facade_tests debug_facade_tests.exe debug_event_tests debug_event_tests.exe debug_trace_tests debug_trace_tests.exe debug_runtime_tests debug_runtime_tests.exe cpu_facade_tests cpu_facade_tests.exe runtime_session_tests trace_native_tests control3_tests control3_cpp_tests outcome_tests cpu_observation_tests stage0-short.bin stage0-exact.bin stage0-long.bin debug-image.bin debug-short.bin
+CLEAN_CMD = rm -f stage0_tests stage0_tests.exe stage1_irq_tests stage1_irq_tests.exe stage1_timer_tests stage1_timer_tests.exe stage1_uart_tests stage1_uart_tests.exe stage2_port_tests stage2_port_tests.exe stage2_edge_tests stage2_edge_tests.exe stage3_adc_tests stage3_adc_tests.exe stage4_timer2_tests stage4_timer2_tests.exe debug_facade_tests debug_facade_tests.exe debug_event_tests debug_event_tests.exe debug_trace_tests debug_trace_tests.exe debug_runtime_tests debug_runtime_tests.exe cpu_facade_tests cpu_facade_tests.exe runtime_session_tests trace_native_tests control3_tests control31_tests control3_cpp_tests outcome_tests cpu_observation_tests stage0-short.bin stage0-exact.bin stage0-long.bin debug-image.bin debug-short.bin
 endif
 CORE_SRC := ../core.c ../opcodes.c ../disasm.c ../binary_loader.c
 DEBUG_SRC := ../emu_sha_internal.c ../emu_debug.c ../emu_decode_internal.c $(CORE_SRC)
@@ -161,3 +161,9 @@ trace_native_tests: test_trace_native.c ../emu_trace_internal.c ../emu_debug_run
 trace-native-test: trace_native_tests
 	./trace_native_tests
 .PHONY: trace-native-test
+
+control31_tests: test_control31.c test_runtime_session.c $(SESSION_SRC) $(PUBLIC_HEADERS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Werror -o $@ test_control31.c $(SESSION_SRC)
+control31-test: control31_tests
+	./control31_tests
+.PHONY: control31-test

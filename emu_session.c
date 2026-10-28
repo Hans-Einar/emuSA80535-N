@@ -27,6 +27,10 @@
 #define EMU_CONTROL3_MANIFEST_SHA256                                                               \
     "0000000000000000000000000000000000000000000000000000000000000000"
 #endif
+#ifndef EMU_CONTROL31_MANIFEST_SHA256
+#define EMU_CONTROL31_MANIFEST_SHA256                                                              \
+    "0000000000000000000000000000000000000000000000000000000000000000"
+#endif
 #define INIT(x)                                                                                    \
     do                                                                                             \
     {                                                                                              \
@@ -99,6 +103,7 @@ struct client_state
     uint64_t id;
     uint32_t maximum_role, may_terminate, last_id, role;
     bool hello, attached, control3;
+    uint32_t control_minor;
     uint64_t lease_id;
 };
 struct emuif_session
@@ -1543,8 +1548,14 @@ static bool capability3(struct emuif_session *s, const char *name)
            (!strcmp(name, "uartOutcomes") && (s->observation_coverage & 112u) == 112u) ||
            (!strcmp(name, "advance") && s->execution_mode == EMUIF_EXECUTION_EXTERNALLY_DRIVEN);
 }
+static bool capability31(struct emuif_session *s, uint32_t minor, const char *name)
+{
+    return (!strcmp(name, "readCodeBreakpoints") && minor == 1) || capability3(s, name);
+}
 static const char *command_capability3(const char *cmd)
 {
+    if (!strcmp(cmd, "readCodeBreakpoints"))
+        return "readCodeBreakpoints";
     if (!strcmp(cmd, "boardInput"))
         return "boardInput";
     if (!strcmp(cmd, "boardInspect"))
@@ -1575,15 +1586,17 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
     {
         static const char *caps[] = {
             "attachSession", "status",     "control",      "codeBreakpoints",   "decodeCode",
-            "memoryRead",    "boardInput", "boardInspect", "boardInspectFault", "advance", "observations", "uartOutcomes", "traceConfig", "tracePage", "captureA", "captureB", "traceFile"};
+            "memoryRead",    "boardInput", "boardInspect", "boardInspectFault", "advance", "observations", "uartOutcomes", "traceConfig", "tracePage", "captureA", "captureB", "traceFile", "readCodeBreakpoints"};
         unsigned i;
+        uint32_t minor;
         bool comma = false;
         int protocol = json_member(d, a, "protocol"),
             required = json_member(d, a, "requiredCapabilities");
         if (c->hello)
             return EMUIF_STATE;
-        if (number(d, protocol, "major") != 3 || number(d, protocol, "minor") != 0 ||
-            !wire_string_is(d, json_member(d, a, "contractVersion"), "0.3.0"))
+        minor = (uint32_t)number(d, protocol, "minor");
+        if (number(d, protocol, "major") != 3 || minor > 1 ||
+            !wire_string_is(d, json_member(d, a, "contractVersion"), minor ? "0.4.0" : "0.3.0"))
         {
             *close = true;
             return EMUIF_VERSION;
@@ -1592,7 +1605,7 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
              t = json_next(d, t))
         {
             json_string(d, t, text, sizeof text);
-            if (!capability3(s, text))
+            if (!capability31(s, minor, text))
                 return EMUIF_UNSUPPORTED;
             if (!strcmp(text, "boardInspectFault"))
             {
@@ -1607,13 +1620,15 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
             }
         }
         c->hello = true;
+        c->control_minor = minor;
         output_format(
             o,
-            "{\"protocol\":{\"major\":3,\"minor\":0},\"contractVersion\":\"0.3.0\","
+            "{\"protocol\":{\"major\":3,\"minor\":%u},\"contractVersion\":\"%s\","
             "\"runtimeCommit\":\"%s\",\"contractManifestSha256\":\"%s\",\"capabilities\":[",
-            EMU_RUNTIME_COMMIT, EMU_CONTROL3_MANIFEST_SHA256);
+            minor, minor ? "0.4.0" : "0.3.0", EMU_RUNTIME_COMMIT,
+            minor ? EMU_CONTROL31_MANIFEST_SHA256 : EMU_CONTROL3_MANIFEST_SHA256);
         for (i = 0; i < sizeof caps / sizeof caps[0]; i++)
-            if (capability3(s, caps[i]))
+            if (capability31(s, minor, caps[i]))
             {
                 if (comma)
                     output_raw(o, ",");
@@ -1649,7 +1664,7 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
     }
     if (strcmp(cmd, "attach") && !c->attached)
         return EMUIF_STATE;
-    if (!capability3(s, command_capability3(cmd)))
+    if (!capability31(s, c->control_minor, command_capability3(cmd)))
         return EMUIF_UNSUPPORTED;
     if (!strcmp(cmd, "tracePage")) {
         if(s->state==EMUIF_STATE_TERMINATED) return EMUIF_STATE;
@@ -1687,6 +1702,21 @@ static emuif_status dispatch3(struct emuif_session *s, struct client_state *c,
         return EMUIF_DENIED;
     if (s->state == EMUIF_STATE_TERMINATED)
         return EMUIF_STATE;
+    if (!strcmp(cmd, "readCodeBreakpoints"))
+    {
+        uint32_t address;
+        bool comma = false;
+        output_format(o, "{\"sessionId\":\"%s\",\"generation\":\"%" PRIu64
+                         "\",\"addresses\":[", s->id, s->generation);
+        for (address = 0; address < 65536u; ++address)
+            if (emu_breakpoint_at(s->breakpoints, (uint16_t)address))
+            {
+                output_format(o, "%s%u", comma ? "," : "", address);
+                comma = true;
+            }
+        output_raw(o, "]}");
+        return EMUIF_OK;
+    }
     if (!strcmp(cmd, "acquireControl"))
     {
         e = acquire_lease(s, c);
@@ -1814,15 +1844,19 @@ static emuif_status request_profile(struct emuif_session *s, uint64_t id,
     }
     if (!json_integer(d, json_member(d, 0, "id"), 1, UINT32_MAX, &rid) ||
         !json_string(d, json_member(d, 0, "command"), cmd, sizeof cmd) ||
-        !(control3 ? wire3_command(cmd) : wire_command(cmd)))
+        !(control3 ? (wire3_command(cmd) ||
+                      (c->hello && c->control_minor == 1 && !strcmp(cmd, "readCodeBreakpoints")))
+                   : wire_command(cmd)))
     {
         close_client(s, c);
         goto done;
     }
     a = json_member(d, 0, "arguments");
+    /* The opt-in read uses the unchanged, closed sessionId-only status shape. */
     if (!valid || d->tokens[0].size != 8 ||
         !wire_string_is(d, json_member(d, 0, "type"), "request") ||
-        !(control3 ? (wire3_arguments(d, a, cmd) && wire3_semantics(d, a, cmd))
+        !(control3 ? (wire3_arguments(d, a, !strcmp(cmd, "readCodeBreakpoints") ? "status" : cmd) &&
+                      wire3_semantics(d, a, cmd))
                    : wire_arguments(d, a, cmd)))
     {
         e = EMUIF_INVALID;

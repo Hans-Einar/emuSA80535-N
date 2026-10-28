@@ -423,7 +423,8 @@ static void help(void)
          "   --control-unix /private/directory/socket --execution-mode externally-driven|host-driven)\n"
          "  [--board-inspect-fault]\n"
          "The optional flag asserts the pinned module promises pure bounded post-fault inspection.\n"
-         "Control3 is wire3.0 / bundle0.3.0; script1 uses wire2.1 / bundle0.2.0.\n"
+         "Control3 supports wire3.0 / bundle0.3.0 or explicit wire3.1 / wire-only0.4.0;\n"
+         "script1 uses wire2.1 / bundle0.2.0.\n"
          "Unix control requires an owned 0700 directory and same-UID clients. No listener opens\n"
          "without --control-unix. External mode advances only through step/advance.\n"
          "Optional --trace-file TOKEN=/absolute/private/stem (repeat up to8) enables file sinks.\n"
@@ -463,7 +464,7 @@ int main(int argc, char **argv)
     if (argc == 2 && !strcmp(argv[1], "--version"))
     {
         printf("emu-runtime script1 source=%s bundle=%s API1 boardABI1.0 wire2.1; "
-               "control3 bundle=0.3.0 wire3.0\n",
+               "control3 bundle=0.3.0 wire3.0; opt-in wire-contract=0.4.0 wire3.1\n",
                EMU_RUNTIME_COMMIT, EMUIF_BUNDLE_VERSION);
         return 0;
     }

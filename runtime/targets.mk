@@ -34,3 +34,7 @@ runtime-trace-file-test: $(RUNTIME_BIN)
 runtime-invocation-test: $(RUNTIME_BIN)
 	$(PYTHON) tests/test_runtime_invocation.py
 .PHONY: runtime-invocation-test
+
+runtime-control31-test: $(RUNTIME_BIN)
+	$(PYTHON) tests/test_runtime_control31.py
+.PHONY: runtime-control31-test
