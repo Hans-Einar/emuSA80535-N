@@ -163,8 +163,11 @@ clear discards it as part of the old epoch.
 B next-call stages at most the CALL source and its terminal instruction record
 until successful retirement. Routing decisions and trace-ID sets are computed
 at each original event using original gates/config; no retrospective predicate
-evaluation. If CALL aborts, discard staged binding and remain armed; the abort
-remains routable through ordinary trace configuration. Other source events
+evaluation. If CALL aborts, close the capture incomplete/reason7 (fault), with
+invocationId=0 and contextId=0 because binding never succeeded; endSequence is
+the abort sequence. Remove candidate B routes from staged records and commit
+other traces in source order. The abort remains routable to those other traces
+through ordinary configuration; the failed B scope does not remain armed. Other source events
 between CALL and retire are staged too, bounded to256 records/786432 bytes;
 overflow closes the armed scope incomplete/overflow before any binding success.
 Captured source order is preserved when the stage commits.
