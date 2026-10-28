@@ -297,6 +297,58 @@ static void test_mov_direct_indirect(void)
     }
 }
 
+static void test_mov_direct_indirect_program(void)
+{
+    static const enum em8051_variant variants[] = {
+        EM8051_VARIANT_8051, EM8051_VARIANT_8052, EM8051_VARIANT_SAB80535
+    };
+    static const unsigned char programs[][14] = {
+        {
+            0x78, 0x30,       /* MOV R0,#30 */
+            0x75, 0x30, 0xA5, /* MOV 30,#A5 */
+            0x75, 0x20, 0x5A, /* MOV 20,#5A */
+            0x86, 0x20,       /* MOV 20,@R0 */
+            0xE5, 0x20,       /* MOV A,20 */
+            0x80, 0xFE        /* SJMP $ */
+        },
+        {
+            0x79, 0x30,       /* MOV R1,#30 */
+            0x75, 0x30, 0xA5, /* MOV 30,#A5 */
+            0x75, 0x20, 0x5A, /* MOV 20,#5A */
+            0x87, 0x20,       /* MOV 20,@R1 */
+            0xE5, 0x20,       /* MOV A,20 */
+            0x80, 0xFE        /* SJMP $ */
+        }
+    };
+    struct fixture fixture;
+    struct em8051_run_result result;
+    unsigned variant, dispatch, ri, opcode;
+
+    for (variant = 0; variant < ARRAY_SIZE(variants); variant++)
+    for (dispatch = 0; dispatch < 2; dispatch++)
+    for (ri = 0; ri < ARRAY_SIZE(programs); ri++)
+    {
+        /* The complete CODE image is this prefix followed by zero padding. */
+        setup_fixture(&fixture, variants[variant]);
+        memcpy(fixture.code, programs[ri], sizeof(programs[ri]));
+        if (dispatch)
+            for (opcode = 0; opcode < 256; opcode++)
+                fixture.cpu.op[opcode] = do_op;
+        CHECK(em8051_run(&fixture.cpu, 5, &result) == EM8051_STOP_INSTRUCTION_LIMIT);
+        CHECK(fixture.cpu.mSFR[REG_ACC] == 0xA5);
+        CHECK(fixture.cpu.mLowerData[0x20] == 0xA5);
+        CHECK(fixture.cpu.mLowerData[0x30] == 0xA5);
+        CHECK(fixture.cpu.mLowerData[ri] == 0x30);
+        CHECK(result.pc == 0x000C);
+        CHECK(result.instructions == 5);
+        CHECK(result.machine_cycles == 8);
+        CHECK(fixture.cpu.mPC == result.pc);
+        CHECK(fixture.cpu.mInstructionCount == result.instructions);
+        CHECK(fixture.cpu.mMachineCycleCount == result.machine_cycles);
+        CHECK(fixture.cpu.mTickDelay == 0);
+    }
+}
+
 static void test_upper_iram_and_stack(void)
 {
     struct fixture fixture;
@@ -836,6 +888,7 @@ int main(void)
     test_variant_and_sab_reset_map();
     test_classic_instruction_regression();
     test_mov_direct_indirect();
+    test_mov_direct_indirect_program();
     test_upper_iram_and_stack();
     test_sfr_gateway_validation();
     test_exact_raw_loader();
