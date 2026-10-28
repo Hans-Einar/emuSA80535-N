@@ -93,3 +93,10 @@ the last processed canonical source at explicit known-context binding, without
 inventing a source. Staged B record views count exactly once after successful
 binding and may immediately reach the record limit; A counters/gates retain
 original source-time evaluation. Terminal RET retirement routes before closure.
+
+Runtime stop policy: B stopCpu=true requests a safe stop on terminal return or
+incomplete outcome as well as limits. Public budget/paused represents this scope
+stop; captureStatus supplies the exact return/incomplete reason. Higher-priority
+actual fault, power-down, CODE breakpoint and watch reasons retain precedence.
+Reset remains a paused reset lifecycle operation. With stopCpu=false, terminal
+scope only closes its trace filter and ordinary execution may continue.
