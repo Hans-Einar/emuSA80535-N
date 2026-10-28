@@ -1,6 +1,6 @@
 # ITR-024 / SLC-024 — Persistent-control and observation contract gate
 
-Status: active, contract/SDK declarations only; no runtime implementation
+Status: accepted, contract/SDK declarations only; no runtime implementation
 Authority: shared-user collaboration and explicit external concurrence at
 30fe45a. Read AGENTS/CurrentIndex, lifecycle01..05, this Sprint/Handoff, accepted
 bundle0.2 and DEBUG-DES-064..097. Preserve historical aliases/ledger and old pins.
@@ -83,3 +83,11 @@ Export exact reviewed clean source; retain durable archive and checksum, then
 notify external owner before new dependent consumer implementation. Current V0
 runtime/board pins remain unchanged. Acceptance of this contract gate does not
 activate all planned product implementation or claim connected-system behavior.
+
+## Accepted gate
+
+Accepted source2133e7220284bb8dc1600ba98b2d842106a7dba4 after separate
+REV-SLC-024 approval and VER-SLC-024 verification. IFC-003 is immutable target
+SDK0.3.0 / wire3.0 / observation1 / trace1; artifact pins are in
+SDP/Verification/SLC-024-ARTIFACT.json. All eight recorded findings are resolved.
+No successor implementation is activated by this acceptance.

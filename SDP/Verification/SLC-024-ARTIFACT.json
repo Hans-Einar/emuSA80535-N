@@ -1,0 +1,38 @@
+{
+  "archiveSha256": "405f22f7fc7e0a49d921715102102a4d667ba1ff84b1238494d76353feeb0f53",
+  "availability": "contract-only; new target symbols and services not implemented",
+  "bundleVersion": "0.3.0",
+  "exportPath": "/home/warloc/git/emuSA80535-N-artifacts/interfaces/0.3.0/emusa80535-interfaces-0.3.0.tar.gz",
+  "implementedRuntimeChanged": false,
+  "manifestSha256": "ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0",
+  "networkPublication": false,
+  "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+  "review": "REV-SLC-024",
+  "reviewCommit": "52682f9f985affb09da6910385f0316c390aab13",
+  "sourceCommit": "2133e7220284bb8dc1600ba98b2d842106a7dba4",
+  "verification": "VER-SLC-024",
+  "verificationEvidencePath": "/home/warloc/git/emuSA80535-N-artifacts/interfaces/0.3.0/verification",
+  "versions": {
+    "boardAbi": {
+      "major": 1,
+      "minor": 0,
+      "platform": "linux-x86_64-sysv-le"
+    },
+    "cpuObservation": 1,
+    "implementedContract": "0.2.0",
+    "implementedRuntimeWire": {
+      "major": 2,
+      "minor": 1
+    },
+    "legacyWire": {
+      "major": 1,
+      "minor": 0
+    },
+    "nativeApi": 1,
+    "runtimeWire": {
+      "major": 3,
+      "minor": 0
+    },
+    "traceApi": 1
+  }
+}

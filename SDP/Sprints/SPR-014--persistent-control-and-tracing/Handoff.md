@@ -1,23 +1,37 @@
 # Handoff — persistent control and tracing
 
-Status: active SLC-024 contract gate, no product implementation
+Status: SLC-024 accepted contract gate; no active implementation Slice
 
-The external Master concurred with the producer response SHA256
-08c26d70c3198c13da4312f0e31154ee3d80d684c4df541744e886f65cddad00,
-retained at /home/warloc/git/emuSA80535-N-artifacts/coordination/p1000-20261028-reply.md.
-External PLAN-PERIPH-004 is independently reviewed/accepted at30fe45a; its
-ownership decisions require no new board ABI1 callback. Two producer studies
-confirmed current session persistence and CODE/decode/memory commands, but
-missing canonical trace wiring, UART outcome exposure, stable ring paging and
-file/invocation services. REQ-027..029 / DES-119..124 bound the new contracts.
+Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
+Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
+Verification: VER-SLC-024; exact archive/manifest/source and durable paths:
+SDP/Verification/SLC-024-ARTIFACT.json. IFC-003 is SDK0.3.0, wire3.0, CPU
+observation extension1 and trace facade1. Read interfaces/0.3.0/README.md and
+its six contract documents before implementing the next Slice.
 
-Clarifications from fresh reply review: step also advances time in externally
-clocked mode; reset ends a B invocation binding while general trace enabled state
-remains preserved. Keep original agreed reply unchanged; record clarifications
-and gate progress in a new coordination status artifact. Operational activation
-is not cold reset; external failure/context mapping is the other owner's work.
+The shared user's continued collaboration and external planning concurrence at
+30fe45a authorized this gate. Original producer reply remains byte-identical,
+SHA25608c26d70c3198c13da4312f0e31154ee3d80d684c4df541744e886f65cddad00.
+Completion handoff is under
+/home/warloc/git/emuSA80535-N-artifacts/coordination/p1000-20261028-contract-ready.md.
+Explicit advance **or step** moves time in externally driven mode. Reset ends a
+B invocation binding while preserving general trace enabled/configuration state.
+Rearm is explicit scope state. Board and CPU input stages and UART outcomes are
+separate, correlated, and retained independently of user trace filters.
 
-Do not change runtime a03504b, script1 or the external accepted V0 pins in this
-gate. Native public headers currently describe the implemented compatibility
-profile0.2; new target extension/version declarations and bundle tooling must
-avoid changing the compiled host's advertised profile/manifest identity.
+Do not interpret the frozen contract as implemented runtime functionality.
+Existing runtime a03504b / script1 / wire2.1 / SDK0.2 and external V0 pins remain
+unchanged. New target headers and availability macros are separate from existing
+compatibility version.h. The artifact includes immutable baseline payloads and
+can verify/export either SDK without Git or sibling repositories. The built
+runtime still advertises its implemented0.2/2.1 profile honestly.
+
+Next planned bounded work is SLC-025 persistent structured local control, followed
+by SLC-026 canonical producers/safe stops, SLC-027 persistent capture/paging/file
+and SLC-028 invocation scope. Master must record the next active contract before
+assigning a fresh Worker; each step requires a separate fresh Reviewer and
+capability-specific behavioral verification. Reuse the existing engine, keep
+raw-byte coordination external, preserve old ABI1 and immutable artifact pins.
+The complete conformance obligations are interfaces/0.3.0/docs/06-conformance.md.
+This handoff does not claim composed serial exchange, full machine behavior,
+DAP/TCP implementation, RPM publication or SDP migration.
