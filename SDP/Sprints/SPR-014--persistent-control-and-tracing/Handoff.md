@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: SLC-024 accepted contract gate; no active implementation Slice
+Status: SLC-025 active implementation; SLC-024 accepted contract gate
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
@@ -35,3 +35,12 @@ raw-byte coordination external, preserve old ABI1 and immutable artifact pins.
 The complete conformance obligations are interfaces/0.3.0/docs/06-conformance.md.
 This handoff does not claim composed serial exchange, full machine behavior,
 DAP/TCP implementation, RPM publication or SDP migration.
+
+## Active continuation
+
+ControlSlice.md activates SLC-025 under the explicit continued execution request.
+The coordinator has independently verified the frozen SDK0.3 archive and all64
+payload checks. Fresh session and host Workers implement separate owned files;
+a fresh Reviewer checks the combined candidate. Proceed through later reviewed
+Slices autonomously; communicate actual availability and exact artifacts at each
+gate. Existing accepted V0 remains reproducible throughout.

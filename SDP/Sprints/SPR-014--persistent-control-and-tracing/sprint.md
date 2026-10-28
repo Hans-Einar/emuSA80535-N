@@ -1,6 +1,6 @@
 # SPR-014 — Persistent local control and canonical tracing
 
-Status: open; ITR-024 / SLC-024 accepted; no active implementation Slice
+Status: active; ITR-025 / SLC-025 active; SLC-024 accepted
 Authority: shared user's continued collaboration instruction, relayed and
 confirmed by the external simulator Master on 2026-10-28; external planning
 acceptance30fe45a. Baseline fe6203f; accepted runtime a03504b remains operational.
@@ -19,3 +19,8 @@ No physical I/O, TCP/DAP implementation, RPM publication or SDP migration here.
 SLC-024 acceptance: REV-SLC-024 / VER-SLC-024 and IFC-003 freeze the consumer
 contract. The Sprint remains open for its planned bounded implementation gates;
 CurrentIndex records no active Iteration/Slice until the next contract is set.
+
+2026-10-28 continuation authority: shared user asks both projects to operate in
+Master mode and execute the agreed implementation/integration sequence without
+renewed approval. SLC-025 is activated by ControlSlice.md; later Slices retain
+separate contracts and reviews before implementation.
