@@ -1,6 +1,6 @@
 # Handoff — persistent control and tracing
 
-Status: SLC-024/025/026/029 accepted; SLC-027 active
+Status: SLC-024/025/026/027/029 accepted; SLC-028 planned
 
 Frozen source:2133e7220284bb8dc1600ba98b2d842106a7dba4.
 Fresh review: REV-SLC-024, approved52682f9; F001..F008 resolved.
@@ -88,3 +88,9 @@ implementation boundary and future028 context recovery obligations.
 SLC-027 active through TraceSlice.md. Accepted026 handoff available at
 /home/warloc/git/emuSA80535-N-artifacts/coordination/p1000-20261028-outcomes-ready.md.
 Proceed with fresh Trace/File Workers and independent Reviewer.
+
+SLC-027 accepted: source 740f60863bc52481e589f219ba54df8f5bd0fc82, review
+135be69fd2039020e52301dc20ef5ddcadfa79c6, VER-SLC-027 and artifact record.
+Persistent capture A, trace configuration/ring paging and optional asynchronous
+file sinks are implemented. Full ACCESS and capture B remain unavailable.
+Continue immediately to bounded028 under standing authority.

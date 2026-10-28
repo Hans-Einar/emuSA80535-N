@@ -1,6 +1,6 @@
 # ITR-027 / SLC-027 — Persistent capture and bounded file delivery
 
-Status: active. Sprint SPR-014. Authority: standing explicit continued producer
+Status: accepted through REV-SLC-027 / VER-SLC-027. Sprint SPR-014. Authority: standing explicit continued producer
 Master execution through026/027/028 and joint virtual integration.
 Baseline:306c5af, accepted026 product af73adf974731afe32fdb2be806e1557a0804f7c.
 REQ-029, DES-122..124. Read AGENTS, CurrentIndex, Sprint/Handoff, lifecycle01..05,

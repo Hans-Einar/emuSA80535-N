@@ -1,0 +1,78 @@
+{
+  "archiveSha256": "dd7203ff3aff63f8305660ee1e5311b8d829efd5323d8a9c694803840ab0c7ef",
+  "capabilities": [
+    "attachSession",
+    "status",
+    "control",
+    "codeBreakpoints",
+    "decodeCode",
+    "memoryRead",
+    "boardInput",
+    "boardInspect",
+    "advance",
+    "observations",
+    "uartOutcomes",
+    "traceConfig",
+    "tracePage",
+    "captureA",
+    "traceFile"
+  ],
+  "captureModeA": "persistent across calls, pause, reset and reconnect",
+  "compatibility": {
+    "boardAbi": "1.0",
+    "cpuApi": 1,
+    "legacyDebugWire": "1.0",
+    "runtimeWire": "2.1",
+    "script": 1
+  },
+  "conditionalCapabilities": {
+    "advance": "externally-driven mode",
+    "boardInput": "module stimulus capability",
+    "boardInspect": "module inspect capability",
+    "boardInspectFault": "module inspect plus explicit fault-inspection promise",
+    "observations": "native SAB80535 binding",
+    "traceFile": "host provider with startup registered token mapping",
+    "uartOutcomes": "native lifecycle/input/UART binding"
+  },
+  "contractManifestSha256": "ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0",
+  "contractVersion": "0.3.0",
+  "exportPath": "/home/warloc/git/emuSA80535-N-artifacts/runtime/740f60863bc52481e589f219ba54df8f5bd0fc82/emusa80535-1.0.0.tar.gz",
+  "lifetimeConnectionIds": 8192,
+  "maxConcurrentClients": 8,
+  "networkPublication": false,
+  "observationBindingVariant": "sab80535",
+  "observationCoverage": [
+    "instruction",
+    "control",
+    "irq",
+    "lifecycle",
+    "input",
+    "uart"
+  ],
+  "observationCoverageMask": 125,
+  "outcomeStorageRecords": 1024,
+  "partialAccessFacts": [
+    "MOVX XDATA",
+    "SBUF writes and RMW"
+  ],
+  "physicalIo": false,
+  "review": "REV-SLC-027",
+  "reviewCommit": "135be69fd2039020e52301dc20ef5ddcadfa79c6",
+  "runtimeWire": {
+    "major": 3,
+    "minor": 0
+  },
+  "sourceCommit": "740f60863bc52481e589f219ba54df8f5bd0fc82",
+  "supersedesForIntegration": "af73adf974731afe32fdb2be806e1557a0804f7c",
+  "traceFileQueueRecords": 256,
+  "traceRingRecords": {
+    "max": 4096,
+    "min": 2
+  },
+  "unavailable": [
+    "full ACCESS coverage",
+    "captureB"
+  ],
+  "verification": "VER-SLC-027",
+  "verificationEvidencePath": "/home/warloc/git/emuSA80535-N-artifacts/runtime/740f60863bc52481e589f219ba54df8f5bd0fc82/verification"
+}

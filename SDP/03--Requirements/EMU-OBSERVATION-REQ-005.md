@@ -1,7 +1,8 @@
 # EMU-OBSERVATION-REQ-005 — Persistent control and observable execution
 
 Status: REQ-027 verified SLC-025; REQ-028 partial coverage125 SLC-026;
-REQ-029 operational outcomes verified, trace/capture/file remain targets
+REQ-029 operational outcomes, persistent capture A and file delivery verified;
+invocation capture B remains target
 Authority: shared-user collaboration request and external concurrence2026-10-28
 
 REQ-027: expose persistent local structured control of the existing session,
