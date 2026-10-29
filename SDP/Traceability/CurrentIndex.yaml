@@ -3,8 +3,8 @@ updated: 2026-10-29
 
 active:
   sprint: SPR-014
-  iteration: null
-  slice: null
+  iteration: ITR-034
+  slice: SLC-034
 
 merge_gate:
   status: MERGED
@@ -23,6 +23,8 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
+  ITR-034: {kind: iteration, status: active-preparation, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/NativeOutcomeCostActivation.md}
+  SLC-034: {kind: slice, status: active-measurement-preparation, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/NativeOutcomeCostSlice.md}
   REV-SLC-033: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-033.md}
   VER-SLC-033: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-033.md}
   ITR-033: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/ProbeDocumentationSlice.md}
