@@ -1,6 +1,6 @@
 # ITR-032 / SLC-032 — Execution throughput and probe contract audit
 
-Status: active. Sprint SPR-014. Baseline Master38f39b9; accepted product031
+Status: accepted through REV-SLC-032 / VER-SLC-032. Sprint SPR-014. Baseline Master38f39b9; accepted product031
 59f7a5c and consumer product028 8dd1230 remain independently selected.
 Authority: new shared-user stabilization/research instruction relayed by overall
 coordinator2026-10-29. This supersedes the previous shutdown only for NEW owned

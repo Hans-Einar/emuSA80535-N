@@ -3,8 +3,8 @@ updated: 2026-10-29
 
 active:
   sprint: SPR-014
-  iteration: ITR-032
-  slice: SLC-032
+  iteration: ITR-033
+  slice: SLC-033
 
 merge_gate:
   status: MERGED
@@ -23,8 +23,12 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
-  ITR-032: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/PerformanceAuditSlice.md}
-  SLC-032: {kind: slice, status: active-audit, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/PerformanceAuditSlice.md}
+  ITR-033: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/ProbeDocumentationSlice.md}
+  SLC-033: {kind: slice, status: active-docs, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/ProbeDocumentationSlice.md}
+  REV-SLC-032: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-032.md}
+  VER-SLC-032: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-032.md}
+  ITR-032: {kind: iteration, status: complete, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/PerformanceAuditSlice.md}
+  SLC-032: {kind: slice, status: accepted-audit, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/PerformanceAuditSlice.md}
   IFC-004: {kind: wire-extension, version: 0.4.0, status: accepted-immutable, state: current, source: interfaces/control31.lock.json}
   REV-SLC-031: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-031.md}
   VER-SLC-031: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-031.md}

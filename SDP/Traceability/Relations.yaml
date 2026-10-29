@@ -353,3 +353,8 @@ relations:
   - {from: AUD-SLC-017-RECONCILIATION, type: audits, to: SLC-017}
   - {from: REV-SLC-017-RECONCILIATION, type: reviews, to: AUD-SLC-017-RECONCILIATION}
   - {from: VER-SLC-017-RECONCILIATION, type: verifies, to: AUD-SLC-017-RECONCILIATION}
+
+  - {from: SLC-032, type: verifies, to: REQ-027..REQ-029}
+  - {from: REV-SLC-032, type: reviews, to: SLC-032}
+  - {from: VER-SLC-032, type: verifies, to: SLC-032}
+  - {from: SLC-033, type: clarifies, to: DES-121..DES-124}

@@ -1,6 +1,6 @@
 # VER-SLC-032 — Generic execution throughput audit
 
-Status: Worker verification passed; independent review required.
+Status: passed and independently approved through REV-SLC-032.
 Authority: SPR-014 / ITR-032 / SLC-032 PerformanceAuditSlice.md.
 Traceability: MND-001, ARCH-014/015, REQ-027..029, DES-119..124.
 Product baseline: accepted028 `8dd1230704cd6c460167b954f7e987c23e24ff86` and
@@ -136,3 +136,13 @@ scheduling before selecting the next bounded producer or consumer correction.
 The separate read-only state/function-probe study and independent reset/recovery
 proof are integrated by Master/Reviewer. Synthetic forced entry must remain
 explicitly distinguished from preserved-state PC mutation and natural execution.
+
+## Master acceptance
+
+Reviewed candidate3f8233c4437dbefd7aaf6909c20b2bdec963f165; fresh review
+1ee99aa43afd45bf7237e9e44f128a0931d24bbf. Master independently verified all26
+Worker and24Reviewer manifest entries. Reviewer reproduced both native products,
+all session/socket matrices and62 schema-validated actual reset/reconnect/fault
+recovery replies. Ordinary queued UART fault and external paused-state recovery
+passed; reset is not guaranteed after exhaustion or failing callbacks. No product
+source changed, so no new runtime artifact or consumer pin is required.

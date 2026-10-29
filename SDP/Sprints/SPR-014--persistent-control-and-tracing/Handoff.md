@@ -134,3 +134,9 @@ opt-in intake; no user-lab processes were attached or modified.
 user stabilization/research authority. New owned isolated tests allowed; existing
 user processes/pins untouched. Measure producer/transport overhead and audit
 probe/recovery contracts before any separately reviewed product correction.
+
+SLC-032 accepted through REV/VER-SLC-032, Worker3f8233c and fresh review1ee99aa.
+Generic throughput and ordinary reset/reconnect proof preserved; no CPU timing
+defect or product optimization established. ProbeDocumentationSlice.md activates
+SLC-033 to correct captured-prefix wording and document existing research/recovery
+contracts, including RX-drop value validity. No new runtime pin needed.
