@@ -140,3 +140,11 @@ Generic throughput and ordinary reset/reconnect proof preserved; no CPU timing
 defect or product optimization established. ProbeDocumentationSlice.md activates
 SLC-033 to correct captured-prefix wording and document existing research/recovery
 contracts, including RX-drop value validity. No new runtime pin needed.
+
+SLC-033 accepted documentation candidate c6a2a8707403a11800091ba2aba644d4a43896ca,
+fresh review432f5188c61840f6c53c6705f121ff4bf1f8e493 through REV/VER-SLC-033.
+runtime/RESEARCH.md records existing observation, synthetic-entry and recovery
+limits; README fetched-prefix overclaim corrected. No new runtime artifact/pin
+or active implementation Slice. Master remains available for measured generic
+defects under standing stabilization authority; consumer scheduling/recovery
+and validation corrections remain externally owned.

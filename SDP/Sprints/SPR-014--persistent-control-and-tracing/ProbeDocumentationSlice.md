@@ -1,6 +1,6 @@
 # ITR-033 / SLC-033 — Accurate execution evidence and recovery guidance
 
-Status: active. Sprint SPR-014. Follows accepted evidence audit032.
+Status: accepted through REV-SLC-033 / VER-SLC-033. Sprint SPR-014. Follows accepted evidence audit032.
 Authority: shared-user stabilization/research mandate2026-10-29 and concrete
 source/consumer audit findings. Documentation only; accepted runtime unchanged.
 

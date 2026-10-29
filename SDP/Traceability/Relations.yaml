@@ -358,3 +358,5 @@ relations:
   - {from: REV-SLC-032, type: reviews, to: SLC-032}
   - {from: VER-SLC-032, type: verifies, to: SLC-032}
   - {from: SLC-033, type: clarifies, to: DES-121..DES-124}
+  - {from: REV-SLC-033, type: reviews, to: SLC-033}
+  - {from: VER-SLC-033, type: verifies, to: SLC-033}
