@@ -1,10 +1,10 @@
 schema_version: emu-sab80535-current-index-v1
-updated: 2026-10-28
+updated: 2026-10-29
 
 active:
   sprint: SPR-014
-  iteration: null
-  slice: null
+  iteration: ITR-032
+  slice: SLC-032
 
 merge_gate:
   status: MERGED
@@ -23,6 +23,8 @@ merge_gate:
   pr_12: closed-superseded
 
 items:
+  ITR-032: {kind: iteration, status: active, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/PerformanceAuditSlice.md}
+  SLC-032: {kind: slice, status: active-audit, state: current, source: SDP/Sprints/SPR-014--persistent-control-and-tracing/PerformanceAuditSlice.md}
   IFC-004: {kind: wire-extension, version: 0.4.0, status: accepted-immutable, state: current, source: interfaces/control31.lock.json}
   REV-SLC-031: {kind: review, status: approved, state: current, source: SDP/CodeReview/REV-SLC-031.md}
   VER-SLC-031: {kind: verification, status: passed, state: current, source: SDP/Verification/VER-SLC-031.md}

@@ -129,3 +129,8 @@ exact installed proof. IFC-004 wire-only0.4/3.1 frozen by external
 interfaces/control31.lock.json; old3.0/SDK0.3 and UART behavior unchanged.
 No implementation Slice remains active. Consumer028 pin remains until explicit
 opt-in intake; no user-lab processes were attached or modified.
+
+2026-10-29: PerformanceAuditSlice.md activates evidence-only SLC-032 under new
+user stabilization/research authority. New owned isolated tests allowed; existing
+user processes/pins untouched. Measure producer/transport overhead and audit
+probe/recovery contracts before any separately reviewed product correction.

@@ -36,3 +36,8 @@ concurred protocol before freeze; existing028 remains consumer pin.
 SLC-030 audit and SLC-031 opt-in enumeration now accepted. No implementation
 Slice active. REQ-028 full ACCESS gap remains explicit; later work needs its own
 bounded contract. Consumer integration pins are independently selected.
+
+2026-10-29: PerformanceAuditSlice.md activates evidence-only SLC-032 under new
+user stabilization/research authority. New owned isolated tests allowed; existing
+user processes/pins untouched. Measure producer/transport overhead and audit
+probe/recovery contracts before any separately reviewed product correction.
