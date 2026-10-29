@@ -277,9 +277,14 @@ instrumentation: explicit XDATA reads/writes and SFR99 writes/RMW can be selecte
 or watched, but broad access completeness is not advertised. Access predicates
 must name a supported space/range/mask. Broad selectors (matchMask0 or PC-only)
 can include available facts without asserting completeness. Instruction-begin
-facts can contain only the fetched opcode and empty text; retired instructions
-carry complete captured bytes/disassembly. A failed MOVX attempt never becomes
-a retired instruction.
+facts can contain only the fetched opcode and empty text. Retirement and abort
+retain all bytes actually fetched by that attempt, which may still be an
+incomplete instruction prefix: an untaken conditional path can omit an operand
+fetch. Disassembly text remains empty when the captured prefix is insufficient.
+Static decoding of the image may be shown separately as enrichment; it must not
+replace captured execution evidence. A failed MOVX attempt never becomes a
+retired instruction. See [execution research and recovery](RESEARCH.md) for
+state captures, invocation probes and UART value-validity rules.
 
 Capture A persists across calls, pauses, disconnects and resets, retaining
 cumulative cycles and reporting the current generation. Its maxCycles interval
