@@ -1,9 +1,149 @@
 schema_version: emu-sab80535-relations-v1
-updated: 2026-09-06
+updated: 2026-10-28
 
 identity_provenance: SDP/Verification/SLC-017-RECONCILIATION-AUDIT.md
 
 relations:
+  - {from: REV-SLC-031, type: reviews, to: SLC-031}
+  - {from: VER-SLC-031, type: verifies, to: SLC-031}
+  - {from: SLC-031, type: satisfies, to: REQ-030}
+  - {from: SLC-031, type: delivers, to: IFC-004}
+  - {from: IFC-004, type: extends, to: IFC-003}
+  - {from: SLC-030, type: audits, to: SLC-028}
+  - {from: REV-SLC-030, type: reviews, to: SLC-030}
+  - {from: VER-SLC-030, type: verifies, to: SLC-030}
+  - {from: REV-SLC-028, type: reviews, to: SLC-028}
+  - {from: VER-SLC-028, type: verifies, to: SLC-028}
+  - {from: SLC-028, type: satisfies, to: REQ-029}
+  - {from: ITR-028, type: belongs_to, to: SPR-014}
+  - {from: SLC-028, type: belongs_to, to: ITR-028}
+  - {from: SLC-028, type: implements_design, to: DES-123}
+  - {from: REV-SLC-027, type: reviews, to: SLC-027}
+  - {from: VER-SLC-027, type: verifies, to: SLC-027}
+  - {from: SLC-027, type: partially_satisfies, to: REQ-029}
+  - {from: REV-SLC-029, type: reviews, to: SLC-029}
+  - {from: VER-SLC-029, type: verifies, to: SLC-029}
+  - {from: ITR-029, type: belongs_to, to: SPR-014}
+  - {from: SLC-029, type: belongs_to, to: ITR-029}
+  - {from: SLC-029, type: corrects, to: SLC-025}
+  - {from: REV-SLC-025, type: reviews, to: SLC-025}
+  - {from: VER-SLC-025, type: verifies, to: SLC-025}
+  - {from: SLC-025, type: satisfies, to: REQ-027}
+  - {from: REV-SLC-025, type: opens, to: REV-SLC-025-F001..F006}
+  - {from: SLC-025, type: disposes, to: REV-SLC-025-F001..F006}
+  - {from: ITR-025, type: belongs_to, to: SPR-014}
+  - {from: SLC-025, type: belongs_to, to: ITR-025}
+  - {from: SLC-025, type: implements_design, to: DES-119..DES-124}
+  - {from: SLC-025, type: implements, to: REQ-027}
+  - {from: SLC-024, type: delivers, to: IFC-003}
+  - {from: IFC-003, type: extends, to: IFC-002}
+  - {from: IFC-003, type: specifies, to: DES-119..DES-124}
+  - {from: REV-SLC-024, type: reviews, to: SLC-024}
+  - {from: VER-SLC-024, type: verifies, to: SLC-024}
+  - {from: REV-SLC-024, type: opens, to: REV-SLC-024-F001..F008}
+  - {from: SLC-024, type: resolves, to: REV-SLC-024-F001..F008}
+  - {from: ITR-024, type: belongs_to, to: SPR-014}
+  - {from: SLC-024, type: belongs_to, to: ITR-024}
+  - {from: REQ-027..REQ-029, type: derives_from, to: MND-001}
+  - {from: DES-119..DES-124, type: realizes, to: REQ-027..REQ-029}
+  - {from: SLC-024, type: specifies, to: DES-119..DES-124}
+  - {from: REV-SLC-023, type: reviews, to: SLC-023}
+  - {from: VER-SLC-023, type: verifies, to: SLC-023}
+  - {from: SLC-023, type: satisfies, to: REQ-026}
+  - {from: REV-SLC-022, type: reviews, to: SLC-022}
+  - {from: VER-SLC-022, type: verifies, to: SLC-022}
+  - {from: SLC-022, type: implements_design, to: DES-115..DES-118}
+  - {from: ITR-023, type: belongs_to, to: SPR-013}
+  - {from: SLC-023, type: belongs_to, to: ITR-023}
+  - {from: SLC-023, type: verifies_integration, to: REQ-026}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F001}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F001}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F002}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F002}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F003}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F003}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F004}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F004}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F005}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F005}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F006}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F006}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F007}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F007}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F008}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F008}
+  - {from: REV-SLC-022, type: opens, to: REV-SLC-022-F009}
+  - {from: SLC-022, type: resolves, to: REV-SLC-022-F009}
+  - {from: SLC-021, type: delivers, to: IFC-002}
+  - {from: IFC-002, type: supersedes, to: IFC-001}
+  - {from: REV-SLC-021, type: reviews, to: SLC-021}
+  - {from: VER-SLC-021, type: verifies, to: SLC-021}
+  - {from: ITR-021, type: belongs_to, to: SPR-013}
+  - {from: SLC-021, type: belongs_to, to: ITR-021}
+  - {from: REQ-026, type: derives_from, to: MND-001}
+  - {from: DES-115..DES-118, type: realizes, to: REQ-026}
+  - {from: SPR-013, type: schedules, to: REQ-026}
+  - {from: ITR-022, type: belongs_to, to: SPR-013}
+  - {from: SLC-022, type: belongs_to, to: ITR-022}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F001}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F001}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F002}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F002}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F003}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F003}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F004}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F004}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F005}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F005}
+  - {from: REV-SLC-021, type: opens, to: REV-SLC-021-F006}
+  - {from: SLC-021, type: resolves, to: REV-SLC-021-F006}
+  - {from: REQ-025, type: derives_from, to: MND-001}
+  - {from: REQ-025, type: refines, to: REQ-018..REQ-024}
+  - {from: DES-111..DES-114, type: realizes, to: REQ-025}
+  - {from: SPR-012, type: schedules, to: REQ-025}
+  - {from: ITR-020, type: belongs_to, to: SPR-012}
+  - {from: SLC-020, type: belongs_to, to: ITR-020}
+  - {from: SLC-020, type: delivers, to: IFC-001}
+  - {from: IFC-001, type: realizes, to: DES-111..DES-114}
+  - {from: REV-SLC-020, type: reviews, to: SLC-020}
+  - {from: VER-SLC-020, type: verifies, to: SLC-020}
+  - {from: REV-SLC-020, type: opens, to: REV-SLC-020-F001}
+  - {from: SLC-020, type: resolves, to: REV-SLC-020-F001}
+  - {from: REV-SLC-020, type: opens, to: REV-SLC-020-F002}
+  - {from: SLC-020, type: resolves, to: REV-SLC-020-F002}
+  - {from: REV-SLC-020, type: opens, to: REV-SLC-020-F003}
+  - {from: SLC-020, type: resolves, to: REV-SLC-020-F003}
+  - {from: REV-SLC-020, type: opens, to: REV-SLC-020-F004}
+  - {from: SLC-020, type: resolves, to: REV-SLC-020-F004}
+  - {from: REV-SLC-020, type: opens, to: REV-SLC-020-F005}
+  - {from: SLC-020, type: resolves, to: REV-SLC-020-F005}
+  - {from: REV-SLC-020, type: opens, to: REV-SLC-020-F006}
+  - {from: SLC-020, type: resolves, to: REV-SLC-020-F006}
+  - {from: REV-SLC-020, type: opens, to: REV-SLC-020-F007}
+  - {from: SLC-020, type: resolves, to: REV-SLC-020-F007}
+  - {from: REV-SLC-019, type: reviews, to: SLC-019}
+  - {from: VER-SLC-019, type: verifies, to: SLC-019}
+  - {from: REV-SLC-019, type: opens, to: REV-SLC-019-F001}
+  - {from: SLC-019, type: resolves, to: REV-SLC-019-F001}
+  - {from: REQ-017, type: release_gated_by, to: REQ-024}
+  - {from: STU-004, type: informs, to: MND-001}
+  - {from: REQ-018..REQ-024, type: derives_from, to: MND-001}
+  - {from: REQ-018..REQ-024, type: informed_by, to: STU-004}
+  - {from: ARCH-011..ARCH-018, type: realizes, to: REQ-018..REQ-024}
+  - {from: DES-101..DES-110, type: refines, to: ARCH-011..ARCH-018}
+  - {from: SPR-011, type: schedules, to: REQ-018..REQ-024}
+  - {from: ITR-019, type: belongs_to, to: SPR-011}
+  - {from: SLC-019, type: belongs_to, to: ITR-019}
+  - {from: SLC-019, type: defines, to: STU-004}
+  - {from: SLC-019, type: defines, to: DES-101..DES-110}
+  - {from: REV-SLC-018, type: reviews, to: SLC-018}
+  - {from: VER-SLC-018, type: verifies, to: SLC-018}
+  - {from: REQ-017, type: derives_from, to: MND-001}
+  - {from: DES-098..DES-100, type: realizes, to: REQ-017}
+  - {from: SPR-010, type: schedules, to: REQ-017}
+  - {from: ITR-018, type: belongs_to, to: SPR-010}
+  - {from: SLC-018, type: belongs_to, to: ITR-018}
+  - {from: SLC-018, type: implements_design, to: DES-098..DES-100}
   - {from: REV-SLC-017-RECONCILIATION, type: opens, to: REV-SLC-017-EVIDENCE-F001}
   - {from: SLC-017, type: resolves, to: REV-SLC-017-EVIDENCE-F001}
   - {from: STU-001, type: informs, to: MND-001}
@@ -213,3 +353,10 @@ relations:
   - {from: AUD-SLC-017-RECONCILIATION, type: audits, to: SLC-017}
   - {from: REV-SLC-017-RECONCILIATION, type: reviews, to: AUD-SLC-017-RECONCILIATION}
   - {from: VER-SLC-017-RECONCILIATION, type: verifies, to: AUD-SLC-017-RECONCILIATION}
+
+  - {from: SLC-032, type: verifies, to: REQ-027..REQ-029}
+  - {from: REV-SLC-032, type: reviews, to: SLC-032}
+  - {from: VER-SLC-032, type: verifies, to: SLC-032}
+  - {from: SLC-033, type: clarifies, to: DES-121..DES-124}
+  - {from: REV-SLC-033, type: reviews, to: SLC-033}
+  - {from: VER-SLC-033, type: verifies, to: SLC-033}

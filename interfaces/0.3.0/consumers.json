@@ -1,0 +1,6 @@
+{
+  "bundleVersion": "0.3.0",
+  "status": "target-contract-only",
+  "consumers": [],
+  "policy": "Consumer implementation requires separately reviewed source/manifest/archive lock; no target capabilities implemented."
+}

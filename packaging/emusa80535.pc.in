@@ -1,0 +1,9 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: emusa80535
+Description: Deterministic generic SAB80535 emulator and same-build debugger SDK
+Version: @VERSION@
+Libs: -L${libdir} -lemusa80535
+Cflags: -I${includedir} -I${includedir}/emusa80535

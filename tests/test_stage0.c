@@ -159,6 +159,196 @@ static void test_classic_instruction_regression(void)
     CHECK(result.pc == 4);
 }
 
+/* MOV direct,@Ri uses the active bank's pointer as an indirect source.
+ * Deliberately different RAM/SFR values distinguish it from MOV @Ri,direct. */
+static unsigned gMovReads, gMovWrites;
+static uint8_t gMovWriteAddress, gMovWriteValue;
+static uint16_t gMovWritePC;
+static bool gMovAbortOnWrite, gMovAborted;
+
+static uint8_t mov_sfr_read(struct em8051 *aCPU, uint8_t aAddress)
+{
+    gMovReads++;
+    return 0x96;
+}
+
+static void mov_sfr_write(struct em8051 *aCPU, uint8_t aAddress)
+{
+    gMovWrites++;
+    gMovWriteAddress = aAddress;
+    gMovWriteValue = aCPU->mSFR[aAddress - 0x80u];
+    gMovWritePC = aCPU->mPC;
+    gMovAborted = gMovAbortOnWrite;
+}
+
+static bool mov_execution_aborted(const struct em8051 *aCPU, void *aUser)
+{
+    return gMovAborted;
+}
+
+static void test_mov_direct_indirect(void)
+{
+    static const enum em8051_variant variants[] = {
+        EM8051_VARIANT_8051, EM8051_VARIANT_8052, EM8051_VARIANT_SAB80535
+    };
+    struct fixture fixture;
+    struct em8051_run_result result;
+    uint8_t expected_lower[128], expected_upper[128];
+    unsigned variant, dispatch, bank, ri, scenario, i;
+
+    for (variant = 0; variant < ARRAY_SIZE(variants); variant++)
+    for (dispatch = 0; dispatch < 2; dispatch++)
+    for (bank = 0; bank < 4; bank++)
+    for (ri = 0; ri < 2; ri++)
+    for (scenario = 0; scenario < 11; scenario++)
+    {
+        uint8_t pointer = (uint8_t)(8u * bank + ri);
+        uint8_t source = 0x42, destination = 0x53, value = 0x65;
+        uint8_t psw = (uint8_t)(PSWMASK_C | PSWMASK_AC | PSWMASK_OV |
+                                (bank << PSW_RS0));
+        bool abort_write = scenario == 8 || scenario == 9;
+        bool upper = (scenario >= 2 && scenario <= 4) || scenario == 10;
+        if (upper && scenario != 10 && variants[variant] == EM8051_VARIANT_8051)
+            continue;
+        switch (scenario)
+        {
+        case 1: destination = 0xF0; break; /* lower RAM -> B */
+        case 2: source = 0xA5; break; /* upper RAM -> lower RAM */
+        case 3: source = 0xA5; destination = 0xF0; break;
+        case 4: source = destination = 0xF0; break; /* IRAM != SFR */
+        case 5: destination = source; break; /* exact RAM self-alias */
+        case 6: destination = pointer; break; /* overwrite source Ri */
+        case 7: destination = 0xD0; break; /* overwrite bank/flags */
+        case 8: destination = 0xF0; break; /* abort at B write */
+        case 9: destination = 0xD0; break; /* abort before parity update */
+        case 10: source = 0xA5; break; /* retain absent-upper 8051 behavior */
+        default: break;
+        }
+        setup_fixture(&fixture, variants[variant]);
+        memset(fixture.cpu.mLowerData, 0x19, 128);
+        if (fixture.cpu.mUpperData)
+            memset(fixture.cpu.mUpperData, 0x2B, 128);
+        /* Other banks and the other Ri point at a distinct sentinel byte. */
+        for (i = 0; i < 4; i++)
+        {
+            fixture.cpu.mLowerData[8u * i] = 0x60;
+            fixture.cpu.mLowerData[8u * i + 1u] = 0x61;
+        }
+        fixture.cpu.mLowerData[pointer] = source;
+        if (upper && fixture.cpu.mUpperData)
+            fixture.cpu.mUpperData[source - 0x80u] = value;
+        else if (upper)
+            value = 0x77; /* established missing indirect RAM sentinel */
+        else
+            fixture.cpu.mLowerData[source] = value;
+        fixture.cpu.mSFR[REG_B] = 0x96;
+        fixture.cpu.mSFR[REG_PSW] = psw;
+        fixture.cpu.mSFR[REG_ACC] = 0x3C; /* even parity, unchanged by MOV */
+        fixture.cpu.mSFR[REG_TMOD] = TMODMASK_M0_0;
+        fixture.cpu.mSFR[REG_TCON] = TCONMASK_TR0;
+        fixture.code[0] = (uint8_t)(0x86u + ri);
+        fixture.code[1] = destination;
+        fixture.code[2] = 0x04; /* INC A must never execute */
+        if (dispatch)
+            fixture.cpu.op[fixture.code[0]] = do_op;
+        for (i = 0; i < 128; i++)
+        {
+            fixture.cpu.sfrread[i] = mov_sfr_read;
+            fixture.cpu.sfrwrite[i] = mov_sfr_write;
+        }
+        gMovReads = gMovWrites = 0;
+        gMovWriteAddress = gMovWriteValue = 0;
+        gMovWritePC = 0xFFFF;
+        gMovAbortOnWrite = abort_write;
+        gMovAborted = false;
+        em8051_set_execution_abort(&fixture.cpu, mov_execution_aborted, NULL);
+        memcpy(expected_lower, fixture.cpu.mLowerData, 128);
+        if (destination < 0x80u)
+            expected_lower[destination] = value;
+        if (fixture.cpu.mUpperData)
+            memcpy(expected_upper, fixture.cpu.mUpperData, 128);
+
+        CHECK(em8051_step_instruction(&fixture.cpu, &result) ==
+              (abort_write ? EM8051_STOP_ABORTED : EM8051_STOP_INSTRUCTION_LIMIT));
+        CHECK(memcmp(fixture.cpu.mLowerData, expected_lower, 128) == 0);
+        if (fixture.cpu.mUpperData)
+            CHECK(memcmp(fixture.cpu.mUpperData, expected_upper, 128) == 0);
+        CHECK(fixture.cpu.mSFR[REG_B] == (destination == 0xF0 ? value : 0x96));
+        CHECK(fixture.cpu.mSFR[REG_ACC] == 0x3C);
+        CHECK(fixture.cpu.mSFR[REG_PSW] == (destination == 0xD0 ?
+              (abort_write ? value : (value & (uint8_t)~PSWMASK_P)) : psw));
+        CHECK(gMovReads == 0);
+        CHECK(gMovWrites == (destination >= 0x80u ? 1u : 0u));
+        if (destination >= 0x80u)
+        {
+            CHECK(gMovWriteAddress == destination);
+            CHECK(gMovWriteValue == value);
+            CHECK(gMovWritePC == 0);
+        }
+        CHECK(fixture.cpu.mPC == (abort_write ? 0 : 2));
+        CHECK(result.pc == fixture.cpu.mPC);
+        CHECK(result.instructions == (abort_write ? 0u : 1u));
+        CHECK(result.machine_cycles == (abort_write ? 0u : 2u));
+        CHECK(fixture.cpu.mInstructionCount == result.instructions);
+        CHECK(fixture.cpu.mMachineCycleCount == result.machine_cycles);
+        CHECK(fixture.cpu.mTickDelay == 0);
+        CHECK(fixture.cpu.mSFR[REG_TL0] == (abort_write ? 0 : 2));
+        CHECK(!fixture.cpu.mExceptionRaised);
+    }
+}
+
+static void test_mov_direct_indirect_program(void)
+{
+    static const enum em8051_variant variants[] = {
+        EM8051_VARIANT_8051, EM8051_VARIANT_8052, EM8051_VARIANT_SAB80535
+    };
+    static const unsigned char programs[][14] = {
+        {
+            0x78, 0x30,       /* MOV R0,#30 */
+            0x75, 0x30, 0xA5, /* MOV 30,#A5 */
+            0x75, 0x20, 0x5A, /* MOV 20,#5A */
+            0x86, 0x20,       /* MOV 20,@R0 */
+            0xE5, 0x20,       /* MOV A,20 */
+            0x80, 0xFE        /* SJMP $ */
+        },
+        {
+            0x79, 0x30,       /* MOV R1,#30 */
+            0x75, 0x30, 0xA5, /* MOV 30,#A5 */
+            0x75, 0x20, 0x5A, /* MOV 20,#5A */
+            0x87, 0x20,       /* MOV 20,@R1 */
+            0xE5, 0x20,       /* MOV A,20 */
+            0x80, 0xFE        /* SJMP $ */
+        }
+    };
+    struct fixture fixture;
+    struct em8051_run_result result;
+    unsigned variant, dispatch, ri, opcode;
+
+    for (variant = 0; variant < ARRAY_SIZE(variants); variant++)
+    for (dispatch = 0; dispatch < 2; dispatch++)
+    for (ri = 0; ri < ARRAY_SIZE(programs); ri++)
+    {
+        /* The complete CODE image is this prefix followed by zero padding. */
+        setup_fixture(&fixture, variants[variant]);
+        memcpy(fixture.code, programs[ri], sizeof(programs[ri]));
+        if (dispatch)
+            for (opcode = 0; opcode < 256; opcode++)
+                fixture.cpu.op[opcode] = do_op;
+        CHECK(em8051_run(&fixture.cpu, 5, &result) == EM8051_STOP_INSTRUCTION_LIMIT);
+        CHECK(fixture.cpu.mSFR[REG_ACC] == 0xA5);
+        CHECK(fixture.cpu.mLowerData[0x20] == 0xA5);
+        CHECK(fixture.cpu.mLowerData[0x30] == 0xA5);
+        CHECK(fixture.cpu.mLowerData[ri] == 0x30);
+        CHECK(result.pc == 0x000C);
+        CHECK(result.instructions == 5);
+        CHECK(result.machine_cycles == 8);
+        CHECK(fixture.cpu.mPC == result.pc);
+        CHECK(fixture.cpu.mInstructionCount == result.instructions);
+        CHECK(fixture.cpu.mMachineCycleCount == result.machine_cycles);
+        CHECK(fixture.cpu.mTickDelay == 0);
+    }
+}
+
 static void test_upper_iram_and_stack(void)
 {
     struct fixture fixture;
@@ -697,6 +887,8 @@ int main(void)
 {
     test_variant_and_sab_reset_map();
     test_classic_instruction_regression();
+    test_mov_direct_indirect();
+    test_mov_direct_indirect_program();
     test_upper_iram_and_stack();
     test_sfr_gateway_validation();
     test_exact_raw_loader();

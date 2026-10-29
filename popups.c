@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "curses.h"
-#include "emu8051.h"
+#include <emusa80535/emu8051.h>
 #include "emulator.h"
 
 // store the object filename (Accessed through command line as well)

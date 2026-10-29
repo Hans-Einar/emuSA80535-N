@@ -1,0 +1,43 @@
+{
+  "base": {
+    "archiveSha256": "405f22f7fc7e0a49d921715102102a4d667ba1ff84b1238494d76353feeb0f53",
+    "bundleVersion": "0.3.0",
+    "manifestSha256": "ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0",
+    "sourceCommit": "2133e7220284bb8dc1600ba98b2d842106a7dba4"
+  },
+  "bundleVersion": "0.4.0",
+  "files": {
+    ".gitignore": "32dae3052f331ee34d628ef535709b301259a45df7c7522c4d35dcf49873f00b",
+    "LICENSE": "3c05d81f8d97faa7f8acc73af3e1a41491d9cea7f7ed01e5b03ec5c4e9566751",
+    "README.md": "22d1fda057a79b06fdc3888563a2ad532747c77c8ab561001cf61aa56965d715",
+    "baseline-tools/bundle.py": "bb4739bbf98fc5a2387895dc6258b8b62365e48dc5f098978082da5e678914d1",
+    "baseline-tools/target_wire.py": "cb44b6a04b3319b98348dc07cb428b3d5358242dee2cd38d65a7bad4e5f8668c",
+    "bundle.py": "9db49528f342b8a6047d65d36e4ac7a9e3e7b38ad479a7566e3f134380ee5131",
+    "check_contract.py": "699602f641c4adfc2703e7c4787cc4e8291c6a545635e194c58b1e513cef86c0",
+    "examples/runtime-3.1.ndjson": "b09fb6a7454c01d6de02fb7212d60b171475812aacdbbac10cb7c255a81a4ab1",
+    "examples/trace-file-0.3.ndjson": "96218b0392ba50ee53d257955ec7f855d77ece2f3a1f449fb9fe9ff6b3a563cd",
+    "schemas/runtime-3.1.schema.json": "08cb8a21f7096da68a660f2ce1c84604d13424ccc63526e41c345ecf0dad989e",
+    "schemas/trace-file-0.3.schema.json": "e504082cfe5a4ef9f17a6c028a5c04f96521bcef5a73b1421123538d03fa00cd",
+    "wire.py": "154c3ee58ab8d16f5520db6e142deb960efeb359d2c21e18677af43878ac159d"
+  },
+  "kind": "control-wire-extension",
+  "nativeInterfaces": {
+    "boardAbi": "1.0",
+    "controlQuery": "emusa80535_control_query_v3",
+    "cpuApi": 1,
+    "observationApi": 1,
+    "traceApi": 1
+  },
+  "protocol": {
+    "major": 3,
+    "minor": 1
+  },
+  "traceFileContract": {
+    "bundleVersion": "0.3.0",
+    "manifestSha256": "ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0",
+    "protocol": {
+      "major": 3,
+      "minor": 0
+    }
+  }
+}

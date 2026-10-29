@@ -4,14 +4,14 @@
  * Distributed under the MIT license; see LICENSE.
  */
 
-#include "emu_debug_event.h"
+#include <emusa80535/emu_debug_event.h>
 
 #include <limits.h>
 #include <string.h>
 
 static bool value_width_valid(uint8_t aWidth)
 {
-    return aWidth == 8u || aWidth == 16u || aWidth == 32u || aWidth == 64u;
+    return aWidth == 1u || aWidth == 8u || aWidth == 16u || aWidth == 32u || aWidth == 64u;
 }
 
 static uint64_t width_mask(uint8_t aWidth)
@@ -94,7 +94,7 @@ static bool action_valid(const struct em8051_debug_watch_action *aAction)
 {
     size_t i;
 
-    if (aAction->kind > EM8051_DEBUG_WATCH_ROUTE)
+    if (aAction->canonical > 1u || aAction->kind > EM8051_DEBUG_WATCH_ROUTE)
         return false;
     if (aAction->condition.present > 1u)
         return false;
@@ -108,7 +108,7 @@ static bool action_valid(const struct em8051_debug_watch_action *aAction)
     }
     if (aAction->kind != EM8051_DEBUG_WATCH_ROUTE)
         return aAction->trace_id_count == 0u;
-    if (aAction->trace_id_count == 0u ||
+    if ((!aAction->canonical && aAction->trace_id_count == 0u) ||
         aAction->trace_id_count > EM8051_DEBUG_WATCH_MAX_ROUTES)
         return false;
     for (i = 0u; i < aAction->trace_id_count; ++i)
@@ -127,6 +127,7 @@ static bool watch_valid(const struct em8051_debug_watch *aWatch)
     size_t i;
 
     if (aWatch->id == 0u || aWatch->enabled > 1u ||
+        aWatch->canonical_space > 4u ||
         aWatch->address_space == EM8051_DEBUG_SPACE_NONE ||
         aWatch->address_space > EM8051_DEBUG_SPACE_XDATA ||
         aWatch->address_first > aWatch->address_last ||
@@ -248,6 +249,10 @@ enum em8051_debug_event_status em8051_debug_event_bus_emit(
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
     event = *aEvent;
     event.sequence = aBus->next_sequence++;
+    if (event.observation.kind) {
+        event.observation.sequence = event.sequence;
+        event.observation.generation = event.generation;
+    }
     aBus->dispatching = 1u;
     for (i = 0u; i < aBus->observer_count; ++i)
     {
@@ -311,7 +316,10 @@ enum em8051_debug_event_status em8051_debug_watch_table_match(
     if (aTable == NULL || aEvent == NULL || aRequired == NULL ||
         (aCapacity != 0u && aResults == NULL))
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
-    if (aEvent->kind == EM8051_DEBUG_EVENT_WATCH_MATCH)
+    if (aEvent->kind == EM8051_DEBUG_EVENT_WATCH_MATCH ||
+        (aEvent->observation.kind &&
+         (aEvent->observation.kind != EMUIF_OBS_ACCESS_RESULT ||
+          aEvent->observation.status != EMUIF_OK)))
     {
         *aRequired = 0u;
         return EM8051_DEBUG_EVENT_OK;
@@ -322,7 +330,8 @@ enum em8051_debug_event_status em8051_debug_watch_table_match(
         struct em8051_debug_watch_result result;
         size_t action_index;
 
-        if (watch->enabled == 0u || watch->address_space != aEvent->address_space ||
+        if (watch->enabled == 0u ||
+            (watch->canonical_space ? (!aEvent->observation.kind || aEvent->observation.space + 1 != watch->canonical_space) : watch->address_space != aEvent->address_space) ||
             aEvent->address < watch->address_first ||
             aEvent->address > watch->address_last ||
             (watch->access_mask & aEvent->access) == 0u)

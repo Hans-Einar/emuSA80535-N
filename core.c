@@ -30,7 +30,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "emu8051.h"
+#include <emusa80535/emu8051.h>
+#include "emu_cpu_observation_internal.h"
 
 #define SAB_SFR_INDEX(aAddress) ((uint8_t)((aAddress) - 0x80u))
 #define SAB_IRQ_BIT(aSource) ((uint16_t)(1u << (unsigned)(aSource)))
@@ -380,6 +381,20 @@ int em8051_init_variant(struct em8051 *aCPU, enum em8051_variant aVariant)
     return 0;
 }
 
+void em8051_set_execution_abort(struct em8051 *aCPU,
+                                em8051executionabort aAbort, void *aUser)
+{
+    if (!aCPU) return;
+    aCPU->execution_abort = aAbort;
+    aCPU->execution_abort_user = aUser;
+}
+
+bool em8051_execution_aborted(const struct em8051 *aCPU)
+{
+    return aCPU && aCPU->execution_abort &&
+        aCPU->execution_abort(aCPU, aCPU->execution_abort_user);
+}
+
 void em8051_set_trace(struct em8051 *aCPU, em8051trace aTrace, void *aUser)
 {
     aCPU->trace = aTrace;
@@ -458,7 +473,7 @@ void em8051_trace_emit(struct em8051 *aCPU, enum em8051_trace_type aType,
                        uint16_t aAddress, uint8_t aValue)
 {
     struct em8051_trace_record record;
-    if (!aCPU->trace)
+    if (em8051_execution_aborted(aCPU) || !aCPU->trace)
         return;
 
     record.type = aType;
@@ -497,7 +512,8 @@ static void sab_external_maintain_level_requests(struct em8051 *aCPU)
         }
         else if (!(pins & pin_mask))
         {
-            aCPU->mSFR[REG_TCON] |= request_mask;
+            emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | request_mask,
+                               aCPU->mMachineCycleCount);
             aCPU->mSABExternalLevelAsserted |= sample_bit;
         }
         else if (aCPU->mSABExternalLevelAsserted & sample_bit)
@@ -663,7 +679,8 @@ static void sab_external_observe_change(
     }
 
     if (qualifying)
-        *request_sfr |= request_mask;
+        emu_cpu_irq_write(aCPU, (uint8_t)(request_sfr - aCPU->mSFR),
+                           *request_sfr | request_mask, aCPU->mMachineCycleCount);
     sab_irq_sync(aCPU);
     sab_external_trace_emit(aCPU, aSource, aOldLevel, aNewLevel, trigger);
 }
@@ -808,6 +825,8 @@ static void sab_uart_tx_start(struct em8051 *aCPU, uint64_t aMachineCycle)
     aCPU->mSABUartTxPending = false;
     aCPU->mSABUartTxActive = true;
     aCPU->mSABUartTxBitIndex = 0;
+    (void)emu_cpu_raw(aCPU, EMU_RAW_TX_START, aMachineCycle,
+                       aCPU->mSABUartTxData, aCPU->mSABUartTxNinth, 0, 0);
     sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_START,
                         aMachineCycle, aCPU->mSABUartTxData,
                         aCPU->mSABUartTxNinth, 0, false);
@@ -838,16 +857,24 @@ static void sab_uart_tx_boundary(struct em8051 *aCPU,
     if (aCPU->mSABUartTxBitIndex == 9u)
     {
         aCPU->mSABUartTxBitIndex = 10u;
-        aCPU->mSFR[REG_SCON] |= SCONMASK_TI;
+        {
+            bool ti_edge = !(aCPU->mSFR[REG_SCON] & SCONMASK_TI);
+            emu_cpu_irq_write(aCPU, REG_SCON, aCPU->mSFR[REG_SCON] | SCONMASK_TI,
+                               aMachineCycle);
+            (void)emu_cpu_raw(aCPU, EMU_RAW_TX_STOP, aMachineCycle, 0, 0, 0, 0);
+            if (ti_edge) (void)emu_cpu_raw(aCPU, EMU_RAW_TX_TI, aMachineCycle, 0, 0, 0, 0);
+        }
         sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_STOP,
                             aMachineCycle, aCPU->mSABUartTxData,
                             aCPU->mSABUartTxNinth, 10u, true);
         return;
     }
 
+    (void)emu_cpu_raw(aCPU, EMU_RAW_TX_END, aMachineCycle, 0, 0, 0, 0);
     sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_TX_END,
                         aMachineCycle, aCPU->mSABUartTxData,
                         aCPU->mSABUartTxNinth, 10u, true);
+    if (em8051_execution_aborted(aCPU)) return;
     aCPU->mSABUartTxActive = false;
     if (aCPU->mSABUartTxPending)
         sab_uart_tx_start(aCPU, aMachineCycle);
@@ -871,7 +898,10 @@ static void sab_uart_rx_boundary(struct em8051 *aCPU,
             aCPU->mSFR[REG_SCON] &= (uint8_t)~SCONMASK_RB8;
             if (aCPU->mSABUartRxPendingNinth)
                 aCPU->mSFR[REG_SCON] |= SCONMASK_RB8;
-            aCPU->mSFR[REG_SCON] |= SCONMASK_RI;
+            emu_cpu_irq_write(aCPU, REG_SCON, aCPU->mSFR[REG_SCON] | SCONMASK_RI,
+                               aMachineCycle);
+            (void)emu_cpu_raw(aCPU, EMU_RAW_RX_ACCEPT, aMachineCycle,
+                               aCPU->mSABUartRxPendingData, aCPU->mSABUartRxPendingNinth, 0, 0);
             sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_ACCEPT,
                                 aMachineCycle,
                                 aCPU->mSABUartRxPendingData,
@@ -879,6 +909,9 @@ static void sab_uart_rx_boundary(struct em8051 *aCPU,
         }
         else
         {
+            (void)emu_cpu_raw(aCPU, EMU_RAW_RX_DROP, aMachineCycle,
+                               (aCPU->mSFR[REG_SCON] & SCONMASK_RI) ?
+                               EMUIF_OBS_REASON_RI : EMUIF_OBS_REASON_SM2, 0, 0, 0);
             sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_DROP,
                                 aMachineCycle,
                                 aCPU->mSABUartRxPendingData,
@@ -888,6 +921,7 @@ static void sab_uart_rx_boundary(struct em8051 *aCPU,
     else if (aCPU->mSABUartRxBitIndex == 11u)
     {
         aCPU->mSABUartRxActive = false;
+        (void)emu_cpu_raw(aCPU, EMU_RAW_RX_END, aMachineCycle, 0, 0, 0, 0);
         sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_END,
                             aMachineCycle, aCPU->mSABUartRxPendingData,
                             aCPU->mSABUartRxPendingNinth, 10u, true);
@@ -906,6 +940,7 @@ static void sab_uart_timer1_overflow(struct em8051 *aCPU)
     completed_cycle = aCPU->mMachineCycleCount + 1u;
     if (sab_uart_divider_step(&aCPU->mSABUartDividerPhase, smod))
         sab_uart_tx_boundary(aCPU, completed_cycle);
+    if (em8051_execution_aborted(aCPU)) return;
     if (aCPU->mSABUartRxActive &&
         sab_uart_divider_step(&aCPU->mSABUartRxDividerPhase, smod))
     {
@@ -922,6 +957,8 @@ static void sab_uart_sbuf_write(struct em8051 *aCPU, uint8_t aValue)
     aCPU->mSABUartTxPendingNinth =
         (aCPU->mSFR[REG_SCON] & SCONMASK_TB8) != 0;
     aCPU->mSABUartTxPending = true;
+    (void)emu_cpu_raw(aCPU, EMU_RAW_TX_HOLD, aCPU->mMachineCycleCount,
+                       aValue, aCPU->mSABUartTxPendingNinth, 0, 0);
 }
 
 bool em8051_sab_uart_inject_rx_frame(struct em8051 *aCPU, uint8_t aData,
@@ -939,6 +976,8 @@ bool em8051_sab_uart_inject_rx_frame(struct em8051 *aCPU, uint8_t aData,
     aCPU->mSABUartRxDividerPhase = 0;
     aCPU->mSABUartRxBitIndex = 0;
     aCPU->mSABUartRxActive = true;
+    (void)emu_cpu_raw(aCPU, EMU_RAW_RX_START, aCPU->mMachineCycleCount,
+                       aData, aNinthBit, 0, 0);
     sab_uart_trace_emit(aCPU, EM8051_SAB_UART_TRACE_RX_START,
                         aCPU->mMachineCycleCount, aData, aNinthBit, 0, false);
     return true;
@@ -1092,8 +1131,9 @@ static void sab_adc_tick(struct em8051 *aCPU)
     }
     aCPU->mSABADCActive = false;
     sab_adc_set_busy(aCPU, false);
-    aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)] |=
-        SAB_IRCONMASK_IADC;
+    emu_cpu_irq_write(aCPU, SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON),
+                       aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)] | SAB_IRCONMASK_IADC,
+                       machine_cycle);
     sab_irq_sync(aCPU);
     sab_adc_trace_emit(aCPU, EM8051_SAB_ADC_TRACE_COMPLETE,
                        machine_cycle);
@@ -1148,6 +1188,9 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
         aAddress == (uint8_t)(REG_SBUF + 0x80u))
     {
+        uint64_t observed_access = emu_cpu_raw(aCPU, EMU_RAW_ACCESS_BEGIN,
+            aCPU->mMachineCycleCount, aAddress, EMUIF_SPACE_SFR, EMUIF_OBS_ACCESS_WRITE, aValue);
+        if (em8051_execution_aborted(aCPU)) return;
         sab_uart_sbuf_write(aCPU, aValue);
         /* Present TX through the established callback surface, then restore
          * the SBUF mirror from canonical RX state as it exists after the
@@ -1155,12 +1198,19 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
         aCPU->mSFR[index] = aValue;
         if (aCPU->sfrwrite[index])
             aCPU->sfrwrite[index](aCPU, aAddress);
+        if (em8051_execution_aborted(aCPU)) {
+            (void)emu_cpu_raw(aCPU, EMU_RAW_ACCESS_END, aCPU->mMachineCycleCount,
+                observed_access, aAddress, (EMUIF_SPACE_SFR << 16) | EMUIF_OBS_ACCESS_WRITE, aValue);
+            return;
+        }
         aCPU->mSFR[index] = aCPU->mSABUartRxData;
         em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
         sab_adc_finish_sfr_transaction(aCPU);
+        (void)emu_cpu_raw(aCPU, EMU_RAW_ACCESS_END, aCPU->mMachineCycleCount,
+            observed_access, aAddress, (EMUIF_SPACE_SFR << 16) | EMUIF_OBS_ACCESS_WRITE, aValue);
         return;
     }
-    aCPU->mSFR[index] = aValue;
+    emu_cpu_irq_write(aCPU, index, aValue, aCPU->mMachineCycleCount);
     if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
         aAddress == EM8051_SAB_SFR_DAPR)
     {
@@ -1168,6 +1218,7 @@ void em8051_sfr_write(struct em8051 *aCPU, uint8_t aAddress, uint8_t aValue)
     }
     if (aCPU->sfrwrite[index])
         aCPU->sfrwrite[index](aCPU, aAddress);
+    if (em8051_execution_aborted(aCPU)) return;
     if (sab_port_index(aCPU, aAddress) >= 0)
         sab_external_sample_port(aCPU, aAddress);
     em8051_trace_emit(aCPU, EM8051_TRACE_SFR_WRITE, aAddress, aValue);
@@ -1249,7 +1300,8 @@ bool em8051_sab_irq_set_pending(struct em8051 *aCPU,
             request_mask = SCONMASK_RI;
         else if (aSource == EM8051_SAB_IRQ_TIMER2)
             request_mask = SAB_IRCONMASK_TF2;
-        *request_sfr |= request_mask;
+        emu_cpu_irq_write(aCPU, (uint8_t)(request_sfr - aCPU->mSFR),
+                           *request_sfr | request_mask, aCPU->mMachineCycleCount);
     }
     else
     {
@@ -1304,6 +1356,7 @@ static void timer_overflow_emit(struct em8051 *aCPU,
          * remain independent views of the same completed timer overflow. */
         sab_uart_timer1_overflow(aCPU);
     }
+    if (em8051_execution_aborted(aCPU)) return;
     if (!aCPU->timer_overflow)
         return;
 
@@ -1367,7 +1420,8 @@ static void timer_tick(struct em8051 *aCPU)
             if (v > 0xff)
             {
                 // TL0 overflowed
-                aCPU->mSFR[REG_TCON] |= TCONMASK_TF0;
+                emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF0,
+                                  aCPU->mMachineCycleCount + 1u);
             }
         }
 
@@ -1399,7 +1453,8 @@ static void timer_tick(struct em8051 *aCPU)
             if (v > 0xff)
             {
                 // TH0 overflowed
-                aCPU->mSFR[REG_TCON] |= TCONMASK_TF1;
+                emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF1,
+                                  aCPU->mMachineCycleCount + 1u);
             }
         }
 
@@ -1444,7 +1499,8 @@ static void timer_tick(struct em8051 *aCPU)
                     if (v > 0xff)
                     {
                         // TH0 overflowed; set bit
-                        aCPU->mSFR[REG_TCON] |= TCONMASK_TF0;
+                        emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF0,
+                                  aCPU->mMachineCycleCount + 1u);
                     }
                 }
                 break;
@@ -1461,7 +1517,8 @@ static void timer_tick(struct em8051 *aCPU)
                     if (v > 0xff)
                     {
                         // TH0 overflowed; set bit
-                        aCPU->mSFR[REG_TCON] |= TCONMASK_TF0;
+                        emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF0,
+                                  aCPU->mMachineCycleCount + 1u);
                         timer_overflow_emit(aCPU, EM8051_TIMER0);
                     }
                 }
@@ -1474,7 +1531,8 @@ static void timer_tick(struct em8051 *aCPU)
                 {
                     // TL0 overflowed; reload
                     aCPU->mSFR[REG_TL0] = aCPU->mSFR[REG_TH0];
-                    aCPU->mSFR[REG_TCON] |= TCONMASK_TF0;
+                    emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF0,
+                                  aCPU->mMachineCycleCount + 1u);
                 }
                 break;
             default: // two 8-bit timers
@@ -1483,6 +1541,8 @@ static void timer_tick(struct em8051 *aCPU)
             }
         }
     }
+
+    if (em8051_execution_aborted(aCPU)) return;
 
     // TODO: External int 1 
 
@@ -1524,7 +1584,8 @@ static void timer_tick(struct em8051 *aCPU)
                         // TH1 overflowed; set bit
                         // Only update TF1 if timer 0 is not in "mode 3"
                     if (!((aCPU->mSFR[REG_TMOD] & T0_MODE3_MASK ) == T0_MODE3_MASK))
-                        aCPU->mSFR[REG_TCON] |= TCONMASK_TF1;
+                        emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF1,
+                                  aCPU->mMachineCycleCount + 1u);
 
                     } 
                 }
@@ -1545,7 +1606,8 @@ static void timer_tick(struct em8051 *aCPU)
                         // Only update TF1 if timer 0 is not in "mode 3"
               
                         if (!((aCPU->mSFR[REG_TMOD] & T0_MODE3_MASK)  == T0_MODE3_MASK))
-                            aCPU->mSFR[REG_TCON] |= TCONMASK_TF1;
+                            emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF1,
+                                  aCPU->mMachineCycleCount + 1u);
 
                     }
                 }
@@ -1563,7 +1625,8 @@ static void timer_tick(struct em8051 *aCPU)
             
                     if (!((aCPU->mSFR[REG_TMOD] & T0_MODE3_MASK ) == T0_MODE3_MASK))
                     {
-                        aCPU->mSFR[REG_TCON] |= TCONMASK_TF1;
+                        emu_cpu_irq_write(aCPU, REG_TCON, aCPU->mSFR[REG_TCON] | TCONMASK_TF1,
+                                  aCPU->mMachineCycleCount + 1u);
                         timer_overflow_emit(aCPU, EM8051_TIMER1);
                     }
                     
@@ -1627,9 +1690,11 @@ static void sab_timer2_tick(struct em8051 *aCPU)
 
     if (value == 0u)
     {
-        aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)] |=
-            SAB_IRCONMASK_TF2;
+        emu_cpu_irq_write(aCPU, SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON),
+                           aCPU->mSFR[SAB_SFR_INDEX(EM8051_SAB_SFR_IRCON)] | SAB_IRCONMASK_TF2,
+                           aCPU->mMachineCycleCount + 1u);
         timer_overflow_emit(aCPU, EM8051_TIMER2);
+        if (em8051_execution_aborted(aCPU)) return;
         sab_irq_sync(aCPU);
     }
 }
@@ -1688,6 +1753,8 @@ static bool handle_sab_interrupts(struct em8051 *aCPU)
     uint8_t selected_priority = 0;
     uint8_t current_priority = 0;
     uint16_t pending_snapshot;
+    uint16_t observed_return_pc;
+    uint8_t observed_sp;
     unsigned source;
     uint8_t depth;
 
@@ -1734,7 +1801,11 @@ static bool handle_sab_interrupts(struct em8051 *aCPU)
     if (selected < 0 || depth >= 4u)
         return true;
 
+    if (aCPU->mObservation && !emu_cpu_raw(aCPU, EMU_RAW_CONTEXT_PREFLIGHT,
+            aCPU->mMachineCycleCount, 0, 0, 0, 0)) return false;
     pending_snapshot = aCPU->mSABIrqPending;
+    observed_return_pc = aCPU->mPC;
+    observed_sp = aCPU->mSFR[REG_SP];
     if (!push_to_stack(aCPU, (uint8_t)(aCPU->mPC & 0xffu)))
         return false;
     if (!push_to_stack(aCPU, (uint8_t)(aCPU->mPC >> 8)))
@@ -1751,6 +1822,8 @@ static bool handle_sab_interrupts(struct em8051 *aCPU)
     aCPU->mSABIrqDepth = (uint8_t)(depth + 1u);
     aCPU->mSABIrqInService |= SAB_IRQ_BIT((unsigned)selected);
 
+    (void)emu_cpu_raw(aCPU, EMU_RAW_IRQ_ENTER, aCPU->mMachineCycleCount,
+                       selected, observed_return_pc, observed_sp, aCPU->mSFR[REG_SP]);
     sab_irq_auto_clear(aCPU, (enum em8051_sab_irq_source)selected);
     sab_irq_sync(aCPU);
     sab_irq_trace_emit(aCPU, EM8051_SAB_IRQ_TRACE_ACCEPT,
@@ -1779,8 +1852,10 @@ void em8051_sab_irq_reti(struct em8051 *aCPU, uint8_t aOriginalSP)
 
         if (aCPU->mSABIrqSavedACC[index] != aCPU->mSFR[REG_ACC])
             em8051_raise_exception(aCPU, EXCEPTION_IRET_ACC_MISMATCH);
+        if (em8051_execution_aborted(aCPU)) return;
         if (aCPU->mSABIrqSavedSP[index] != aOriginalSP)
             em8051_raise_exception(aCPU, EXCEPTION_IRET_SP_MISMATCH);
+        if (em8051_execution_aborted(aCPU)) return;
         if ((aCPU->mSABIrqSavedPSW[index] &
              (PSWMASK_OV | PSWMASK_RS0 | PSWMASK_RS1 |
               PSWMASK_AC | PSWMASK_C)) !=
@@ -1789,6 +1864,7 @@ void em8051_sab_irq_reti(struct em8051 *aCPU, uint8_t aOriginalSP)
               PSWMASK_AC | PSWMASK_C)))
         {
             em8051_raise_exception(aCPU, EXCEPTION_IRET_PSW_MISMATCH);
+            if (em8051_execution_aborted(aCPU)) return;
         }
 
         aCPU->mSABIrqDepth = index;
@@ -1949,9 +2025,14 @@ static bool handle_interrupts(struct em8051 *aCPU)
 
 static void advance_machine_cycle(struct em8051 *aCPU)
 {
+    if (em8051_execution_aborted(aCPU)) return;
+    (void)emu_cpu_raw(aCPU, EMU_RAW_CYCLE_BEGIN, aCPU->mMachineCycleCount + 1u, 0, 0, 0, 0);
     timer_tick(aCPU);
+    if (em8051_execution_aborted(aCPU)) return;
     sab_timer2_tick(aCPU);
+    if (em8051_execution_aborted(aCPU)) return;
     sab_adc_tick(aCPU);
+    if (em8051_execution_aborted(aCPU)) return;
     aCPU->mMachineCycleCount++;
     sab_external_apply_scheduled(aCPU);
     sab_external_maintain_level_requests(aCPU);
@@ -1961,6 +2042,8 @@ bool tick(struct em8051 *aCPU)
 {
     uint8_t v;
     bool ticked = false;
+
+    if (em8051_execution_aborted(aCPU)) return false;
 
     /* A pending cycle belongs to the already-started instruction or interrupt
      * entry. It advances peripherals and virtual time, but must not also start
@@ -1989,6 +2072,7 @@ bool tick(struct em8051 *aCPU)
         advance_machine_cycle(aCPU);
         return false;
     }
+    if (em8051_execution_aborted(aCPU)) return false;
 
     if (aCPU->mTickDelay == 0)
     {
@@ -2001,10 +2085,19 @@ bool tick(struct em8051 *aCPU)
             uint8_t opcode = aCPU->mCodeMem[aCPU->mPC & aCPU->mCodeMemMaxIdx];
             aCPU->mTracePC = aCPU->mPC;
             aCPU->mInInstruction = true;
+            (void)emu_cpu_raw(aCPU, EMU_RAW_BEGIN, aCPU->mMachineCycleCount,
+                               aCPU->mPC, opcode, 0, 0);
             em8051_trace_emit(aCPU, EM8051_TRACE_INSTRUCTION,
                               aCPU->mPC, opcode);
+            if (em8051_execution_aborted(aCPU)) {
+                aCPU->mInInstruction = false;
+                return false;
+            }
             aCPU->mTickDelay = aCPU->op[opcode](aCPU);
             aCPU->mInInstruction = false;
+            (void)emu_cpu_raw(aCPU, EMU_RAW_OPCODE_END, aCPU->mMachineCycleCount,
+                               aCPU->mPC, 0, 0, 0);
+            if (em8051_execution_aborted(aCPU)) return false;
             aCPU->mInstructionCount++;
             if (aCPU->mVariant == EM8051_VARIANT_SAB80535 &&
                 aCPU->mSABIrqInhibitInstructions != 0)
@@ -2056,12 +2149,18 @@ static enum em8051_stop_reason run_control(struct em8051 *aCPU,
 
     while (true)
     {
-        /* Public run calls only return at a completed cycle boundary. This
+        /* Without an asserted abort, public run calls return at a completed
+         * cycle boundary. An abort deliberately preserves a partial boundary. This
          * also leaves an interrupt vector observable after its two entry
          * cycles and before execution of the vector opcode. */
-        while (aCPU->mTickDelay != 0)
+        while (aCPU->mTickDelay != 0 && !em8051_execution_aborted(aCPU))
             (void)tick(aCPU);
 
+        if (em8051_execution_aborted(aCPU))
+        {
+            reason = EM8051_STOP_ABORTED;
+            break;
+        }
         if (aCPU->mExceptionRaised)
         {
             reason = EM8051_STOP_EXCEPTION;

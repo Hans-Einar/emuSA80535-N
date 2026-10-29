@@ -2,7 +2,8 @@
  * Copyright 2026 Hans-Einar
  * Distributed under the MIT license; see LICENSE.
  */
-#include "emu_debug_runtime.h"
+#include <emusa80535/emu_debug_runtime.h>
+#include "emu_debug_observation_internal.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -19,7 +20,7 @@ struct em8051_debug_runtime {
     struct em8051_debug_watch_table watches;
     struct em8051_debug_trace_router router;
     struct em8051_debug_watch_result
-        pending[EM8051_DEBUG_RUNTIME_PENDING_CAPACITY];
+        pending[EM8051_DEBUG_WATCH_MAX_WATCHES];
     struct em8051_debug_event source_event;
     struct em8051_debug_runtime_stop stop;
     uint64_t accepted_source_events;
@@ -30,7 +31,11 @@ struct em8051_debug_runtime {
     size_t pending_count;
     size_t derived_index;
     uint32_t observer_id;
-    uint32_t generation;
+    uint64_t generation;
+    emu_debug_observation_fn observation_fn;
+    void *observation_context;
+    emu_debug_observation_fn after_observation_fn;
+    void *after_observation_context;
     enum em8051_debug_event_status dispatch_status;
     uint8_t phase;
     uint8_t busy;
@@ -112,7 +117,7 @@ static bool sequence_room(const struct em8051_debug_event_bus *aBus,
 static bool event_value_valid(const struct em8051_debug_value *aValue)
 {
     return aValue->known <= 1u && aValue->is_signed <= 1u &&
-           (aValue->width == 0u || aValue->width == 8u ||
+           (aValue->width == 0u || aValue->width == 1u || aValue->width == 8u ||
             aValue->width == 16u || aValue->width == 32u ||
             aValue->width == 64u) &&
            (aValue->known == 0u || aValue->width != 0u);
@@ -154,6 +159,8 @@ static void runtime_observer(const struct em8051_debug_event *aEvent,
 
     if (runtime->dispatch_status != EM8051_DEBUG_EVENT_OK)
         return;
+    if (aEvent->observation.kind && runtime->observation_fn)
+        runtime->observation_fn(runtime->observation_context, &aEvent->observation);
     if (runtime->phase == DISPATCH_SOURCE) {
         size_t required = 0u;
         enum em8051_debug_event_status status;
@@ -164,9 +171,9 @@ static void runtime_observer(const struct em8051_debug_event *aEvent,
         }
         status = em8051_debug_watch_table_match(
             &runtime->watches, aEvent, runtime->pending,
-            EM8051_DEBUG_RUNTIME_PENDING_CAPACITY, &required);
+            aEvent->observation.kind ? EM8051_DEBUG_WATCH_MAX_WATCHES : EM8051_DEBUG_RUNTIME_PENDING_CAPACITY, &required);
         if (status == EM8051_DEBUG_EVENT_LIMIT ||
-            required > EM8051_DEBUG_RUNTIME_PENDING_CAPACITY) {
+            required > (aEvent->observation.kind ? EM8051_DEBUG_WATCH_MAX_WATCHES : EM8051_DEBUG_RUNTIME_PENDING_CAPACITY)) {
             runtime->pending_count = 0u;
             saturated_increment(&runtime->pending_overflows);
             runtime->dispatch_status = EM8051_DEBUG_EVENT_LIMIT;
@@ -416,6 +423,13 @@ static enum em8051_debug_event_status runtime_ingest(
 
         derived.sequence = 0u;
         derived.kind = EM8051_DEBUG_EVENT_WATCH_MATCH;
+        if (derived.observation.kind) {
+            derived.observation.kind = EMUIF_OBS_WATCH;
+            derived.observation.phase = EMUIF_OBS_PHASE_BOUNDARY;
+            derived.observation.source_event_sequence = aRuntime->pending[i].source_event_sequence;
+            derived.observation.watch_id = aRuntime->pending[i].watch_id;
+            derived.observation.fired_actions = aRuntime->pending[i].fired_action_mask;
+        }
         aRuntime->derived_index = i;
         aRuntime->dispatch_status = EM8051_DEBUG_EVENT_OK;
         status = em8051_debug_event_bus_emit(&aRuntime->bus, &derived, NULL);
@@ -456,14 +470,14 @@ static enum em8051_debug_event_status lifecycle_event(
 {
     struct em8051_debug_event event;
     enum em8051_debug_event_status status;
-    uint32_t old_generation;
+    uint64_t old_generation;
     uint32_t old_interrupt_depth;
 
     if (aRuntime == NULL)
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
     if (aRuntime->busy)
         return EM8051_DEBUG_EVENT_BUSY;
-    if (aRuntime->generation == UINT32_MAX ||
+    if (aRuntime->generation == UINT64_MAX ||
         !sequence_room(&aRuntime->bus, 1u))
         return EM8051_DEBUG_EVENT_LIMIT;
     memset(&event, 0, sizeof(event));
@@ -517,7 +531,7 @@ enum em8051_debug_event_status em8051_debug_runtime_load(
         return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
     if (aRuntime->busy)
         return EM8051_DEBUG_EVENT_BUSY;
-    if (aRuntime->generation == UINT32_MAX ||
+    if (aRuntime->generation == UINT64_MAX ||
         !sequence_room(&aRuntime->bus, 1u))
         return EM8051_DEBUG_EVENT_LIMIT;
     candidate = aRuntime->router.config;
@@ -619,5 +633,145 @@ enum em8051_debug_event_status em8051_debug_runtime_read_ring(
     }
     *aRead = count;
     *aRemaining = available - count;
+    return EM8051_DEBUG_EVENT_OK;
+}
+
+/* This bridge feeds the original bus/watch/router pipeline. Canonical metadata
+ * is carried alongside the compatibility projection, never reconstructed later. */
+enum em8051_debug_event_status emu_debug_runtime_observer(
+    struct em8051_debug_runtime *r, emu_debug_observation_fn fn, void *context)
+{
+    if (!r) return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    r->observation_fn = fn;
+    r->observation_context = context;
+    return EM8051_DEBUG_EVENT_OK;
+}
+enum em8051_debug_event_status emu_debug_runtime_after_observation(
+    struct em8051_debug_runtime *r, emu_debug_observation_fn fn, void *context)
+{
+    if (!r) return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    r->after_observation_fn = fn; r->after_observation_context = context;
+    return EM8051_DEBUG_EVENT_OK;
+}
+enum em8051_debug_event_status emu_debug_runtime_observation(
+    struct em8051_debug_runtime *r, const struct emuif_observation *o, uint64_t *sequence)
+{
+    struct em8051_debug_event e;
+    enum em8051_debug_event_status status;
+    uint64_t old_generation;
+    uint32_t old_depth;
+    if (!r || !o || !o->generation || o->kind < 1 || o->kind > 27 ||
+        o->source_event_sequence || o->space > EMUIF_SPACE_XDATA)
+        return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    memset(&e, 0, sizeof e);
+    e.observation = *o;
+    e.observation.sequence = 0;
+    e.generation = o->generation;
+    e.machine_cycle_count = o->cycle;
+    e.instruction_count = o->legacy_instructions;
+    e.pc = o->pc;
+    e.address = o->address;
+    e.phase = (uint8_t)o->phase;
+    e.kind = EM8051_DEBUG_EVENT_UART;
+    switch (o->kind) {
+    case EMUIF_OBS_INSTRUCTION_BEGIN: e.kind = EM8051_DEBUG_EVENT_INSTRUCTION_BEGIN; break;
+    case EMUIF_OBS_INSTRUCTION_RETIRE: e.kind = EM8051_DEBUG_EVENT_INSTRUCTION_END; break;
+    case EMUIF_OBS_INSTRUCTION_ABORT: case EMUIF_OBS_FAULT: e.kind = EM8051_DEBUG_EVENT_EXCEPTION; break;
+    case EMUIF_OBS_ACCESS_ATTEMPT: case EMUIF_OBS_ACCESS_RESULT:
+        e.kind = o->access == EMUIF_OBS_ACCESS_FETCH ? EM8051_DEBUG_EVENT_CODE_FETCH :
+                 o->access == EMUIF_OBS_ACCESS_READ ? EM8051_DEBUG_EVENT_MEMORY_READ :
+                 o->access == EMUIF_OBS_ACCESS_RMW ? EM8051_DEBUG_EVENT_MEMORY_RMW : EM8051_DEBUG_EVENT_MEMORY_WRITE;
+        e.access = (uint8_t)o->access;
+        e.address_space = o->space == EMUIF_SPACE_CODE ? EM8051_DEBUG_SPACE_CODE :
+            o->space == EMUIF_SPACE_IRAM ? (o->address < 128 ? EM8051_DEBUG_SPACE_IRAM_LOWER : EM8051_DEBUG_SPACE_IRAM_UPPER) :
+            o->space == EMUIF_SPACE_SFR ? EM8051_DEBUG_SPACE_SFR : EM8051_DEBUG_SPACE_XDATA;
+        break;
+    case EMUIF_OBS_CALL: e.kind = EM8051_DEBUG_EVENT_CONTROL_CALL; break;
+    case EMUIF_OBS_RET: e.kind = EM8051_DEBUG_EVENT_CONTROL_RETURN; break;
+    case EMUIF_OBS_IRQ_REQUEST: e.kind = EM8051_DEBUG_EVENT_INTERRUPT_REQUEST; break;
+    case EMUIF_OBS_IRQ_ENTER: e.kind = EM8051_DEBUG_EVENT_INTERRUPT_ENTER; break;
+    case EMUIF_OBS_RETI: e.kind = EM8051_DEBUG_EVENT_INTERRUPT_EXIT; break;
+    case EMUIF_OBS_RESET: e.kind = EM8051_DEBUG_EVENT_RESET; break;
+    case EMUIF_OBS_LOAD: e.kind = EM8051_DEBUG_EVENT_LOAD; break;
+    default: break;
+    }
+    e.old_value.value = o->old_value.value;
+    e.old_value.width = (uint8_t)o->old_value.width;
+    e.old_value.known = (uint8_t)o->old_value.known;
+    e.old_value.is_signed = (uint8_t)o->old_value.is_signed;
+    e.new_value.value = o->new_value.value;
+    e.new_value.width = (uint8_t)o->new_value.width;
+    e.new_value.known = (uint8_t)o->new_value.known;
+    e.new_value.is_signed = (uint8_t)o->new_value.is_signed;
+    old_generation = r->generation;
+    old_depth = r->router.interrupt_depth;
+    r->generation = o->generation;
+    if (o->kind == EMUIF_OBS_RESET || o->kind == EMUIF_OBS_LOAD)
+        r->router.interrupt_depth = 0;
+    /* Unknown RETI cannot decrement a context that was never observed. */
+    if (o->kind == EMUIF_OBS_RETI && !r->router.interrupt_depth)
+        e.kind = EM8051_DEBUG_EVENT_CONTROL_RETURN;
+    status = runtime_ingest(r, &e, sequence, true);
+    if (status == EM8051_DEBUG_EVENT_OK && r->after_observation_fn)
+        r->after_observation_fn(r->after_observation_context, &r->source_event.observation);
+    if (status != EM8051_DEBUG_EVENT_OK) {
+        r->generation = old_generation;
+        r->router.interrupt_depth = old_depth;
+    }
+    return status;
+}
+
+/* Atomic canonical projection over the existing matcher/router. */
+enum em8051_debug_event_status emu_debug_runtime_delivery(struct em8051_debug_runtime *r,
+    void *context, void (*deliver)(void *, const struct em8051_debug_trace_record *),
+    bool (*eligible)(void *, uint32_t, const struct em8051_debug_event *))
+{
+    if (!r || r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    r->router.delivery_context=context; r->router.deliver=deliver; r->router.eligible=eligible;
+    return EM8051_DEBUG_EVENT_OK;
+}
+enum em8051_debug_event_status emu_debug_runtime_flush(struct em8051_debug_runtime *r)
+{ return !r || r->busy ? EM8051_DEBUG_EVENT_BUSY : em8051_debug_trace_router_flush(&r->router); }
+enum em8051_debug_event_status emu_debug_runtime_configure(struct em8051_debug_runtime *r,
+    const struct em8051_debug_trace_config *c, const struct em8051_debug_watch *w, size_t n)
+{
+    struct em8051_debug_watch_table watches;
+    struct em8051_debug_trace_router *candidate;
+    enum em8051_debug_event_status status;
+    if (!r || !c) return EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    if (r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    em8051_debug_watch_table_init(&watches);
+    status=em8051_debug_watch_table_replace(&watches,w,n);
+    if(status || !watch_routes_valid(&watches,c)) return status ? status : EM8051_DEBUG_EVENT_INVALID_ARGUMENT;
+    candidate=malloc(sizeof *candidate); if(!candidate) return EM8051_DEBUG_EVENT_LIMIT;
+    *candidate=r->router; memset(candidate->suppression,0,sizeof candidate->suppression);
+    candidate->deliver=NULL; candidate->eligible=NULL;
+    status=em8051_debug_trace_router_replace(candidate,c); free(candidate);
+    if(status) return status;
+    status=em8051_debug_trace_router_flush(&r->router); if(status) return status;
+    status=em8051_debug_trace_router_replace(&r->router,c);
+    if(!status) r->watches=watches;
+    return status;
+}
+
+size_t emu_debug_runtime_pending_summaries(const struct em8051_debug_runtime *r,uint32_t id)
+{ size_t i,n=0;if(!r)return 0;for(i=0;i<r->router.config.trace_count;i++)if(r->router.config.traces[i].destination_id==id&&r->router.suppression[i].active)n++;return n; }
+
+extern enum em8051_debug_event_status emu_debug_trace_flush_selected(struct em8051_debug_trace_router *, uint32_t, uint32_t);
+enum em8051_debug_event_status emu_debug_runtime_flush_selected(struct em8051_debug_runtime *r, uint32_t destination_id, uint32_t trace_id)
+{ return !r || r->busy ? EM8051_DEBUG_EVENT_BUSY : emu_debug_trace_flush_selected(&r->router,destination_id,trace_id); }
+
+/* Failed provisional B routes never become retained suppression summaries. */
+enum em8051_debug_event_status emu_debug_runtime_discard_suppression(
+    struct em8051_debug_runtime *r, uint32_t trace_id)
+{
+    size_t i;
+    if (!r || r->busy) return EM8051_DEBUG_EVENT_BUSY;
+    for (i = 0; i < r->router.config.trace_count; i++)
+        if (r->router.config.traces[i].trace_id == trace_id)
+            memset(&r->router.suppression[i], 0, sizeof r->router.suppression[i]);
     return EM8051_DEBUG_EVENT_OK;
 }

@@ -1,0 +1,25 @@
+{
+  "bundleVersion": "0.2.0",
+  "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+  "sourceCommit": "REPLACE_WITH_EXPORT_SOURCE_COMMIT",
+  "manifestSha256": "REPLACE_WITH_EXPORT_MANIFEST_SHA256",
+  "archiveSha256": "REPLACE_WITH_EXACT_ARCHIVE_SHA256",
+  "versions": {
+    "nativeApi": 1,
+    "boardAbi": {
+      "major": 1,
+      "minor": 0,
+      "platform": "linux-x86_64-sysv-le"
+    },
+    "runtimeWire": {
+      "major": 2,
+      "minor": 1
+    },
+    "legacyWire": {
+      "major": 1,
+      "minor": 0
+    }
+  },
+  "consumer": "external-board",
+  "copyPath": "vendor/emusa80535-interfaces/0.2.0"
+}

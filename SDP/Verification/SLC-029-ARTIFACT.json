@@ -1,0 +1,48 @@
+{
+  "archiveSha256": "be0c84c8eec3cba9f64ff0722f54beabe5ad477e3924f707ab0667615adbd350",
+  "capabilities": [
+    "attachSession",
+    "status",
+    "control",
+    "codeBreakpoints",
+    "decodeCode",
+    "memoryRead",
+    "boardInput",
+    "boardInspect",
+    "boardInspectFault",
+    "advance"
+  ],
+  "compatibility": {
+    "boardAbi": "1.0",
+    "contract": "0.2.0",
+    "cpuApi": 1,
+    "legacyDebugWire": "1.0",
+    "runtimeWire": "2.1",
+    "script": 1
+  },
+  "conditionalCapabilities": {
+    "advance": "externally-driven mode only",
+    "boardInput": "module stimulus capability",
+    "boardInspect": "module inspect capability",
+    "boardInspectFault": "module inspect plus explicit pure fault-inspection promise flag"
+  },
+  "contractManifestSha256": "ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0",
+  "contractVersion": "0.3.0",
+  "exportPath": "/home/warloc/git/emuSA80535-N-artifacts/runtime/d247e7ff82b7b3890da4154d720c94bdb86af64f/emusa80535-1.0.0.tar.gz",
+  "fix": "MOV direct,@R0/@R1 opcodes86/87 source/destination direction",
+  "lifetimeConnectionIds": 8192,
+  "maxConcurrentClients": 8,
+  "networkPublication": false,
+  "observationCoverage": [],
+  "physicalIo": false,
+  "review": "REV-SLC-029",
+  "reviewCommit": "6809ea1bfcc999ced1bac767b2108a0305165767",
+  "runtimeWire": {
+    "major": 3,
+    "minor": 0
+  },
+  "sourceCommit": "d247e7ff82b7b3890da4154d720c94bdb86af64f",
+  "supersedesForIntegration": "45b92abda4c88f56e69fff39441503d13ab64a59",
+  "verification": "VER-SLC-029",
+  "verificationEvidencePath": "/home/warloc/git/emuSA80535-N-artifacts/runtime/d247e7ff82b7b3890da4154d720c94bdb86af64f/verification"
+}

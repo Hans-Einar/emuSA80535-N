@@ -1,0 +1,124 @@
+{
+  "archiveSha256": "9186cfebe71bafa94fe3e51e672d8ef4614fb2c8428b4f6d06c94cfd3af07245",
+  "capabilities": [
+    "attachSession",
+    "status",
+    "control",
+    "codeBreakpoints",
+    "decodeCode",
+    "memoryRead",
+    "boardInput",
+    "boardInspect",
+    "advance",
+    "observations",
+    "uartOutcomes",
+    "traceConfig",
+    "tracePage",
+    "captureA",
+    "traceFile",
+    "captureB"
+  ],
+  "captureModeA": "persistent across calls, pause, reset and reconnect",
+  "captureModeB": {
+    "contextDepth": 64,
+    "mode1": "next fully observed successful CALL; binds after retirement",
+    "mode2": "known committed top CALL context",
+    "retainedStatuses": 64,
+    "stagedRecordsPerDestination": 256,
+    "startSequence": "mode1 CALL retirement; mode2 last processed canonical source at binding",
+    "stopCpu": "safe stop on return/incomplete with budget reason; fault/PD/CODE/watch precedence preserved"
+  },
+  "compatibility": {
+    "boardAbi": "1.0",
+    "cpuApi": 1,
+    "legacyDebugWire": "1.0",
+    "runtimeWire": "2.1",
+    "script": 1
+  },
+  "conditionalCapabilities": {
+    "advance": "externally-driven mode",
+    "boardInput": "module stimulus capability",
+    "boardInspect": "module inspect capability",
+    "boardInspectFault": "module inspect plus explicit fault-inspection promise",
+    "observations": "native SAB80535 binding",
+    "traceFile": "host provider with startup registered token mapping",
+    "uartOutcomes": "native lifecycle/input/UART binding"
+  },
+  "contractManifestSha256": "ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0",
+  "contractVersion": "0.3.0",
+  "exportPath": "/home/warloc/git/emuSA80535-N-artifacts/runtime/59f7a5c769a4fbf9eb73d0d660e94c58534c1c9c/emusa80535-1.0.0.tar.gz",
+  "lifetimeConnectionIds": 8192,
+  "maxConcurrentClients": 8,
+  "networkPublication": false,
+  "observationBindingVariant": "sab80535",
+  "observationCoverage": [
+    "instruction",
+    "control",
+    "irq",
+    "lifecycle",
+    "input",
+    "uart"
+  ],
+  "observationCoverageMask": 125,
+  "optionalControlProfile": {
+    "capability": "readCodeBreakpoints",
+    "command": "readCodeBreakpoints",
+    "compareAndSwap": false,
+    "contractVersion": "0.4.0",
+    "generationPrecondition": false,
+    "leaseRequiredForRead": false,
+    "manifestSha256": "80932dd18f883438074b37c167828484b8cf6f95ce74a309526b6b709c60383a",
+    "maxAddresses": 1024,
+    "mutation": false,
+    "observerAllowed": true,
+    "optIn": "explicit hello3.1 / contractVersion0.4.0",
+    "requestFields": [
+      "sessionId"
+    ],
+    "responseFields": [
+      "sessionId",
+      "generation",
+      "addresses"
+    ],
+    "runtimeWire": {
+      "major": 3,
+      "minor": 1
+    }
+  },
+  "outcomeStorageRecords": 1024,
+  "partialAccessFacts": [
+    "MOVX XDATA",
+    "SBUF writes and RMW"
+  ],
+  "physicalIo": false,
+  "review": "REV-SLC-031",
+  "reviewCommit": "904ff730cbfb6565d1bcc54f8766582c41c56ae7",
+  "runtimeWire": {
+    "major": 3,
+    "minor": 0
+  },
+  "sourceCommit": "59f7a5c769a4fbf9eb73d0d660e94c58534c1c9c",
+  "supersedesForIntegration": "8dd1230704cd6c460167b954f7e987c23e24ff86",
+  "traceFileContractVersion": "0.3.0",
+  "traceFileQueueRecords": 256,
+  "traceRingRecords": {
+    "max": 4096,
+    "min": 2
+  },
+  "uartBehaviorChanged": false,
+  "unavailable": [
+    "full ACCESS coverage"
+  ],
+  "verification": "VER-SLC-031",
+  "verificationEvidencePath": "/home/warloc/git/emuSA80535-N-artifacts/runtime/59f7a5c769a4fbf9eb73d0d660e94c58534c1c9c/verification",
+  "wireExtensionArtifact": {
+    "archiveSha256": "084218bcfc7cde3f43d716087cfce05268a9b9bd8547fd730a71467242a63c92",
+    "baseContractVersion": "0.3.0",
+    "baseManifestSha256": "ed3917b0d3a7300aca94171f1259eacf9861b0ee87376afa534690618da27ff0",
+    "bundleVersion": "0.4.0",
+    "exportPath": "/home/warloc/git/emuSA80535-N-artifacts/interfaces/0.4.0/emusa80535-control-0.4.0.tar.gz",
+    "manifestSha256": "80932dd18f883438074b37c167828484b8cf6f95ce74a309526b6b709c60383a",
+    "schema": "emusa80535-control-lock-v1",
+    "sourceCommit": "59f7a5c769a4fbf9eb73d0d660e94c58534c1c9c"
+  }
+}

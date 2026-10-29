@@ -1,0 +1,102 @@
+{
+  "schema": "emusa80535-composed-system-verification-v1",
+  "status": "verification-passed",
+  "slice": "SLC-023",
+  "runtime": {
+    "source_commit": "a03504bd186efe3a8882bd3f1cdb5c4cf463f30d",
+    "archive_sha256": "1157a016d23462df28b078b53ce82bd5ffa4667e55a1b46033e46f21ed2d8757",
+    "acceptance_record": "SDP/Verification/SLC-022-ARTIFACT.json",
+    "cpu_api": 1,
+    "board_abi": "1.0",
+    "local_script": 1,
+    "native_debug_wire": "2.1"
+  },
+  "external": {
+    "repository": "/home/warloc/git/ponsse",
+    "product_commit": "9f673bb3660cb1a957a95110a69283a55ad990ba",
+    "module_source_commit": "305cd0bcfbd4183e00312426e3e0c11ad39b54e8",
+    "module_sdk_version": "0.1.0",
+    "runtime_sdk_version": "0.2.0",
+    "runtime_lock_sha256": "ec4b67e44d5354b3a8bf26e46b4305fd81b2df771c443370866a84cd1f15dcf6",
+    "review": {
+      "id": "REV-PERIPH-RUN-001",
+      "verdict": "approved",
+      "path": "/home/warloc/git/ponsse/SDP/CodeReview/REV-PERIPH-RUN-001.md",
+      "sha256": "27cf6e6bbfb71c07c8f89c7bae19b67fd566fda92af8f44fea2c5a2555ea53b0",
+      "retained_snapshot": "/home/warloc/git/emuSA80535-N-artifacts/integration/SLC-023/9f673bb3660cb1a957a95110a69283a55ad990ba/verification-recovery/REV-PERIPH-RUN-001.md",
+      "record_commit": "4682bb89d075838bb8d836b165f1b2b2499e1dd2"
+    },
+    "master_finalization": "Accepted and committed after recovery; reviewed product bytes unchanged.",
+    "acceptance_commit": "4682bb89d075838bb8d836b165f1b2b2499e1dd2"
+  },
+  "artifact_sha256": {
+    "module/p1000-board.build-identity.json": "94984489876107bd74c9179c359755ac1420dfec3835aed356ce87807776bc53",
+    "module/p1000-board.so": "05004801bd998bda337d293e1a4df58e9b8ca5b606633afe20f19cf5a76def83",
+    "runtime-source/emu-runtime": "6d5150cdbddb03c9cd3ad94c242fdae9d84d3431f8edb427bd74c25e4e003568"
+  },
+  "verification": {
+    "originating_worker": "/root/integration_verifier",
+    "recovery_worker": "/root/integration_recovery_verifier",
+    "source_archive_reproduced": true,
+    "source_build_without_git": true,
+    "module_tests_passed": 8,
+    "integration_tests_passed": 13,
+    "scenario_record_counts": {
+      "synthetic": 20,
+      "rom-short": 10,
+      "rom-trial": 48,
+      "custom": 9
+    },
+    "all_four_documented_scenarios_passed": true,
+    "expected_diagnostic_runtime_exit_retained": 3,
+    "original_firmware_boot_claimed": false,
+    "separate_process_replay_equal_excluding_only": [
+      "sessionId"
+    ],
+    "post_fault_inspection_default_off_verified": true,
+    "post_fault_execution_and_mutation_rejected": true,
+    "wrong_image_or_module_hash_rejected_before_execution": true,
+    "recovery_checks": {
+      "evidence_manifest_sha256": "cc19ecde3449fb98fa28eb5174bdc7536c39d3dd83455c3290cadbc29900e902",
+      "evidence_files_verified": 77,
+      "external_product_files_verified": 6,
+      "external_review_sha256": "27cf6e6bbfb71c07c8f89c7bae19b67fd566fda92af8f44fea2c5a2555ea53b0",
+      "original_test_execution_repeated": false,
+      "saved_scenario_summaries_and_output_hashes_verified": 4
+    }
+  },
+  "evidence": {
+    "directory": "/home/warloc/git/emuSA80535-N-artifacts/integration/SLC-023/9f673bb3660cb1a957a95110a69283a55ad990ba/verification-worker",
+    "manifest_sha256": "cc19ecde3449fb98fa28eb5174bdc7536c39d3dd83455c3290cadbc29900e902",
+    "exact_bootstrap_and_test_commands": "verification-commands.json",
+    "exact_launcher_commands": "launcher-commands.json",
+    "independent_check_summary": "final-independent-checks.json",
+    "recovery_directory": "/home/warloc/git/emuSA80535-N-artifacts/integration/SLC-023/9f673bb3660cb1a957a95110a69283a55ad990ba/verification-recovery",
+    "recovery_manifest_sha256": "946151d630b83c47ec6851573a0f1cdfe277d476e2c7c6ea665e48ab74add45f",
+    "external_domain_results": "/home/warloc/git/ponsse/SDP/Verification/PERIPH-RUN-001-evidence/"
+  },
+  "handoff": {
+    "instructions": "/home/warloc/git/ponsse/p1000/simulator/RUN_V0.md",
+    "default_build": "/home/warloc/git/ponsse/p1000/simulator/build-v0",
+    "command_cwd": "/home/warloc/git/ponsse/p1000/simulator",
+    "verify_command": [
+      "python3",
+      "tools/v0.py",
+      "verify-build"
+    ],
+    "example_run_command": [
+      "python3",
+      "tools/v0.py",
+      "run",
+      "synthetic",
+      "--output",
+      "build-v0/try-synthetic"
+    ]
+  },
+  "limits": [
+    "Linux x86-64 with the documented fixed GCC/G++14.3.1 and CMake3.31.8 build",
+    "Scripted local controls, no remote debugger/DAP listener or administrative signals",
+    "No full firmware boot or physical hardware equivalence claim",
+    "No RPM release/publication or SDP migration"
+  ]
+}

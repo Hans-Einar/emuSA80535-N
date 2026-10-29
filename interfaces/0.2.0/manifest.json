@@ -1,0 +1,92 @@
+{
+  "availability": {
+    "boardAbi": "declarations-only",
+    "cpuControllerApi": "implemented-same-build",
+    "dapAttach": "mapping-only",
+    "legacyCpuAndDebug": "implemented-same-build",
+    "runtimeWire2": "specification-only",
+    "sessionDebugApi": "declarations-only"
+  },
+  "bundleVersion": "0.2.0",
+  "files": {
+    "LICENSE": "3c05d81f8d97faa7f8acc73af3e1a41491d9cea7f7ed01e5b03ec5c4e9566751",
+    "interfaces/0.2.0/README.md": "f9bfaa44b42fc69f0bb5ae4e7245505c6b65aed87b82b839419044bc8b262453",
+    "interfaces/0.2.0/consumers.json": "19b62a51109fee8147f38614ca8680fdce84c863247e29e6ca8ee9b6b698763b",
+    "interfaces/0.2.0/docs/01-overview.md": "c311896f463185450be406ffed40d381245a1b86cffc7f31c32e6556b6e39518",
+    "interfaces/0.2.0/docs/02-cpu.md": "eaff15a1e6d9827e2c97c58223170d67b5d3a7298a422af173e0d0d22ffe63e5",
+    "interfaces/0.2.0/docs/03-board.md": "5203b7852559c7f1a534a81b83418d08654504daee7ee9982758f3d0db96bce4",
+    "interfaces/0.2.0/docs/04-time.md": "47d494232e525046d7972e61f0d1a729563656034f0a767c6e55a9426c4190e8",
+    "interfaces/0.2.0/docs/05-session.md": "4280ad5cf08c5f6d8bacd796ae176dba12ec74d72ef1458b221771490012bbef",
+    "interfaces/0.2.0/docs/06-debug-service.md": "d6830d94c2aa59e460735447d0c407a404a57743c21c4b31c5159899fe51c372",
+    "interfaces/0.2.0/docs/07-wire.md": "cd6087aac3b11a9206720a1fe596f248e37d8ad636130a240da2f0981a64a210",
+    "interfaces/0.2.0/docs/08-dap.md": "b5a055b611da725dac39ab40b0e65acc7a58f576a679187e80c24a5bdf25b0a2",
+    "interfaces/0.2.0/docs/09-host.md": "d0b216fad4efbbd18a09ea339a239a983d938c4844cc4cdef96baf5ff1b64642",
+    "interfaces/0.2.0/docs/10-legacy.md": "fb366ecc66ee08b90bae3bcd43030fd98fe4000bc967ffe35ee418eaa7cd8ff3",
+    "interfaces/0.2.0/docs/11-versioning.md": "e0460d7545b1b382c2152d942b7b01f7ecf247da9fe0deabb70b29e46947dcea",
+    "interfaces/0.2.0/docs/12-conformance.md": "c39bdd178137b99173b7042b135b31828d095e4b218f0091b624814f5a6148c0",
+    "interfaces/0.2.0/examples/consumer.c": "cb00399a52d71671077c1e93adcc289389d2a16f4b39b0a79ff4412b18a5e328",
+    "interfaces/0.2.0/examples/consumer.lock.example.json": "acb2622dc57caf5d4804e268469afcd2866f2a42710293719a1e0fd7eb0f2fb4",
+    "interfaces/0.2.0/examples/runtime-2.1.ndjson": "4ead2203af3516894419cf99df0de8724c25b5f18fa1c86e599a0ec3956c4a2f",
+    "interfaces/0.2.0/reference/dap-LICENSE": "c52a00ba6a403c7f07bc6ca5c7d50411a4aae36cf9b4199a79af6f0c67f47be5",
+    "interfaces/0.2.0/reference/debug-model.md": "120d053d535801afabdb18437a9e68a41f1d1f790d498b7b0bd83facda7d4631",
+    "interfaces/0.2.0/reference/debug-stable-facade.md": "b47e7882d70ac88b1243a95161666aa27fccb4a82c9c5552b731349bf43d021a",
+    "interfaces/0.2.0/reference/legacy-protocol-1.0.md": "6ee44685fcc2022916eb9ba2648baa9a030c924df7afffe6d84a9741f089cee6",
+    "interfaces/0.2.0/schemas/runtime-2.1.schema.json": "44fa2d015a3b29682e751b5e5ff2e084a2169a1f0253a82cf9a2f386cac8c8aa",
+    "interfaces/README.md": "1015b144212b42e3cec0848a35cc091074d5520544845d0f051facaea99a3bca",
+    "interfaces/tools/bundle.py": "24ce617271bc816ab2a0f643c17ea368134bbfc0b89089f5ef8dd8f8f043e276",
+    "interfaces/tools/check_contracts.py": "bc36d9e47f577c9ab353cfe5be54d42c818fbab9d694985d4bd33557bb51bed9",
+    "interfaces/tools/wire.py": "4a08a65840c53dfdb51f6fcca726759d04558dc8bba1d45196c580bcaf662d4f",
+    "lib/include/emusa80535/contracts/board.h": "b8f880485879db36c4a438164f7704d315a51ee466fe299ae641ed3c90dda832",
+    "lib/include/emusa80535/contracts/cpu.h": "7fbb1c5aabfcadc36ed2c4be733809a490f00321a5f6f3d3675387db86d821db",
+    "lib/include/emusa80535/contracts/debug.h": "ec2922db572f38b260fd8d7e5d4223cd5070d77163216b062b37a92454aafe5f",
+    "lib/include/emusa80535/contracts/runtime.h": "a4171497ba0be43438b56d25d2349927e23c81e13cb716943c9b9aef711e600a",
+    "lib/include/emusa80535/contracts/types.h": "0cecfe8165ed6c9af4890ba8d0a580652ea5a7a2fef927450ff8fe4b224e0a4e",
+    "lib/include/emusa80535/contracts/version.h": "801900fd748e3681ababd441df6dc329828f028d7f1036757018bc6a9c1d6a4f",
+    "lib/include/emusa80535/emu8051.h": "15bb429ea156fee78917ed8cf95aaa549d607d2035699ebf0791c5836d8fc676",
+    "lib/include/emusa80535/emu_debug.h": "c143d75d75f6dce4996ea2a05317d61fa9aa93486f5d566137e7ebe38b9f8573",
+    "lib/include/emusa80535/emu_debug_event.h": "3220dc04178155c7d3afe7b4814a38b99064b9f084382e12f6a6d6e287bdeb1b",
+    "lib/include/emusa80535/emu_debug_runtime.h": "a739b419bcef2afc19b40fd52295a5d55c0b63c28a11a08c207fbbef77b99151",
+    "lib/include/emusa80535/emu_debug_trace.h": "72a391a5a29a9e0d513d28fedef208f4153f4d9259f399fb842ca39322f0b8ff"
+  },
+  "references": [
+    {
+      "path": "interfaces/0.2.0/reference/debug-model.md",
+      "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+      "sha256": "120d053d535801afabdb18437a9e68a41f1d1f790d498b7b0bd83facda7d4631",
+      "sourceCommit": "d4497fac6ca5d99d9192f660d01989ca080740fc",
+      "sourcePath": "SDP/05--Design/EMU-DEBUG-DES-007.md"
+    },
+    {
+      "path": "interfaces/0.2.0/reference/debug-stable-facade.md",
+      "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+      "sha256": "b47e7882d70ac88b1243a95161666aa27fccb4a82c9c5552b731349bf43d021a",
+      "sourceCommit": "d4497fac6ca5d99d9192f660d01989ca080740fc",
+      "sourcePath": "SDP/05--Design/EMU-DEBUG-DES-008.md"
+    },
+    {
+      "path": "interfaces/0.2.0/reference/legacy-protocol-1.0.md",
+      "repository": "https://github.com/Hans-Einar/emuSA80535-DAP",
+      "sha256": "6ee44685fcc2022916eb9ba2648baa9a030c924df7afffe6d84a9741f089cee6",
+      "sourceCommit": "2e4c2dae2bb3637c4f3dbf803b83cc3f7e246301",
+      "sourcePath": "protocol/EMU_DEBUG_API_REQUIREMENTS.md"
+    }
+  ],
+  "repository": "https://github.com/Hans-Einar/emuSA80535-N",
+  "status": "cpu-api-implemented-runtime-target",
+  "versions": {
+    "boardAbi": {
+      "major": 1,
+      "minor": 0,
+      "platform": "linux-x86_64-sysv-le"
+    },
+    "legacyWire": {
+      "major": 1,
+      "minor": 0
+    },
+    "nativeApi": 1,
+    "runtimeWire": {
+      "major": 2,
+      "minor": 1
+    }
+  }
+}

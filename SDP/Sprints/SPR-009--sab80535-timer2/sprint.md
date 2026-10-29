@@ -61,5 +61,7 @@ VER-SLC-015 passed exact-head Linux GCC/strict-Clang/ASan+UBSan/debug/DAP and
 Windows GCC/strict-Clang verification. SLC-015 is accepted and satisfies
 REQ-014 within the explicitly reached Timer2 mode boundary.
 
-PR #18 remains open and intentionally unmerged pending Steering authorization.
+PR #18 merged into `master` on 2026-09-06 as
+`b43fe36b0965b6ac8628677bb6fcc16513d1f567`; Issue #17 is closed completed.
+The exit criteria above preserve the original Worker delivery contract.
 SPR-009 is complete; no Stage-5 work is authorized by this closure.

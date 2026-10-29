@@ -1,0 +1,3040 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:emusa80535:runtime-control:2.0:bundle:0.1.0",
+  "title": "Runtime control protocol 2.0 (target)",
+  "description": "Additional normative UTF-8 byte and uint64 bounds in docs/07-wire.md apply. Validate format uint64.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "hello"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "protocol": {
+              "type": "object",
+              "properties": {
+                "major": {
+                  "const": 2
+                },
+                "minor": {
+                  "const": 0
+                }
+              },
+              "required": [
+                "major",
+                "minor"
+              ],
+              "additionalProperties": false
+            },
+            "contractVersion": {
+              "const": "0.1.0"
+            },
+            "requiredCapabilities": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "attachSession",
+                  "status",
+                  "control",
+                  "codeBreakpoints",
+                  "decodeCode",
+                  "memoryRead",
+                  "traceRead",
+                  "boardInput",
+                  "boardInspect"
+                ]
+              },
+              "maxItems": 9,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "protocol",
+            "contractVersion",
+            "requiredCapabilities"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "hello"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "protocol": {
+              "type": "object",
+              "properties": {
+                "major": {
+                  "const": 2
+                },
+                "minor": {
+                  "const": 0
+                }
+              },
+              "required": [
+                "major",
+                "minor"
+              ],
+              "additionalProperties": false
+            },
+            "contractVersion": {
+              "const": "0.1.0"
+            },
+            "runtimeCommit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "contractManifestSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "attachSession",
+                  "status",
+                  "control",
+                  "codeBreakpoints",
+                  "decodeCode",
+                  "memoryRead",
+                  "traceRead",
+                  "boardInput",
+                  "boardInspect"
+                ]
+              },
+              "maxItems": 9,
+              "uniqueItems": true
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "maxFrameBytes": {
+                  "const": 65536
+                },
+                "maxConfigBytes": {
+                  "const": 16384
+                },
+                "maxInputs": {
+                  "const": 1024
+                },
+                "maxPageRecords": {
+                  "const": 128
+                },
+                "maxCycleBudget": {
+                  "const": 100000
+                },
+                "maxSafeDrainCycles": {
+                  "const": 16
+                },
+                "maxClients": {
+                  "const": 8
+                },
+                "maxPendingRequests": {
+                  "const": 32
+                },
+                "maxBreakpoints": {
+                  "const": 1024
+                },
+                "maxMemoryBytes": {
+                  "const": 256
+                },
+                "maxDecodeRecords": {
+                  "const": 256
+                },
+                "maxBoardPayloadBytes": {
+                  "const": 4096
+                }
+              },
+              "required": [
+                "maxFrameBytes",
+                "maxConfigBytes",
+                "maxInputs",
+                "maxPageRecords",
+                "maxCycleBudget",
+                "maxSafeDrainCycles",
+                "maxClients",
+                "maxPendingRequests",
+                "maxBreakpoints",
+                "maxMemoryBytes",
+                "maxDecodeRecords",
+                "maxBoardPayloadBytes"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "protocol",
+            "contractVersion",
+            "runtimeCommit",
+            "contractManifestSha256",
+            "capabilities",
+            "limits"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "attach"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "role": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            }
+          },
+          "required": [
+            "sessionId",
+            "role"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "attach"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "state": {
+              "enum": [
+                "paused",
+                "running",
+                "faulted",
+                "terminated"
+              ]
+            },
+            "variant": {
+              "enum": [
+                "8051",
+                "8052",
+                "sab80535"
+              ]
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "pc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "registers": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "psw": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "sp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "dptr": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "r": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "maxItems": 8,
+                  "minItems": 8
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "psw",
+                "sp",
+                "dptr",
+                "r"
+              ],
+              "additionalProperties": false
+            },
+            "idle": {
+              "type": "boolean"
+            },
+            "powerDown": {
+              "type": "boolean"
+            },
+            "safeBoundary": {
+              "type": "boolean"
+            },
+            "stopRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "reason": {
+              "enum": [
+                "entry",
+                "pause",
+                "step",
+                "breakpoint",
+                "watchpoint",
+                "exception",
+                "cycle-budget",
+                "power-down-unsupported",
+                "terminated"
+              ]
+            },
+            "imageSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "configSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "moduleVersion": {
+              "type": "string",
+              "maxLength": 31
+            },
+            "controlRole": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            },
+            "canTerminate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "state",
+            "variant",
+            "cycle",
+            "instructions",
+            "pc",
+            "registers",
+            "idle",
+            "powerDown",
+            "safeBoundary",
+            "stopRevision",
+            "reason",
+            "imageSha256",
+            "moduleSha256",
+            "configSha256",
+            "moduleId",
+            "moduleVersion",
+            "controlRole",
+            "canTerminate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "status"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          },
+          "required": [
+            "sessionId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "status"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "state": {
+              "enum": [
+                "paused",
+                "running",
+                "faulted",
+                "terminated"
+              ]
+            },
+            "variant": {
+              "enum": [
+                "8051",
+                "8052",
+                "sab80535"
+              ]
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "pc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "registers": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "psw": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "sp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "dptr": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "r": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "maxItems": 8,
+                  "minItems": 8
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "psw",
+                "sp",
+                "dptr",
+                "r"
+              ],
+              "additionalProperties": false
+            },
+            "idle": {
+              "type": "boolean"
+            },
+            "powerDown": {
+              "type": "boolean"
+            },
+            "safeBoundary": {
+              "type": "boolean"
+            },
+            "stopRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "reason": {
+              "enum": [
+                "entry",
+                "pause",
+                "step",
+                "breakpoint",
+                "watchpoint",
+                "exception",
+                "cycle-budget",
+                "power-down-unsupported",
+                "terminated"
+              ]
+            },
+            "imageSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "configSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "moduleVersion": {
+              "type": "string",
+              "maxLength": 31
+            },
+            "controlRole": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            },
+            "canTerminate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "state",
+            "variant",
+            "cycle",
+            "instructions",
+            "pc",
+            "registers",
+            "idle",
+            "powerDown",
+            "safeBoundary",
+            "stopRevision",
+            "reason",
+            "imageSha256",
+            "moduleSha256",
+            "configSha256",
+            "moduleId",
+            "moduleVersion",
+            "controlRole",
+            "canTerminate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "pause"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "pause"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "state": {
+              "enum": [
+                "paused",
+                "running",
+                "faulted",
+                "terminated"
+              ]
+            },
+            "variant": {
+              "enum": [
+                "8051",
+                "8052",
+                "sab80535"
+              ]
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "pc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "registers": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "psw": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "sp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "dptr": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "r": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "maxItems": 8,
+                  "minItems": 8
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "psw",
+                "sp",
+                "dptr",
+                "r"
+              ],
+              "additionalProperties": false
+            },
+            "idle": {
+              "type": "boolean"
+            },
+            "powerDown": {
+              "type": "boolean"
+            },
+            "safeBoundary": {
+              "type": "boolean"
+            },
+            "stopRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "reason": {
+              "enum": [
+                "entry",
+                "pause",
+                "step",
+                "breakpoint",
+                "watchpoint",
+                "exception",
+                "cycle-budget",
+                "power-down-unsupported",
+                "terminated"
+              ]
+            },
+            "imageSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "configSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "moduleVersion": {
+              "type": "string",
+              "maxLength": 31
+            },
+            "controlRole": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            },
+            "canTerminate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "state",
+            "variant",
+            "cycle",
+            "instructions",
+            "pc",
+            "registers",
+            "idle",
+            "powerDown",
+            "safeBoundary",
+            "stopRevision",
+            "reason",
+            "imageSha256",
+            "moduleSha256",
+            "configSha256",
+            "moduleId",
+            "moduleVersion",
+            "controlRole",
+            "canTerminate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "resume"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "resume"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "state": {
+              "enum": [
+                "paused",
+                "running",
+                "faulted",
+                "terminated"
+              ]
+            },
+            "variant": {
+              "enum": [
+                "8051",
+                "8052",
+                "sab80535"
+              ]
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "pc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "registers": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "psw": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "sp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "dptr": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "r": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "maxItems": 8,
+                  "minItems": 8
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "psw",
+                "sp",
+                "dptr",
+                "r"
+              ],
+              "additionalProperties": false
+            },
+            "idle": {
+              "type": "boolean"
+            },
+            "powerDown": {
+              "type": "boolean"
+            },
+            "safeBoundary": {
+              "type": "boolean"
+            },
+            "stopRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "reason": {
+              "enum": [
+                "entry",
+                "pause",
+                "step",
+                "breakpoint",
+                "watchpoint",
+                "exception",
+                "cycle-budget",
+                "power-down-unsupported",
+                "terminated"
+              ]
+            },
+            "imageSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "configSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "moduleVersion": {
+              "type": "string",
+              "maxLength": 31
+            },
+            "controlRole": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            },
+            "canTerminate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "state",
+            "variant",
+            "cycle",
+            "instructions",
+            "pc",
+            "registers",
+            "idle",
+            "powerDown",
+            "safeBoundary",
+            "stopRevision",
+            "reason",
+            "imageSha256",
+            "moduleSha256",
+            "configSha256",
+            "moduleId",
+            "moduleVersion",
+            "controlRole",
+            "canTerminate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "step"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "maxCycles": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "maxCycles"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "step"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "state": {
+              "enum": [
+                "paused",
+                "running",
+                "faulted",
+                "terminated"
+              ]
+            },
+            "variant": {
+              "enum": [
+                "8051",
+                "8052",
+                "sab80535"
+              ]
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "pc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "registers": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "psw": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "sp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "dptr": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "r": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "maxItems": 8,
+                  "minItems": 8
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "psw",
+                "sp",
+                "dptr",
+                "r"
+              ],
+              "additionalProperties": false
+            },
+            "idle": {
+              "type": "boolean"
+            },
+            "powerDown": {
+              "type": "boolean"
+            },
+            "safeBoundary": {
+              "type": "boolean"
+            },
+            "stopRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "reason": {
+              "enum": [
+                "entry",
+                "pause",
+                "step",
+                "breakpoint",
+                "watchpoint",
+                "exception",
+                "cycle-budget",
+                "power-down-unsupported",
+                "terminated"
+              ]
+            },
+            "imageSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "configSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "moduleVersion": {
+              "type": "string",
+              "maxLength": 31
+            },
+            "controlRole": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            },
+            "canTerminate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "state",
+            "variant",
+            "cycle",
+            "instructions",
+            "pc",
+            "registers",
+            "idle",
+            "powerDown",
+            "safeBoundary",
+            "stopRevision",
+            "reason",
+            "imageSha256",
+            "moduleSha256",
+            "configSha256",
+            "moduleId",
+            "moduleVersion",
+            "controlRole",
+            "canTerminate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "reset"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "seed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4294967295
+            },
+            "entry": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "seed",
+            "entry"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "reset"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "state": {
+              "enum": [
+                "paused",
+                "running",
+                "faulted",
+                "terminated"
+              ]
+            },
+            "variant": {
+              "enum": [
+                "8051",
+                "8052",
+                "sab80535"
+              ]
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "pc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "registers": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "psw": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "sp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "dptr": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "r": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "maxItems": 8,
+                  "minItems": 8
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "psw",
+                "sp",
+                "dptr",
+                "r"
+              ],
+              "additionalProperties": false
+            },
+            "idle": {
+              "type": "boolean"
+            },
+            "powerDown": {
+              "type": "boolean"
+            },
+            "safeBoundary": {
+              "type": "boolean"
+            },
+            "stopRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "reason": {
+              "enum": [
+                "entry",
+                "pause",
+                "step",
+                "breakpoint",
+                "watchpoint",
+                "exception",
+                "cycle-budget",
+                "power-down-unsupported",
+                "terminated"
+              ]
+            },
+            "imageSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "configSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "moduleVersion": {
+              "type": "string",
+              "maxLength": 31
+            },
+            "controlRole": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            },
+            "canTerminate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "state",
+            "variant",
+            "cycle",
+            "instructions",
+            "pc",
+            "registers",
+            "idle",
+            "powerDown",
+            "safeBoundary",
+            "stopRevision",
+            "reason",
+            "imageSha256",
+            "moduleSha256",
+            "configSha256",
+            "moduleId",
+            "moduleVersion",
+            "controlRole",
+            "canTerminate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "replaceCodeBreakpoints"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "addresses": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "maxItems": 1024,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "addresses"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "replaceCodeBreakpoints"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "addresses": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "maxItems": 1024,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "addresses"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "decodeCode"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "address": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "byteOffset": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "instructionOffset": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 256
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "address",
+            "byteOffset",
+            "instructionOffset",
+            "count"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "decodeCode"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "records": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 65535
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 3
+                  },
+                  "valid": {
+                    "type": "boolean"
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 96
+                  },
+                  "reason": {
+                    "enum": [
+                      "decoded",
+                      "unknown-predecessor"
+                    ]
+                  }
+                },
+                "required": [
+                  "address",
+                  "size",
+                  "valid",
+                  "text",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 256
+            }
+          },
+          "required": [
+            "records"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "readMemory"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "space": {
+              "enum": [
+                "CODE",
+                "IRAM",
+                "SFR",
+                "XDATA"
+              ]
+            },
+            "address": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 256
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "space",
+            "address",
+            "count"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "readMemory"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "bytesHex": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{2}){0,256}$"
+            }
+          },
+          "required": [
+            "address",
+            "bytesHex"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "tracePage"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "destinationId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4294967295
+            },
+            "ringEpoch": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "afterRecordSequence": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "maxRecords": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 128
+            }
+          },
+          "required": [
+            "sessionId",
+            "destinationId",
+            "ringEpoch",
+            "afterRecordSequence",
+            "maxRecords"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "tracePage"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "destinationId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4294967295
+            },
+            "ringEpoch": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "requestedAfterRecordSequence": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "oldestRecordSequence": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "newestRecordSequence": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "firstRecordSequence": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "lastRecordSequence": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "nextAfterRecordSequence": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "returned": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 128
+            },
+            "remaining": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "more": {
+              "type": "boolean"
+            },
+            "cursorState": {
+              "enum": [
+                "current",
+                "expired",
+                "ahead",
+                "wrong-session",
+                "wrong-epoch"
+              ]
+            },
+            "overwriteCount": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "lossCount": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "lostBeforePage": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "records": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "recordSequence": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$",
+                    "maxLength": 20,
+                    "format": "uint64"
+                  },
+                  "kind": {
+                    "enum": [
+                      "event",
+                      "suppression",
+                      "loss",
+                      "sink-status"
+                    ]
+                  },
+                  "generation": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$",
+                    "maxLength": 20,
+                    "format": "uint64"
+                  },
+                  "sourceFirstSequence": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$",
+                    "maxLength": 20,
+                    "format": "uint64"
+                  },
+                  "sourceLastSequence": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$",
+                    "maxLength": 20,
+                    "format": "uint64"
+                  },
+                  "cycle": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$",
+                    "maxLength": 20,
+                    "format": "uint64"
+                  },
+                  "pc": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 65535
+                  },
+                  "eventKind": {
+                    "enum": [
+                      "none",
+                      "instruction-begin",
+                      "instruction-end",
+                      "code-fetch",
+                      "memory-read",
+                      "memory-write",
+                      "memory-rmw",
+                      "call",
+                      "return",
+                      "irq-request",
+                      "irq-enter",
+                      "irq-exit",
+                      "exception",
+                      "halt",
+                      "timer-overflow",
+                      "uart-frame",
+                      "uart-bit",
+                      "reset",
+                      "load",
+                      "debug-mutation"
+                    ]
+                  },
+                  "space": {
+                    "enum": [
+                      "CODE",
+                      "IRAM",
+                      "SFR",
+                      "XDATA",
+                      "NONE"
+                    ]
+                  },
+                  "address": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 65535
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 8
+                  },
+                  "oldKnown": {
+                    "type": "boolean"
+                  },
+                  "oldValue": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$",
+                    "maxLength": 20,
+                    "format": "uint64"
+                  },
+                  "newKnown": {
+                    "type": "boolean"
+                  },
+                  "newValue": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$",
+                    "maxLength": 20,
+                    "format": "uint64"
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "recordSequence",
+                  "kind",
+                  "generation",
+                  "sourceFirstSequence",
+                  "sourceLastSequence",
+                  "cycle",
+                  "pc",
+                  "eventKind",
+                  "space",
+                  "address",
+                  "width",
+                  "oldKnown",
+                  "oldValue",
+                  "newKnown",
+                  "newValue",
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 128
+            }
+          },
+          "required": [
+            "sessionId",
+            "destinationId",
+            "ringEpoch",
+            "requestedAfterRecordSequence",
+            "oldestRecordSequence",
+            "newestRecordSequence",
+            "firstRecordSequence",
+            "lastRecordSequence",
+            "nextAfterRecordSequence",
+            "returned",
+            "remaining",
+            "more",
+            "cursorState",
+            "overwriteCount",
+            "lossCount",
+            "lostBeforePage",
+            "records"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "boardInput"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "cycle": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$",
+                  "maxLength": 20,
+                  "format": "uint64"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "payload": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "cycle",
+            "schema",
+            "payload"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "boardInput"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "order": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          },
+          "required": [
+            "generation",
+            "cycle",
+            "order"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "boardInspect"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "payload": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "schema",
+            "payload"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "boardInspect"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "payload": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "generation",
+            "schema",
+            "payload"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "detach"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          },
+          "required": [
+            "sessionId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "detach"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "detached": {
+              "const": true
+            }
+          },
+          "required": [
+            "sessionId",
+            "detached"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "request"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "terminate"
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "arguments"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "const": "terminate"
+        },
+        "success": {
+          "const": true
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "generation": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "state": {
+              "enum": [
+                "paused",
+                "running",
+                "faulted",
+                "terminated"
+              ]
+            },
+            "variant": {
+              "enum": [
+                "8051",
+                "8052",
+                "sab80535"
+              ]
+            },
+            "cycle": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "instructions": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "pc": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "registers": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "psw": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "sp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "dptr": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "r": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "maxItems": 8,
+                  "minItems": 8
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "psw",
+                "sp",
+                "dptr",
+                "r"
+              ],
+              "additionalProperties": false
+            },
+            "idle": {
+              "type": "boolean"
+            },
+            "powerDown": {
+              "type": "boolean"
+            },
+            "safeBoundary": {
+              "type": "boolean"
+            },
+            "stopRevision": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "reason": {
+              "enum": [
+                "entry",
+                "pause",
+                "step",
+                "breakpoint",
+                "watchpoint",
+                "exception",
+                "cycle-budget",
+                "power-down-unsupported",
+                "terminated"
+              ]
+            },
+            "imageSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "configSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moduleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,63}$"
+            },
+            "moduleVersion": {
+              "type": "string",
+              "maxLength": 31
+            },
+            "controlRole": {
+              "enum": [
+                "observer",
+                "controller"
+              ]
+            },
+            "canTerminate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "sessionId",
+            "generation",
+            "state",
+            "variant",
+            "cycle",
+            "instructions",
+            "pc",
+            "registers",
+            "idle",
+            "powerDown",
+            "safeBoundary",
+            "stopRevision",
+            "reason",
+            "imageSha256",
+            "moduleSha256",
+            "configSha256",
+            "moduleId",
+            "moduleVersion",
+            "controlRole",
+            "canTerminate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "response"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "command": {
+          "enum": [
+            "hello",
+            "attach",
+            "status",
+            "pause",
+            "resume",
+            "step",
+            "reset",
+            "replaceCodeBreakpoints",
+            "decodeCode",
+            "readMemory",
+            "tracePage",
+            "boardInput",
+            "boardInspect",
+            "detach",
+            "terminate"
+          ]
+        },
+        "success": {
+          "const": false
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "enum": [
+                "INVALID",
+                "VERSION",
+                "STATE",
+                "RANGE",
+                "CAPACITY",
+                "UNSUPPORTED",
+                "BUSY",
+                "STALE",
+                "DENIED",
+                "FAULT",
+                "EXHAUSTED",
+                "IO",
+                "HASH",
+                "NOT_FOUND"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "command",
+        "success",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
